@@ -123,8 +123,8 @@ const tone = { Yes: "text-app-pos", Maybe: "text-app-warn" };
   .card[data-out="approve"] { translate: 60% -20px; rotate: 6deg; opacity: 0; }
   .card[data-out="reject"] { translate: -60% -20px; rotate: -6deg; opacity: 0; }
   .card [data-act]:focus-visible { outline: 2px solid var(--color-app-tint); outline-offset: 2px; }
-  .avatar > :global(span) { border-radius: 12px; }
-  #approved-list .avatar > :global(span) { border-radius: 9999px; }
+  .avatar > :global(*) { border-radius: 12px; }
+  #approved-list .avatar > :global(*) { border-radius: 9999px; }
   .bump { animation: bump 300ms var(--ease-out-soft); }
   @keyframes bump { 50% { scale: 1.25; } }
   :global(.row-in) { animation: row-in 300ms var(--ease-out-soft) both; }
@@ -154,7 +154,7 @@ const tone = { Yes: "text-app-pos", Maybe: "text-app-warn" };
   function addApproved(card: HTMLElement) {
     // Reuse the first row as a template: swap in this candidate's avatar and name, newest first, max 4 rows.
     const row = list.firstElementChild!.cloneNode(true) as HTMLElement;
-    const avatar = card.querySelector<HTMLElement>(".avatar > span")!.cloneNode(true) as HTMLElement;
+    const avatar = card.querySelector<HTMLElement>(".avatar > *")!.cloneNode(true) as HTMLElement;
     Object.assign(avatar.style, { width: "24px", height: "24px", fontSize: "9px" });
     row.querySelector(".avatar")!.replaceChildren(avatar);
     row.children[1].textContent = card.getAttribute("aria-label");

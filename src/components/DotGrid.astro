@@ -1,0 +1,213 @@
+---
+// Canvas dot grid with mixed dot sizes; dots swell near the cursor.
+// Dots are a shade darker than the page bg and stay clear of the text inside any [data-dotgrid-avoid] element in the same parent.
+// `people`: as the cursor travels, an occasional dot grows into a candidate photo with a name tag, then shrinks back.
+interface Props { class?: string; people?: boolean }
+const { class: className = "", people = false } = Astro.props;
+const slug = (n: string) => n.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const candidates = [
+  ["Maya Chen", "Senior Engineer · Stripe"],
+  ["Daniel Okafor", "Backend Lead · Plaid"],
+  ["Priya Raman", "Engineer II · Brex"],
+  ["Sofia Alvarez", "Staff Engineer · Datadog"],
+  ["Tom Becker", "Data Engineer · Ramp"],
+  ["Sara Kim", "Senior Engineer · Shopify"],
+  ["Rachel Diaz", "VP Sales · Workrise"],
+  ["Marcus Hill", "Head of Sales · Bazaarvoice"],
+  ["Jessica Moore", "ICU RN · OhioHealth"],
+  ["Ayana Brooks", "Staff PM · Vanta"],
+  ["Leo Tanaka", "Senior SWE · Plaid"],
+  ["Hannah Park", "Director of Sales · Kasisto"],
+].map(([name, role]) => ({ name, role, photo: `/images/people/${slug(name)}.webp` }));
+---
+
+<div data-dotgrid aria-hidden="true" class:list={["pointer-events-none absolute inset-x-0 top-0", className]} data-people={people ? JSON.stringify(candidates) : undefined}>
+  <canvas class="absolute inset-0 size-full"></canvas>
+</div>
+
+<style is:global>
+  /* Zero-size anchor on the dot. Photo stays centered on it; the white pill grows sideways from behind it, then the name fades in. */
+  .dg-person { position: absolute; width: 0; height: 0; --ease: cubic-bezier(0.22, 1, 0.36, 1); }
+  .dg-photo { position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; max-width: none; border-radius: 9999px; object-fit: cover; z-index: 2; scale: 0.1; opacity: 0; transition: scale 800ms var(--ease), opacity 400ms var(--ease); }
+  .dg-bg { position: absolute; top: -18px; left: -18px; width: 36px; height: 36px; border-radius: 18px; background: white; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.04), 0 8px 20px -8px rgb(115 70 38 / 0.28); opacity: 0;
+    /* closing: collapse behind the photo, then fade */
+    transition: width 700ms var(--ease), opacity 250ms ease 550ms; }
+  .dg-label { position: absolute; top: -18px; left: 26px; height: 36px; display: flex; flex-direction: column; justify-content: center; white-space: nowrap; font-size: 13px; line-height: 1.15; color: var(--color-ink); z-index: 1; opacity: 0; transition: opacity 200ms ease; }
+  .dg-label small { font-size: 11px; color: var(--color-ink-2); }
+  .dg-person.flip .dg-bg { left: auto; right: -18px; }
+  .dg-person.flip .dg-label { left: auto; right: 26px; text-align: right; }
+  .dg-person[data-s] .dg-photo { scale: 1; opacity: 1; }
+  .dg-person[data-s="open"] .dg-bg { width: var(--w); opacity: 1; transition: width 800ms var(--ease), opacity 200ms ease; }
+  .dg-person[data-s="open"] .dg-label { opacity: 1; transition: opacity 400ms ease 450ms; }
+</style>
+
+<script>
+  const GAP = 22, R = 150, TOP = 18; // first row sits TOP px down so it never touches the edge
+  const PAD = 12, FADE = 36; // dots stop PAD px from text, fade in over FADE px
+  const DOT = [232, 226, 218]; // bg #fcfaf8, just a touch darker
+  // People: spawn at most every TRAVEL px of cursor movement and COOLDOWN ms, MIN_GAP apart, HOLD ms on screen, LIMIT at once.
+  const TRAVEL = 700, COOLDOWN = 1500, MIN_GAP = 300, HOLD = 4500, LIMIT = 3;
+  const IDLE = 3500; // with no cursor activity, one still appears somewhere after this long
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Deterministic per-dot noise so sizes vary but don't flicker.
+  const hash = (x: number, y: number) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
+  const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  type Person = { name: string; role: string; photo: string };
+  type Box = { l: number; t: number; r: number; b: number };
+
+  document.querySelectorAll<HTMLElement>("[data-dotgrid]").forEach((root) => {
+    const canvas = root.querySelector("canvas")!;
+    const ctx = canvas.getContext("2d")!;
+    const avoidEl = root.parentElement?.querySelector<HTMLElement>("[data-dotgrid-avoid]");
+    const pool: Person[] = root.dataset.people ? JSON.parse(root.dataset.people) : [];
+    const live = new Map<string, { x: number; y: number }>(); // "i,j" -> active avatar position
+    let w = 0, h = 0, raf = 0, visible = false, boxes: Box[] = [];
+    let px = -1e4, py = -1e4, tx = -1e4, ty = -1e4, strength = 0, target = 0, travel = 0, next = 0, last = 0;
+
+    // Tight boxes around each line of text (and each button), relative to the grid.
+    const measure = () => {
+      if (!avoidEl) return;
+      const o = root.getBoundingClientRect();
+      const rects: DOMRect[] = [];
+      const seen = new Set<Element>();
+      const walk = document.createTreeWalker(avoidEl, NodeFilter.SHOW_TEXT);
+      const range = document.createRange();
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+        if (!n.textContent?.trim()) continue;
+        const control = n.parentElement?.closest("a, button, [class*='rounded-full']");
+        if (control && avoidEl.contains(control)) { if (!seen.has(control)) { seen.add(control); rects.push(control.getBoundingClientRect()); } continue; }
+        range.selectNodeContents(n);
+        rects.push(...range.getClientRects());
+      }
+      boxes = rects.map((r) => ({ l: r.left - o.left, t: r.top - o.top, r: r.right - o.left, b: r.bottom - o.top }));
+    };
+    const distToText = (x: number, y: number) => {
+      let d = Infinity;
+      for (const b of boxes) d = Math.min(d, Math.hypot(Math.max(b.l - x, 0, x - b.r), Math.max(b.t - y, 0, y - b.b)));
+      return d;
+    };
+    // 0 on/near text, 1 in open space; also fades toward the bottom.
+    const edgeAt = (x: number, y: number) => smooth(PAD, PAD + FADE, distToText(x, y)) * (1 - smooth(0.6, 1, y / h));
+    const hitsText = (b: Box) => boxes.some((t) => b.l < t.r + PAD && b.r > t.l - PAD && b.t < t.b + PAD && b.b > t.t - PAD);
+
+    const resize = () => {
+      const dpr = devicePixelRatio || 1;
+      w = canvas.clientWidth; h = canvas.clientHeight;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      measure(); draw();
+    };
+    const grid = () => {
+      const cols = Math.ceil(w / GAP) + 1;
+      return { cols, rows: Math.ceil((h - TOP) / GAP) + 1, ox: Math.round((w - (cols - 1) * GAP) / 2) };
+    };
+
+    const draw = () => {
+      ctx.clearRect(0, 0, w, h);
+      px += (tx - px) * 0.18; py += (ty - py) * 0.18;
+      strength += (target - strength) * 0.08;
+      const { cols, rows, ox } = grid();
+      ctx.fillStyle = `rgb(${DOT.join(" ")})`;
+      for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
+        if (live.has(`${i},${j}`)) continue;
+        const x = ox + i * GAP, y = TOP + j * GAP;
+        const edge = edgeAt(x, y);
+        if (edge < 0.02) continue;
+        const n = hash(i, j);
+        const f = Math.max(0, 1 - Math.hypot(x - px, y - py) / R) ** 2 * strength * edge;
+        const r = (0.6 + n * n * 1.6) * (1 + 1.8 * f);
+        ctx.globalAlpha = Math.min(1, (0.55 + n * 0.45) * edge + f * 0.5);
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      const settling = Math.abs(tx - px) + Math.abs(ty - py) > 0.5 || Math.abs(target - strength) > 0.01;
+      raf = visible && !reduce && settling ? requestAnimationFrame(draw) : 0;
+    };
+    const kick = () => { if (!raf && visible && !reduce) raf = requestAnimationFrame(draw); };
+
+    // Near (cx, cy) within `reach`; Infinity = anywhere.
+    const spawn = async (cx = tx, cy = ty, reach = R) => {
+      measure();
+      const used = new Set([...root.querySelectorAll<HTMLElement>(".dg-person")].map((el) => el.dataset.name));
+      const free = pool.filter((p) => !used.has(p.name));
+      const p = free[Math.floor(Math.random() * free.length)];
+      if (!p) return;
+
+      // Preload so the photo is ready before anything shows.
+      const img = new Image();
+      img.src = p.photo;
+      try { await img.decode(); } catch { return; }
+
+      const el = document.createElement("div");
+      el.className = "dg-person";
+      el.dataset.name = p.name;
+      el.innerHTML = `<div class="dg-bg"></div><div class="dg-label">${p.name}<small>${p.role}</small></div>`;
+      img.className = "dg-photo"; img.alt = "";
+      el.append(img);
+      el.style.visibility = "hidden";
+      root.append(el);
+      const tagW = el.querySelector<HTMLElement>(".dg-label")!.offsetWidth + 44 + 16; // photo slot + right padding
+      el.style.setProperty("--w", `${tagW}px`);
+
+      // Dots near the cursor, in open space, away from other avatars, where the whole tag fits on one side.
+      const { cols, rows, ox } = grid();
+      const spots: { key: string; x: number; y: number; flip: boolean }[] = [];
+      for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
+        const x = ox + i * GAP, y = TOP + j * GAP;
+        if (Math.hypot(x - cx, y - cy) > reach || y < 40 || y > h * 0.62 || edgeAt(x, y) < 0.95) continue;
+        if ([...live.values()].some((q) => Math.hypot(q.x - x, q.y - y) < MIN_GAP)) continue;
+        const right = { l: x - 18, t: y - 18, r: x - 18 + tagW, b: y + 18 };
+        const left = { l: x + 18 - tagW, t: y - 18, r: x + 18, b: y + 18 };
+        const fits = (b: Box) => b.l > 12 && b.r < w - 12 && !hitsText(b);
+        if (fits(right)) spots.push({ key: `${i},${j}`, x, y, flip: false });
+        else if (fits(left)) spots.push({ key: `${i},${j}`, x, y, flip: true });
+      }
+      const s = spots[Math.floor(Math.random() * spots.length)];
+      if (!s) { el.remove(); return; }
+
+      el.classList.toggle("flip", s.flip);
+      el.style.left = `${s.x}px`; el.style.top = `${s.y}px`;
+      el.style.visibility = "";
+      last = performance.now();
+      live.set(s.key, s); draw();
+      await wait(40); el.dataset.s = "avatar"; // photo grows from the dot
+      await wait(700); el.dataset.s = "open"; // pill grows from behind it, name fades in
+      await wait(850 + HOLD); el.dataset.s = "avatar"; // name out, pill collapses
+      await wait(850); delete el.dataset.s; // photo shrinks back into the dot
+      await wait(800); el.remove(); live.delete(s.key); draw();
+    };
+
+    let lx = 0, ly = 0;
+    addEventListener("pointermove", (e) => {
+      const b = root.getBoundingClientRect();
+      tx = e.clientX - b.left; ty = e.clientY - b.top;
+      if (px < -1e3) { px = tx; py = ty; lx = tx; ly = ty; }
+      const inside = tx > -40 && tx < b.width + 40 && ty > -40 && ty < b.height + 40;
+      target = inside ? 1 : 0;
+      if (pool.length && inside && visible && !reduce) {
+        travel += Math.hypot(tx - lx, ty - ly);
+        if (travel > TRAVEL && live.size < LIMIT && performance.now() > next) {
+          travel = 0; next = performance.now() + COOLDOWN;
+          spawn();
+        }
+      }
+      lx = tx; ly = ty;
+      kick();
+    }, { passive: true });
+    document.addEventListener("pointerleave", () => { target = 0; kick(); });
+
+    if (pool.length && !reduce) setInterval(() => {
+      const now = performance.now();
+      if (visible && !document.hidden && live.size < LIMIT && now - last > IDLE && now > next) { last = now; spawn(0, 0, Infinity); }
+    }, 500);
+
+    new ResizeObserver(resize).observe(canvas);
+    new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      // Re-measure once the copy's reveal animation has settled.
+      if (visible) { measure(); setTimeout(() => { measure(); draw(); }, 900); }
+      kick();
+    }).observe(root);
+  });
+</script>

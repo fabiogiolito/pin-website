@@ -20,10 +20,10 @@ import Booked from "./chapters/Booked.astro";
   <!-- Stage bar: sticks under the header while the chapters scroll by -->
   <nav aria-label="Journey stages" class="sticky top-16 z-40 mt-10 flex justify-center border-b border-ink/5 bg-bg/85 px-4 py-2 backdrop-blur-md">
     <ol class="flex gap-0.5 overflow-x-auto rounded-full bg-white p-1 shadow-[0_0_0_1px_rgb(0_0_0/0.05)]">
-      {stages.map((s, i) => (
+      {stages.map((s) => (
         <li>
-          <a href={`#${s.toLowerCase()}`} class="rail-item flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium text-ink-3 transition-colors duration-300 hover:text-ink md:px-4">
-            <span class="hidden tabular-nums opacity-60 sm:inline">{i + 1}</span>{s}
+          <a href={`#${s.toLowerCase()}`} class="rail-item flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium text-ink-3 transition-colors duration-300 hover:text-ink md:px-4">
+            {s}
           </a>
         </li>
       ))}

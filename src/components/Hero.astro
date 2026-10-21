@@ -3,6 +3,7 @@ import { Check, Video, CornerDownLeft } from "@lucide/astro";
 import Avatar from "./Avatar.astro";
 import PinAvatar from "./PinAvatar.astro";
 import Button from "./ui/Button.astro";
+import DotGrid from "./DotGrid.astro";
 
 const logos = [["expa", "Expa"], ["lithic", "Lithic"], ["paytient", "Paytient"], ["datapeoplesearch", "DataPeopleSearch"], ["pinpointtalent", "Pinpoint Talent"], ["gostaff", "GoStaff"]];
 const work = [
@@ -19,38 +20,31 @@ const booked = [
 ---
 
 <section class="relative overflow-hidden">
+  <DotGrid class="h-[620px] xl:h-[700px] 2xl:h-[780px]" people />
 
-  <div class="relative mx-auto max-w-7xl px-4 pb-20 pt-12 md:px-8 md:pb-24 md:pt-16">
-    <div class="mx-auto max-w-4xl text-center">
-      <p data-reveal class="inline-flex items-center gap-2 rounded-full border border-green/20 bg-white px-3 py-1.5 text-sm font-medium text-green-accessible">
+  <div class="relative mx-auto max-w-7xl px-4 pb-20 pt-12 md:px-8 md:pb-24 md:pt-16 xl:pb-32 xl:pt-24 2xl:pt-32">
+    <div data-dotgrid-avoid class="relative mx-auto max-w-3xl text-center">
+      <p data-reveal class="inline-flex items-center gap-2 rounded-full border border-green/20 bg-white px-3 py-1 text-[13px] font-medium text-green-accessible">
         The AI recruiter for recruiters
       </p>
-      <h1 data-reveal style="--i:1" class="mt-6 text-[44px] font-medium leading-[1.02] tracking-[-0.03em] text-balance md:text-[64px] xl:text-[72px]">
+      <h1 data-reveal style="--i:1" class="mt-5 text-[36px] font-medium leading-[1.05] tracking-[-0.03em] text-balance md:text-[52px]">
         From job title to booked interviews.
       </h1>
-      <p data-reveal style="--i:2" class="mt-3 text-[26px] font-medium leading-[1.1] tracking-[-0.02em] text-green md:text-[36px]">
-        Pin does everything in between.
+      <p data-reveal style="--i:2" class="mx-auto mt-4 max-w-md text-lg leading-snug text-ink-2 text-pretty">
+        Pin finds, reaches out, follows up and books the calls. You just show up.
       </p>
-      <p data-reveal style="--i:3" class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-ink-2 md:text-xl text-pretty">
-        Tell Pin who you're hiring. It finds the right people in 850M+ profiles, reaches out from your inbox, handles the replies, and books the calls. You talk to candidates who already want to talk to you.
-      </p>
-      <div data-reveal style="--i:4" class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+      <div data-reveal style="--i:3" class="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
         <Button signup arrow track="hero">Try Pin free</Button>
         <Button href="/book-a-demo/" variant="secondary" track="hero">Book a demo</Button>
       </div>
-      <p data-reveal style="--i:5" class="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-1 text-sm text-ink-2">
-        <span class="inline-flex items-center gap-1.5"><Check size={14} class="text-green" /> No credit card</span>
-        <span class="inline-flex items-center gap-1.5"><Check size={14} class="text-green" /> 10,000+ recruiters</span>
-        <span class="inline-flex items-center gap-1.5"><Check size={14} class="text-green" /> SOC 2 Type 2</span>
-      </p>
     </div>
 
     <!-- Input → Pin → Output, readable at a glance -->
-    <div class="relative mt-14 grid gap-4 lg:grid-cols-[1fr_auto_1.1fr_auto_1fr] lg:items-stretch lg:gap-0">
+    <div class="depth-fan relative mt-14 grid gap-4 lg:grid-cols-[1fr_auto_1.1fr_auto_1fr] lg:items-stretch lg:gap-0 xl:mt-20 2xl:mt-24">
       <!-- You type -->
       <div data-reveal style="--i:5" class="flex flex-col">
         <p class="mb-3 text-center text-sm font-medium text-ink-2">You type one line</p>
-        <div class="flex flex-1 flex-col rounded-2xl bg-white p-4 font-app shadow-window">
+        <div class="card flex flex-1 flex-col rounded-2xl bg-white p-4 font-app shadow-window">
           <div class="flex items-center gap-2.5 rounded-xl border border-app-border bg-app-bg2 px-3 py-3 text-[15px]">
             <span class="min-w-0 flex-1 text-app-fg">Senior Backend Engineer at ByteLogic<span class="caret ml-0.5 inline-block h-4 w-px translate-y-0.5 bg-app-fg"></span></span>
             <kbd class="grid size-6 shrink-0 place-items-center rounded-md bg-app-tint text-white"><CornerDownLeft size={13} /></kbd>
@@ -69,12 +63,12 @@ const booked = [
         </div>
       </div>
 
-      <div class="connector" aria-hidden="true"><span></span></div>
+      <div data-reveal style="--i:6" class="connector" aria-hidden="true"><span></span></div>
 
       <!-- Pin does the work -->
       <div data-reveal style="--i:6" class="flex flex-col">
         <p class="mb-3 text-center text-sm font-medium text-ink-2">Pin does the work</p>
-        <div class="flex-1 rounded-2xl bg-white p-5 shadow-[0_0_0_2px_var(--color-green),0_16px_40px_-12px_rgb(74_122_90/0.35)]">
+        <div class="card card-main flex-1 rounded-2xl bg-white p-5 shadow-[0_0_0_2px_var(--color-green),0_16px_40px_-12px_rgb(74_122_90/0.35)]">
           <ul class="space-y-2.5">
             {work.map((w) => (
               <li class="flex items-center gap-3 rounded-lg bg-bg-tertiary px-3 py-2.5">
@@ -87,12 +81,12 @@ const booked = [
         </div>
       </div>
 
-      <div class="connector" aria-hidden="true"><span></span></div>
+      <div data-reveal style="--i:7" class="connector" aria-hidden="true"><span></span></div>
 
       <!-- You get -->
       <div data-reveal style="--i:7" class="flex flex-col">
         <p class="mb-3 text-center text-sm font-medium text-ink-2">You get interviews</p>
-        <div class="flex-1 rounded-2xl bg-white p-4 font-app text-app-fg shadow-window">
+        <div class="card flex-1 rounded-2xl bg-white p-4 font-app text-app-fg shadow-window">
           <p class="mb-3 flex items-center justify-between px-1 text-[12px] text-app-fg2"><span class="font-medium text-app-fg">This week</span><span>3 booked</span></p>
           <ul class="space-y-2">
             {booked.map((b) => (
@@ -109,7 +103,7 @@ const booked = [
       </div>
     </div>
 
-    <div data-reveal class="mt-16 text-center">
+    <div data-reveal class="mt-16 xl:mt-24 2xl:mt-28 text-center">
       <p class="text-sm text-ink-3">Trusted by 10,000+ recruiters at 2,000+ companies</p>
       <ul class="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-6 opacity-60 grayscale md:gap-x-14">
         {logos.map(([file, name]) => <li><img src={`/images/companies/logo-${file}.png`} alt={name} class="h-6 w-auto md:h-7" loading="lazy" /></li>)}
@@ -137,4 +131,15 @@ const booked = [
   @media (prefers-reduced-motion: reduce) {
     .caret, .connector span { animation: none; }
   }
+
+  @media (min-width: 1024px) {
+    /* Side cards angle in toward the middle one, like a triptych */
+    .depth-fan { perspective: 1400px; }
+    .depth-fan > div:nth-child(1) .card { transform: rotateY(16deg) translateZ(-20px); transform-origin: right center; }
+    .depth-fan > div:nth-child(5) .card { transform: rotateY(-16deg) translateZ(-20px); transform-origin: left center; }
+    .depth-fan .card-main { transform: translateZ(30px); }
+    .depth-fan .card { transition: transform 500ms var(--ease-out-soft); }
+    .depth-fan:hover .card { transform: none; }
+  }
 </style>
+

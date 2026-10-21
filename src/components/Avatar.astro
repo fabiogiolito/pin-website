@@ -1,4 +1,6 @@
 ---
+// Candidate avatar. Uses the generated headshot in /public/images/people/<name-slug>.webp when one exists, initials otherwise.
+import { existsSync } from "node:fs";
 interface Props {
   name: string;
   size?: number;
@@ -6,10 +8,16 @@ interface Props {
 }
 const { name, size = 28, hue = 25 } = Astro.props;
 const initials = name.split(" ").map((p) => p[0]).join("").slice(0, 2);
+const slug = name.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const photo = existsSync(`public/images/people/${slug}.webp`) ? `/images/people/${slug}.webp` : null;
 ---
 
-<span
-  aria-hidden="true"
-  class="inline-grid shrink-0 place-items-center rounded-full font-medium text-white"
-  style={`width:${size}px;height:${size}px;font-size:${Math.round(size * 0.38)}px;background:linear-gradient(135deg,hsl(${hue} 45% 62%),hsl(${hue + 30} 40% 42%))`}
->{initials}</span>
+{photo ? (
+  <img src={photo} alt="" aria-hidden="true" width={size} height={size} loading="lazy" class="inline-block shrink-0 rounded-full object-cover" style={`width:${size}px;height:${size}px`} />
+) : (
+  <span
+    aria-hidden="true"
+    class="inline-grid shrink-0 place-items-center rounded-full font-medium text-white"
+    style={`width:${size}px;height:${size}px;font-size:${Math.round(size * 0.38)}px;background:linear-gradient(135deg,hsl(${hue} 45% 62%),hsl(${hue + 30} 40% 42%))`}
+  >{initials}</span>
+)}
