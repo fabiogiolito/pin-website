@@ -1,11 +1,19 @@
 import GhostContentAPI from '@tryghost/content-api'
 import { withDiskCache } from './ghost-cache'
 
-export const ghostClient = new GhostContentAPI({
-  url: import.meta.env.GHOST_URL,
-  key: import.meta.env.CONTENT_API_KEY,
-  version: 'v6.0',
-})
+// Without credentials (e.g. a CI/preview env missing GHOST_URL), every Ghost call rejects
+// so the callers' existing `.catch` fallbacks kick in and the blog builds from local markdown.
+const ghostConfigured = Boolean(import.meta.env.GHOST_URL && import.meta.env.CONTENT_API_KEY)
+const missingConfig = () => Promise.reject(new Error('GHOST_URL / CONTENT_API_KEY not set'))
+const unconfiguredResource = { browse: missingConfig, read: missingConfig }
+
+export const ghostClient = ghostConfigured
+  ? new GhostContentAPI({
+      url: import.meta.env.GHOST_URL,
+      key: import.meta.env.CONTENT_API_KEY,
+      version: 'v6.0',
+    })
+  : ({ posts: unconfiguredResource, pages: unconfiguredResource, tags: unconfiguredResource, authors: unconfiguredResource, settings: unconfiguredResource } as unknown as ReturnType<typeof GhostContentAPI>)
 
 // Tags excluded from the public tag pills UI
 const EXCLUDED_TAG_SLUGS = ['important']
