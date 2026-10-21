@@ -1,0 +1,173 @@
+---
+// Outreach demo: click a step to open it in the editor; the send-mode select changes what happens next.
+import { Mail, CircleUser, Smartphone, ChevronsUpDown, Building2, Pause, Check } from "@lucide/astro";
+import Avatar from "../Avatar.astro";
+import PinAvatar from "../PinAvatar.astro";
+
+// LinkedIn steps are tasks: reminders for the recruiter, not automated sends.
+const steps = [
+  { kind: "mail", name: "Send Email", day: "Day 1" },
+  { kind: "task", name: "Connect on LinkedIn", day: "Day 3" },
+  { kind: "mail", name: "Send Email", day: "Day 5" },
+  { kind: "sms", name: "Text Message", day: "Day 8" },
+  { kind: "task", name: "Message on LinkedIn", day: "Day 10" },
+];
+const field = "flex items-center gap-1.5 rounded-md border border-app-border px-2.5 py-1.5";
+const icon = { mail: "text-app-pos", task: "text-app-tint", sms: "text-app-warn" };
+---
+
+<div id="sequence-editor" class="tint-purple rounded-[28px] px-4 py-8 text-left sm:px-8 md:rounded-[36px] md:px-12 md:py-12">
+  <div class="mx-auto grid max-w-5xl items-start gap-5 text-[14px] md:grid-cols-[0.8fr_1.4fr] md:gap-8">
+    <div class="space-y-5">
+      <div class="panel flex items-center gap-3 p-4">
+        <span class="overflow-hidden rounded-xl"><Avatar name="Maya Chen" hue={340} size={44} /></span>
+        <div class="min-w-0 flex-1">
+          <p class="text-[15px] font-semibold">Maya Chen</p>
+          <p class="flex items-center gap-1.5 truncate text-[13px] text-app-fg2"><Building2 size={13} /> Senior Software Engineer · Stripe</p>
+        </div>
+      </div>
+
+      <div class="relative">
+        <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Click a step</span>
+        <div class="panel p-3 pt-6" role="tablist" aria-label="Sequence steps" aria-orientation="vertical">
+          {steps.map((s, i) => (
+            <button type="button" role="tab" id={`seq-tab-${i}`} aria-controls={`seq-step-${i}`} aria-selected={i === 0 ? "true" : "false"} tabindex={i === 0 ? 0 : -1} class="step flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-app-fg/[0.03] aria-selected:bg-app-ai/[0.07] focus-visible:outline-2 focus-visible:outline-app-ai">
+              {s.kind === "mail" && <Mail size={17} class={icon.mail} />}
+              {s.kind === "task" && <CircleUser size={17} class={icon.task} />}
+              {s.kind === "sms" && <Smartphone size={17} class={icon.sms} />}
+              <span class="flex-1">{s.name}</span>
+              {s.kind === "task" && <span class="rounded bg-app-fg/5 px-1.5 py-0.5 text-[11px] text-app-fg2">Task</span>}
+              <span class="w-12 text-right text-app-fg3">{s.day}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- Editor: one panel per step -->
+    <div class="relative">
+      <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Sent from your inbox, as you</span>
+      <div class="panel overflow-hidden">
+        <!-- Step 1: first email -->
+        <div role="tabpanel" id="seq-step-0" aria-labelledby="seq-tab-0" class="pane">
+          <p class="flex items-center gap-2 border-b border-app-border bg-app-ai/[0.04] px-5 py-3 font-medium text-app-ai"><Mail size={15} /> Step 1: Send Email</p>
+          <div class="space-y-3 p-5">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="w-14 text-app-fg2">From</span>
+              <span class={field}><Mail size={13} class="text-app-fg3" /> alex@yourcompany.com <ChevronsUpDown size={12} class="text-app-fg3" /></span>
+              <label class="relative">
+                <span class="sr-only">Send mode</span>
+                <select class="mode appearance-none rounded-md border border-app-border bg-white py-1.5 pl-2.5 pr-7 ring-green/30 focus-visible:outline-none focus-visible:ring-2">
+                  <option value="auto">Send Automatically</option>
+                  <option value="review">Review before sending</option>
+                </select>
+                <ChevronsUpDown size={12} class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-app-fg3" />
+              </label>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-14 shrink-0 text-app-fg2">Subject</span>
+              <span class:list={[field, "flex-1"]}>Your ledger work at Stripe</span>
+            </div>
+            <div class="space-y-3 rounded-lg border border-app-border p-4 leading-relaxed">
+              <p>Hi <span class="merge">Maya</span>,</p>
+              <p>I came across your work on <span class="merge">Stripe's double-entry ledger</span> and had to reach out. We're rebuilding <span class="merge">ByteLogic</span>'s payments core in <span class="merge">Go and Kotlin</span>, and it's exactly the kind of system you've already scaled.</p>
+              <p>Would you be open to a 20-minute chat next week?</p>
+              <p>Best,<br />Alex</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: LinkedIn task -->
+        <div role="tabpanel" id="seq-step-1" aria-labelledby="seq-tab-1" class="pane" hidden>
+          <p class="flex items-center gap-2 border-b border-app-border bg-app-tint/[0.05] px-5 py-3 font-medium text-app-tint-fg"><CircleUser size={15} /> Step 2: Connect on LinkedIn <span class="rounded bg-app-fg/5 px-1.5 py-0.5 text-[11px] font-normal text-app-fg2">Task</span></p>
+          <div class="space-y-3 p-5">
+            <p class="text-app-fg2">Reminder for you on Day 3 if Maya hasn't replied.</p>
+            <div class="rounded-lg border border-app-border p-4">
+              <p class="text-[12px] font-medium uppercase tracking-wide text-app-fg3">Suggested note</p>
+              <p class="mt-2 leading-relaxed">Hi <span class="merge">Maya</span>, I sent you a note about <span class="merge">ByteLogic</span>'s payments team. Would love to connect.</p>
+            </div>
+            <span class="inline-flex h-8 items-center gap-1.5 rounded-md px-3 font-medium text-app-fg2 shadow-app"><Check size={13} /> Mark as done</span>
+          </div>
+        </div>
+
+        <!-- Step 3: follow-up email -->
+        <div role="tabpanel" id="seq-step-2" aria-labelledby="seq-tab-2" class="pane" hidden>
+          <p class="flex items-center gap-2 border-b border-app-border bg-app-ai/[0.04] px-5 py-3 font-medium text-app-ai"><Mail size={15} /> Step 3: Send Email</p>
+          <div class="space-y-3 p-5">
+            <div class="flex items-center gap-2">
+              <span class="w-14 shrink-0 text-app-fg2">Subject</span>
+              <span class:list={[field, "flex-1"]}>Re: Your ledger work at Stripe</span>
+            </div>
+            <div class="space-y-3 rounded-lg border border-app-border p-4 leading-relaxed">
+              <p>Hi <span class="merge">Maya</span>, one more thought: two of our engineers worked with you at <span class="merge">Square</span>, and they'd love to compare notes on <span class="merge">reconciliation at scale</span>.</p>
+              <p>Happy to send the role details if you'd rather read first.</p>
+            </div>
+            <p class="text-[13px] text-app-fg3">Sends in the same thread. Stops the moment she replies.</p>
+          </div>
+        </div>
+
+        <!-- Step 4: text -->
+        <div role="tabpanel" id="seq-step-3" aria-labelledby="seq-tab-3" class="pane" hidden>
+          <p class="flex items-center gap-2 border-b border-app-border bg-app-warn/[0.06] px-5 py-3 font-medium text-app-warn"><Smartphone size={15} /> Step 4: Text Message</p>
+          <div class="space-y-3 p-5">
+            <p class="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-app-tint px-3.5 py-2.5 leading-relaxed text-white">Hi Maya, Alex from ByteLogic. I emailed about our payments team. Any interest in a short call this week? Totally fine if not.</p>
+            <p class="text-[13px] text-app-fg3">Pin drafts it. You send it.</p>
+          </div>
+        </div>
+
+        <!-- Step 5: LinkedIn message task -->
+        <div role="tabpanel" id="seq-step-4" aria-labelledby="seq-tab-4" class="pane" hidden>
+          <p class="flex items-center gap-2 border-b border-app-border bg-app-tint/[0.05] px-5 py-3 font-medium text-app-tint-fg"><CircleUser size={15} /> Step 5: Message on LinkedIn <span class="rounded bg-app-fg/5 px-1.5 py-0.5 text-[11px] font-normal text-app-fg2">Task</span></p>
+          <div class="space-y-3 p-5">
+            <p class="text-app-fg2">Last touch, on Day 10. Pin reminds you and drafts the message.</p>
+            <div class="rounded-lg border border-app-border p-4 leading-relaxed">Hi <span class="merge">Maya</span>, last note from me. If the timing's off, I'd love to stay in touch for <span class="merge">next year</span>.</div>
+            <span class="inline-flex h-8 items-center gap-1.5 rounded-md px-3 font-medium text-app-fg2 shadow-app"><Check size={13} /> Mark as done</span>
+          </div>
+        </div>
+
+        <div class="border-t border-app-border px-5 py-3">
+          <p class="flex items-center gap-2 text-app-fg2"><PinAvatar size={20} /> <span class="status" aria-live="polite">Sends Tue 9:12 AM, her time</span></p>
+        </div>
+        <div class="flex items-center justify-between border-t border-app-border px-5 py-3 text-[13px]">
+          <span class="text-app-fg3">Every step is editable</span>
+          <span class="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 font-medium text-app-fg2 shadow-app"><Pause size={12} /> Take over</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="mt-6 text-center text-sm text-ink-3">Illustrative example</p>
+</div>
+
+<style>
+  .pane:not([hidden]) { animation: fade 250ms var(--ease-out-soft); }
+  @keyframes fade { from { opacity: 0; translate: 0 4px; } }
+</style>
+
+<script>
+  const root = document.getElementById("sequence-editor")!;
+  const tabs = [...root.querySelectorAll<HTMLButtonElement>("[role=tab]")];
+  const panes = [...root.querySelectorAll<HTMLElement>("[role=tabpanel]")];
+  const mode = root.querySelector<HTMLSelectElement>(".mode")!;
+  const status = root.querySelector<HTMLElement>(".status")!;
+
+  function select(i: number, focus = false) {
+    tabs.forEach((t, j) => {
+      t.setAttribute("aria-selected", String(i === j));
+      t.tabIndex = i === j ? 0 : -1;
+    });
+    panes.forEach((p, j) => (p.hidden = i !== j));
+    if (focus) tabs[i].focus();
+  }
+  tabs.forEach((t, i) => t.addEventListener("click", () => select(i)));
+  root.querySelector("[role=tablist]")!.addEventListener("keydown", (e) => {
+    const k = (e as KeyboardEvent).key;
+    const d = k === "ArrowDown" || k === "ArrowRight" ? 1 : k === "ArrowUp" || k === "ArrowLeft" ? -1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    const cur = tabs.findIndex((t) => t.getAttribute("aria-selected") === "true");
+    select((cur + d + tabs.length) % tabs.length, true);
+  });
+  mode.addEventListener("change", () => {
+    status.textContent = mode.value === "auto" ? "Sends Tue 9:12 AM, her time" : "Waiting for your review. Approve to send.";
+  });
+</script>

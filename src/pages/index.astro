@@ -1,0 +1,59 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+import Problem from "../components/Problem.astro";
+import Journey from "../components/Journey.astro";
+import Autopilot from "../components/Autopilot.astro";
+import Scale from "../components/Scale.astro";
+import Closing from "../components/Closing.astro";
+import { homeFaq } from "../components/homeFaq";
+import { faqJsonLd } from "../components/ui/faq";
+import { organizationSchema, websiteSchema, pinSoftwareSchema, ORGANIZATION_ID, WEBSITE_ID } from "../lib/schema";
+
+// Structured data carried over from new-www's index page.
+const jsonLd = [
+  organizationSchema,
+  websiteSchema,
+  pinSoftwareSchema,
+  faqJsonLd(homeFaq, "https://www.pin.com/#faq"),
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.pin.com/#webpage",
+    url: "https://www.pin.com/",
+    name: "AI Recruiting Platform: From Job Title to Booked Interviews",
+    description: "Pin sources candidates from 850M+ profiles, sends personalized outreach from your inbox, answers candidate questions, and books interviews. Used by 10,000+ recruiters. From $99/mo.",
+    isPartOf: { "@id": WEBSITE_ID },
+    about: { "@id": ORGANIZATION_ID },
+    dateModified: new Date().toISOString().split("T")[0],
+    inLanguage: "en-US",
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": "https://www.pin.com/#key-stats",
+    name: "Key Pin Stats",
+    itemListElement: [
+      "850M+ candidate profiles",
+      "120+ ATS integrations",
+      "10,000+ users hiring with Pin",
+      "Plans from $99/mo",
+      "SOC 2 Type 2 compliant",
+    ].map((name, i) => ({ "@type": "ListItem", position: i + 1, name })),
+  },
+];
+---
+
+<Layout
+  title="Pin: AI Recruiter, From Job Title to Booked Interviews | Free Trial"
+  description="Tell Pin who you're hiring. It searches 850M+ profiles, sends outreach from your inbox, answers candidate questions, and books interviews. From $99/mo."
+  jsonLd={jsonLd}
+  ogVideo={{ url: "https://www.pin.com/videos/pin-intro-video-small.mp4", secureUrl: "https://www.pin.com/videos/pin-intro-video-small.mp4", type: "video/mp4", width: 1920, height: 1066 }}
+>
+  <Hero />
+  <Problem />
+  <Journey />
+  <Autopilot />
+  <Scale />
+  <Closing />
+</Layout>

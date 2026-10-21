@@ -1,0 +1,68 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Button from "../../components/ui/Button.astro";
+import Testimonials from "../../components/company/Testimonials.astro";
+import { Play } from "@lucide/astro";
+---
+
+<Layout title="Demo Confirmed - Pin">
+  <section class="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-24 pt-12 md:px-8 md:pb-32 md:pt-20 lg:grid-cols-2 lg:gap-16">
+    <div>
+      <p data-reveal class="text-sm font-medium tracking-wide text-green">We're looking forward to meeting you.</p>
+      <h1 data-reveal style="--i:1" class="mt-3 text-[40px] font-medium leading-[1.04] tracking-[-0.02em] text-balance md:text-[56px]">Your demo is confirmed!</h1>
+      <p id="meeting-details" class="mt-5 hidden text-xl leading-relaxed text-ink"></p>
+      <p data-reveal style="--i:2" class="mt-5 max-w-xl text-lg leading-relaxed text-ink-2 text-pretty">In the meantime, watch this quick tour, or start a free trial and give Pin your first role to see initial results before we meet.</p>
+      <div data-reveal style="--i:3" class="mt-8">
+        <Button href="https://app.pin.com" arrow track="demo_success">Start a Free Trial</Button>
+      </div>
+    </div>
+
+    <div data-reveal style="--i:2" class="relative">
+      <button type="button" @click="isDemoVideoOpen = true" class="group relative block w-full overflow-hidden rounded-3xl bg-bg-tertiary shadow-window" aria-label="Watch the Pin product tour">
+        <img src="/images/pin-intro-video-small-thumbnail.webp" alt="" width="1920" height="1066" class="w-full" decoding="async" />
+        <span class="absolute inset-0 grid place-items-center">
+          <span class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 font-medium text-ink shadow-app transition-transform group-hover:scale-105"><Play size={16} fill="currentColor" /> Watch the tour</span>
+        </span>
+      </button>
+      <img src="/images/team/stevenlu.webp" alt="Steven Lu" width="120" height="120" loading="lazy" class="absolute -bottom-5 -right-3 size-20 rounded-full border-4 border-bg object-cover md:size-24" />
+    </div>
+  </section>
+
+  <Testimonials />
+</Layout>
+
+<script is:inline>
+  window.dataLayer = window.dataLayer || []
+  const searchParams = new URLSearchParams(window.location.search)
+  const hostName = searchParams.get('hostName')
+  const attendeeStartTimeRaw = searchParams.get('attendeeStartTime')
+  const email = searchParams.get('email')
+
+  window.dataLayer.push({
+    event: 'demo_booked',
+    demo_host: hostName,
+    demo_email: email,
+    demo_start_time: attendeeStartTimeRaw,
+  })
+
+  const formattedTime = attendeeStartTimeRaw
+    ? new Date(attendeeStartTimeRaw).toLocaleString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      })
+    : null
+
+  const meetingDetailsElement = document.getElementById('meeting-details')
+  if (meetingDetailsElement && (formattedTime ?? hostName)) {
+    const parts = []
+    if (formattedTime) parts.push(formattedTime)
+    if (hostName) parts.push(`with ${hostName}`)
+    meetingDetailsElement.textContent = parts.join(' ')
+    meetingDetailsElement.classList.remove('hidden')
+  }
+</script>

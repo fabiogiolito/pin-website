@@ -1,0 +1,87 @@
+---
+// Inline blog CTA: "What role are you hiring?" input with a typewriter of example
+// roles. Submit hands the role to the signup modal via the same pendingJobDescription
+// handoff the homepage uses. Typewriter pauses while the reader focuses or types.
+import { Search, ArrowRight } from '@lucide/astro'
+---
+
+<aside class="not-prose my-12 rounded-[28px] tint-green p-6 md:p-10" x-data={`{
+  typed: '',
+  idx: 0,
+  phase: 'typing',
+  focused: false,
+  roleText: '',
+  examples: [
+    'Senior ML engineer, PyTorch + RAG, NYC or remote',
+    'Director of RevOps with Salesforce CPQ, PLG startup',
+    'Bilingual EN/ES pediatric RN, Austin metro, 3+ yrs',
+    'Head of growth, B2B SaaS, hybrid in SF'
+  ],
+  get driving() { return this.focused || this.roleText.length > 0 },
+  tick() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { this.typed = this.examples[0]; return }
+    if (this.driving) { setTimeout(() => this.tick(), 400); return }
+    const target = this.examples[this.idx]
+    if (this.phase === 'typing') {
+      if (this.typed.length < target.length) {
+        this.typed = target.slice(0, this.typed.length + 1)
+        setTimeout(() => this.tick(), 30 + Math.random() * 35)
+      } else {
+        this.phase = 'holding'
+        setTimeout(() => this.tick(), 1500)
+      }
+    } else if (this.phase === 'holding') {
+      this.phase = 'deleting'
+      setTimeout(() => this.tick(), 200)
+    } else {
+      if (this.typed.length > 0) {
+        this.typed = this.typed.slice(0, -1)
+        setTimeout(() => this.tick(), 14)
+      } else {
+        this.phase = 'typing'
+        this.idx = (this.idx + 1) % this.examples.length
+        setTimeout(() => this.tick(), 250)
+      }
+    }
+  },
+  submit() {
+    const role = (this.roleText || this.typed || '').trim()
+    pendingJobDescription = role
+    pendingJobDescriptionSource = 'www_blog_role_cta'
+    isLoginModalOpen = true
+    window.dataLayer?.push({ event: 'role_cta_submitted', location: 'blog_role_cta', role, page: window.location.pathname })
+  }
+}`} x-init="tick()">
+  <p class="text-sm font-medium tracking-wide text-green">Give Pin a role right now</p>
+  <p class="mt-2 text-[26px] font-medium leading-tight tracking-[-0.02em] text-balance md:text-[32px]">What role are you hiring?</p>
+
+  <form class="mt-6 flex flex-wrap items-center gap-2 rounded-2xl bg-white p-2 pl-4 shadow-app transition-shadow focus-within:shadow-[0_0_0_3px_var(--color-green-light)] sm:flex-nowrap" @submit.prevent="submit()">
+    <Search size={18} class="shrink-0 text-green" aria-hidden="true" />
+    <div class="relative flex min-h-10 min-w-0 flex-1 items-center">
+      <div class="pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-nowrap text-ink-3" x-show="!driving" aria-hidden="true">
+        <span class="truncate" x-text="typed"></span><span class="ml-0.5 h-4 w-0.5 shrink-0 animate-pulse bg-green"></span>
+      </div>
+      <input
+        type="text"
+        class="w-full min-w-0 bg-transparent text-ink outline-none"
+        aria-label="Describe the role you're hiring for"
+        autocomplete="off"
+        spellcheck="false"
+        x-model="roleText"
+        @focus="focused = true"
+        @blur="focused = false"
+      />
+    </div>
+    <button type="submit" class="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-green px-4 py-2.5 font-medium text-white transition-colors hover:bg-green-accessible focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green sm:w-auto" aria-label="Start sourcing">
+      Find Candidates <ArrowRight size={16} class="transition-transform group-hover:translate-x-0.5" />
+    </button>
+  </form>
+
+  <p class="mt-4 text-sm text-ink-2">
+    <a
+      href="#"
+      class="font-medium text-green-accessible underline decoration-green/30 underline-offset-4 hover:decoration-green"
+      @click.prevent="isLoginModalOpen = true; window.dataLayer?.push({ event: 'start_free_clicked', location: 'blog_role_cta_hint', page: window.location.pathname })"
+    >Try For Free</a>, no credit card required
+  </p>
+</aside>

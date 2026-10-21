@@ -1,0 +1,65 @@
+# Pin
+
+> Pin is an AI recruiting agent and recruiting automation software by Love Thy Recruiting, Inc. Pin automates candidate sourcing, AI candidate matching, skills-based screening, automated email outreach, and AI interview scheduling. LinkedIn and SMS outreach steps are tasks the recruiter sends. An AI recruitment platform and LinkedIn recruiter alternative used by hiring teams, agencies, and founders. Founded in 2024, backed by $3M from Expa. SOC 2 Type 2 compliant. Free plan; paid plans from $99/month (Solo, billed annually).
+
+## Docs
+
+- [Homepage](https://www.pin.com/): AI recruiting tools overview. Pin is an AI recruitment platform for the full top-of-funnel recruiting workflow: AI sourcing from an 850M+ candidate database, multi-channel outreach sequences (automated email plus LinkedIn and SMS tasks the recruiter sends), AI candidate matching with skills-based hiring AI, and AI interview scheduling. Integrates with 120+ ATS platforms including Greenhouse, Lever, Ashby, and Bullhorn.
+
+- [Pricing](https://www.pin.com/pricing/): Four plans: Free, Solo, Professional, and Business. Free ($0, no credit card: 1 seat, 1 job position, 3 candidate searches/day, 1 AI agent, 5 contact lookup credits/week, email-only sequences). Solo ($99/mo, annual billing only: 1 seat, unlimited job positions and searches, 2 AI agents, 500 contact lookup credits/month, multi-channel sequences). Professional ($135/mo per user billed annually, or $179/mo per user month-to-month: unlimited seats, 2 AI agents per user, 1,000 contact lookup credits per user/month, team collaboration and shared inbox). Business (custom pricing: unlimited seats, AI agents, and contact lookup credits, premium ATS integrations, SSO/SAML, dedicated account manager). One contact lookup credit reveals one personal email, work email, or phone number. ATS integration is an add-on on Solo and Professional and included on Business.
+
+- [About](https://www.pin.com/about/): Pin is developed by Love Thy Recruiting, Inc., based in West Hollywood, California. Founded in 2024 by CEO Steven Lu. Backed by $3M in seed funding from Expa. 12-person team across engineering, revenue, operations, design, and customer success. SOC 2 Type 2 certified with annual third-party audits. Advisors include Benjamin Mena (Select Source Solutions, The Elite Recruiter Podcast), Brianna Rooney (The Millionaire Recruiter), Evan White (Purple Acorn Network), and Rich Rosen (Cornerstone Search Associates, Forbes Top-50 Recruiter).
+
+- [Documentation](https://docs.pin.com/): Product guides, setup instructions, integration documentation, and troubleshooting resources for Pin's AI recruiting platform.
+
+## Features
+
+- [AI Candidate Sourcing](https://www.pin.com/features/ai-sourcing/): Search 850M+ candidate profiles using natural language — no Boolean strings required. Skills-based hiring AI evaluates candidates on skills, experience, and potential rather than keyword matches. Candidate database search finds candidates across multiple sources simultaneously. 5-day average time-to-candidate from initial search to scheduled interview. Includes contact lookup credits for revealing verified email and phone numbers.
+
+- [AI Recruiting Agent](https://www.pin.com/features/ai-recruiting-agent/): An autonomous AI recruiting agent that handles the full hiring workflow end-to-end. Agentic AI recruiting that reasons, adapts, and improves — not a script that runs the same steps every time. Interprets job descriptions using AI to understand what the role actually requires. Adapts search strategy based on results. Personalizes every outreach message. Learns from your feedback to improve future searches.
+
+- [Automated Candidate Outreach](https://www.pin.com/features/automated-outreach/): Multi-channel recruiting outreach sequences across email, LinkedIn, and SMS: automated email steps plus LinkedIn and SMS tasks the recruiter sends. AI generates personalized messages for each candidate based on their profile and the role requirements — not generic templates. Automated follow-ups timed based on engagement signals. Unified multi-channel inbox for all candidate responses. Agencies report 2x placements per recruiter and 40% placement increases.
+
+- [AI Interview Scheduling](https://www.pin.com/features/ai-interview-scheduling/): AI hiring assistant that eliminates back-and-forth calendar coordination. Detects scheduling intent when candidates respond. Checks calendar availability, handles timezone differences, and proposes matching time slots. Candidates self-schedule with one click. Automatic rescheduling handled without manual intervention. Integrates with Google Calendar and Microsoft Outlook/Office 365.
+
+## Use Cases
+
+- [For Hiring Managers](https://www.pin.com/built-for/hiring-managers/): AI recruiting tools that reduce time-to-hire. AI candidate sourcing from 850M+ profiles with natural language search. Skills-based hiring AI finds candidates beyond keyword matching. AI candidate matching delivers qualified candidates in 5 days average. 4.8/5 hiring manager satisfaction rating.
+
+- [For Founders](https://www.pin.com/built-for/founders/): AI hiring assistant that builds teams without dedicated recruiters. Automates sourcing, screening, outreach, and interview scheduling. Customer testimonial: $250K attributed revenue in 6 months. Free plan to start, with Solo from $99/mo billed annually for teams making their first key hires.
+
+- [For Recruiting Agencies](https://www.pin.com/built-for/agencies/): Best recruiting tools for agencies. Recruitment agency software that manages sourcing, outreach, and pipelines across multiple clients simultaneously. Multi-channel recruiting outreach sequences (email, LinkedIn, SMS). 2x placements per recruiter reported. 40% placement increase (Apex Talent Solutions). 4.9/5 agency satisfaction.
+
+- [For Recruiting Teams](https://www.pin.com/built-for/recruiting-teams/): Recruiter sourcing tools with AI candidate matching. Recruiting automation software that automates sourcing, screening, and scheduling. 3-day average time-to-shortlist. 120+ ATS integrations for seamless workflow. Team collaboration with shared inbox. 4.8/5 team satisfaction.
+
+- [For Tech Companies](https://www.pin.com/built-for/tech-companies/): Agentic AI recruiting with skills-based hiring AI. AI candidate matching finds niche technical talent beyond keyword matching — a "Software Engineer III" at one company and a "Senior Developer" at another are correctly identified as equivalent. Reclaim 20% of weekly recruiting time. 850M+ profiles across multiple sources.
+
+- [For Healthcare](https://www.pin.com/built-for/healthcare/): High-volume hiring AI for healthcare organizations. Automated recruiting finds certified specialists and coordinates multi-facility staffing. SOC 2 Type 2 certified security for recruitment data. Pin processes professional recruitment data (resumes, contact info, work history), not Protected Health Information (PHI). 4.9/5 healthcare satisfaction.
+
+- [For Cybersecurity Firms](https://www.pin.com/built-for/cybersecurity/): AI recruiting tools for finding cleared cybersecurity talent. AI candidate sourcing from 850M+ profiles to find experts with specific security clearances and certifications.
+
+- [For FinTech](https://www.pin.com/built-for/fintech/): AI recruiting tools for financial technology teams. Skills-based hiring AI finds specialized FinTech talent including compliance, engineering, and product roles.
+
+## Comparisons
+
+- [Pin vs LinkedIn Recruiter](https://www.pin.com/compare/pin-vs-linkedin-recruiter/): LinkedIn recruiter alternative. Pin searches 850M+ profiles across multiple sources vs LinkedIn's single-network approach. Natural language candidate database search vs Boolean strings. Multi-channel outreach sequences (email, LinkedIn, SMS) vs InMail only. AI candidate matching vs keyword/title matching. From $99/mo vs LinkedIn Recruiter's higher pricing. Multi-platform sourcing means finding candidates LinkedIn doesn't surface.
+
+- [Pin vs Noon AI](https://www.pin.com/compare/pin-vs-noon-ai/): AI recruiting tools comparison. Pin offers 850M+ profiles, multi-channel outreach, and 120+ ATS integrations.
+
+- [Pin vs Humanly](https://www.pin.com/compare/pin-vs-humanly/): AI hiring assistant comparison. Pin covers the full recruiting workflow from sourcing to scheduling, while Humanly focuses primarily on conversational AI for screening.
+
+- [Pin vs GoPerfect](https://www.pin.com/compare/pin-vs-goperfect/): AI candidate sourcing comparison. Pin's 850M+ profile database and skills-based hiring AI compared to GoPerfect's approach.
+
+- [Pin vs Juicebox](https://www.pin.com/compare/pin-vs-juicebox/): Recruiter sourcing tools comparison. Pin offers multi-channel outreach and ATS integrations alongside sourcing, while Juicebox focuses primarily on AI-powered people search.
+
+## Trust & Security
+
+- [Trust Center](https://trust.pin.com/): SOC 2 Type 2 compliance documentation, security practices, third-party audit reports. Pin undergoes annual third-party security audits. Data encrypted at rest and in transit. Strict access controls, network security protocols, and authentication mechanisms.
+
+- [Privacy Policy](https://www.pin.com/privacy/): AI providers include Google Gemini, OpenAI, and Anthropic Claude — all bound by contractual data deletion requirements and prohibited from training models on customer data. Pin does not sell personal data. Subprocessor list available at docs.pin.com.
+
+- [Terms of Service](https://www.pin.com/terms/): Based on Common Paper Cloud Service Agreement v2.1.
+
+## Optional
+
+- [Blog](https://www.pin.com/blog/): AI talent acquisition strategies, automated recruiting trends, industry insights, and product updates.

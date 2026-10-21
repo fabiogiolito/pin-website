@@ -1,0 +1,334 @@
+---
+import "./tools.css";
+// X-Ray Search Builder — site:-prefixed Google query generator.
+// Clones the Boolean Generator's chip-input UX but outputs a Google search URL
+// scoped to a specific site (LinkedIn, GitHub, Stack Overflow, Reddit,
+// AngelList/Wellfound, Xing, Kaggle, Dribbble, Behance).
+---
+
+<script is:inline>
+  window.xRaySearchBuilder = function () {
+    const sites = [
+      { id: 'linkedin',    label: 'LinkedIn',         domain: 'linkedin.com/in/',          notes: 'Public profiles. Works without LinkedIn Recruiter.' },
+      { id: 'github',      label: 'GitHub',            domain: 'github.com',                notes: 'Surfaces user profiles and repo contributors.' },
+      { id: 'stack',       label: 'Stack Overflow',    domain: 'stackoverflow.com/users/',  notes: 'Identified by reputation + tags answered.' },
+      { id: 'reddit',      label: 'Reddit',            domain: 'reddit.com/user/',          notes: 'Community members active in specific subreddits.' },
+      { id: 'wellfound',   label: 'Wellfound (AngelList)', domain: 'wellfound.com/u/',     notes: 'Startup candidate profiles.' },
+      { id: 'xing',        label: 'Xing',              domain: 'xing.com/profile/',         notes: 'German-speaking Europe equivalent of LinkedIn.' },
+      { id: 'kaggle',      label: 'Kaggle',            domain: 'kaggle.com/',               notes: 'Data-science practitioners with competition history.' },
+      { id: 'dribbble',    label: 'Dribbble',          domain: 'dribbble.com/',             notes: 'Designer portfolios.' },
+      { id: 'behance',     label: 'Behance',           domain: 'behance.net/',              notes: 'Designer portfolios with project detail.' },
+    ];
+
+    const quoteIfMulti = (t) => /\s/.test(t) ? '"' + t + '"' : t;
+    const orGroup = (arr) => arr.length ? '(' + arr.map(quoteIfMulti).join(' OR ') + ')' : '';
+
+    return {
+      sites,
+      site: 'linkedin',
+      titles: ['software engineer'],
+      required: [],
+      keywords: [],
+      exclude: [],
+      location: '',
+      copied: false,
+      linkCopied: false,
+      _trackedFirst: false,
+      _viewTracked: false,
+
+      _track(event, props = {}) {
+        try {
+          const root = this.$root;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event,
+            tool_slug: (root && root.dataset && root.dataset.pinToolSlug) || '',
+            tool_name: (root && root.dataset && root.dataset.pinToolName) || '',
+            post_slug: (location.pathname.split('/').filter(Boolean).pop() || ''),
+            page_path: location.pathname,
+            ...props,
+          });
+        } catch (e) {}
+      },
+      _trackFirstInteraction(type) {
+        if (this._trackedFirst) return;
+        this._trackedFirst = true;
+        this._track('blog_tool_first_interaction', { interaction_type: type });
+      },
+
+      hydrate() {
+        try {
+          const s = new URLSearchParams(window.location.search).get('xray');
+          if (s) {
+            const state = JSON.parse(decodeURIComponent(atob(s)));
+            if (state.site) this.site = state.site;
+            if (Array.isArray(state.titles))   this.titles = state.titles;
+            if (Array.isArray(state.required)) this.required = state.required;
+            if (Array.isArray(state.keywords)) this.keywords = state.keywords;
+            if (Array.isArray(state.exclude))  this.exclude = state.exclude;
+            if (typeof state.location === 'string') this.location = state.location;
+            this._track('blog_tool_shared_state_loaded');
+          }
+        } catch (e) {}
+        if (!this._viewTracked && typeof IntersectionObserver !== 'undefined') {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._viewTracked = true;
+              this._track('blog_tool_viewed');
+              io.disconnect();
+            }
+          }, { threshold: 0.3 });
+          io.observe(this.$root);
+        }
+      },
+
+      applyPreset(id) {
+        if (id === 'backend-sf') {
+          this.site = 'linkedin';
+          this.titles = ['backend engineer', 'senior backend engineer'];
+          this.required = ['Go'];
+          this.keywords = ['Kubernetes'];
+          this.exclude = ['intern'];
+          this.location = 'San Francisco';
+        } else if (id === 'rust-github') {
+          this.site = 'github';
+          this.titles = [];
+          this.required = ['Rust'];
+          this.keywords = ['async', 'tokio'];
+          this.exclude = [];
+          this.location = '';
+        } else if (id === 'data-scientist-kaggle') {
+          this.site = 'kaggle';
+          this.titles = [];
+          this.required = [];
+          this.keywords = ['grandmaster', 'NLP'];
+          this.exclude = [];
+          this.location = '';
+        }
+        this._track('blog_tool_preset_selected', { preset_id: id });
+        this._trackFirstInteraction('preset');
+      },
+
+      reset() {
+        this.site = 'linkedin';
+        this.titles = ['software engineer'];
+        this.required = []; this.keywords = []; this.exclude = [];
+        this.location = '';
+        this._track('blog_tool_reset_clicked');
+      },
+
+      addChip(field, evt) {
+        const raw = (evt.target.value || '').trim().replace(/,$/, '').trim();
+        if (!raw) return;
+        if (!this[field].includes(raw)) this[field].push(raw);
+        evt.target.value = '';
+        this._trackFirstInteraction('chip_add');
+      },
+      removeChip(field, index) {
+        this[field].splice(index, 1);
+        this._trackFirstInteraction('chip_remove');
+      },
+
+      get selectedSite() { return this.sites.find(s => s.id === this.site) || this.sites[0]; },
+
+      get query() {
+        const parts = ['site:' + this.selectedSite.domain];
+        if (this.titles.length)   parts.push(orGroup(this.titles));
+        if (this.required.length) parts.push(this.required.map(quoteIfMulti).join(' '));
+        if (this.keywords.length) parts.push(orGroup(this.keywords));
+        if (this.exclude.length)  parts.push(this.exclude.map(e => '-' + quoteIfMulti(e)).join(' '));
+        if (this.location.trim()) parts.push(quoteIfMulti(this.location.trim()));
+        return parts.filter(Boolean).join(' ').trim();
+      },
+      get googleUrl() {
+        return 'https://www.google.com/search?q=' + encodeURIComponent(this.query || '');
+      },
+      get charCount() { return this.query.length; },
+
+      shareUrl() {
+        try {
+          const state = { site: this.site, titles: this.titles, required: this.required, keywords: this.keywords, exclude: this.exclude, location: this.location };
+          const s = btoa(encodeURIComponent(JSON.stringify(state)));
+          const url = new URL(window.location.href);
+          url.searchParams.set('xray', s);
+          return url.toString();
+        } catch (e) { return window.location.href; }
+      },
+
+      _copyText(text, flag) {
+        const ok = () => { this[flag] = true; setTimeout(() => this[flag] = false, 1500); };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(ok).catch(() => {});
+          return;
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      },
+      copy() {
+        if (!this.query) return;
+        this._copyText(this.query, 'copied');
+        this._track('blog_tool_output_copied', { char_count: this.charCount });
+      },
+      copyLink() {
+        const url = this.shareUrl();
+        try { history.replaceState(null, '', url); } catch (e) {}
+        this._copyText(url, 'linkCopied');
+        this._track('blog_tool_share_link_copied');
+      },
+    };
+  };
+</script>
+
+<section
+  class="pin-tool"
+  data-pin-tool-slug="x-ray-search-builder"
+  data-pin-tool-name="X-Ray Search Builder"
+  x-data="xRaySearchBuilder()"
+  x-init="hydrate()"
+>
+  <h2 class="pt-title" id="pin-tool-x-ray-search-builder">
+    X-Ray Search Builder
+    <span class="pt-tool-badge" aria-hidden="true">Tool</span>
+  </h2>
+  <p class="pt-intro">
+    Source candidates outside LinkedIn Recruiter by writing Google <code>site:</code> queries that surface public profiles on LinkedIn, GitHub, Stack Overflow, Reddit, Wellfound, Xing, Kaggle, Dribbble, and Behance. Pick a site, add titles and skills, and get a copy-ready query plus a one-click Google search link.
+  </p>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Preset</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" @click="applyPreset('backend-sf')">Backend engineer · SF · LinkedIn</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('rust-github')">Rust engineer · GitHub</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('data-scientist-kaggle')">Kaggle grandmaster · NLP</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Target site</span>
+      <div class="pt-presets">
+        <template x-for="s in sites" :key="s.id">
+          <button
+            type="button"
+            class="pt-preset-btn"
+            :class="site === s.id ? 'active' : ''"
+            @click="site = s.id; _trackFirstInteraction('toggle')"
+            x-text="s.label"
+          ></button>
+        </template>
+      </div>
+      <p class="pt-site-note" x-text="selectedSite.notes"></p>
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <label class="pt-label">Titles / roles (joined with OR)</label>
+      <div class="pt-chips" @click="$refs.titleInput.focus()">
+        <template x-for="(t, i) in titles" :key="'t-' + i + '-' + t">
+          <span class="pt-chip">
+            <span x-text="t"></span>
+            <button type="button" aria-label="Remove" @click="removeChip('titles', i)">×</button>
+          </span>
+        </template>
+        <input
+          x-ref="titleInput"
+          class="pt-chip-input"
+          type="text"
+          placeholder="e.g. backend engineer"
+          @keydown.enter.prevent="addChip('titles', $event)"
+          @keydown.,.prevent="addChip('titles', $event)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label">Required (AND each, quoted)</label>
+      <div class="pt-chips" @click="$refs.reqInput.focus()">
+        <template x-for="(s, i) in required" :key="'r-' + i + '-' + s">
+          <span class="pt-chip">
+            <span x-text="s"></span>
+            <button type="button" aria-label="Remove" @click="removeChip('required', i)">×</button>
+          </span>
+        </template>
+        <input x-ref="reqInput" class="pt-chip-input" type="text" placeholder="e.g. Python"
+          @keydown.enter.prevent="addChip('required', $event)"
+          @keydown.,.prevent="addChip('required', $event)" />
+      </div>
+    </div>
+    <div>
+      <label class="pt-label">Keywords (OR)</label>
+      <div class="pt-chips" @click="$refs.kwInput.focus()">
+        <template x-for="(s, i) in keywords" :key="'k-' + i + '-' + s">
+          <span class="pt-chip">
+            <span x-text="s"></span>
+            <button type="button" aria-label="Remove" @click="removeChip('keywords', i)">×</button>
+          </span>
+        </template>
+        <input x-ref="kwInput" class="pt-chip-input" type="text" placeholder="e.g. Kubernetes, gRPC"
+          @keydown.enter.prevent="addChip('keywords', $event)"
+          @keydown.,.prevent="addChip('keywords', $event)" />
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label">Exclude (-term)</label>
+      <div class="pt-chips" @click="$refs.excInput.focus()">
+        <template x-for="(s, i) in exclude" :key="'x-' + i + '-' + s">
+          <span class="pt-chip">
+            <span x-text="s"></span>
+            <button type="button" aria-label="Remove" @click="removeChip('exclude', i)">×</button>
+          </span>
+        </template>
+        <input x-ref="excInput" class="pt-chip-input" type="text" placeholder="e.g. recruiter, intern"
+          @keydown.enter.prevent="addChip('exclude', $event)"
+          @keydown.,.prevent="addChip('exclude', $event)" />
+      </div>
+    </div>
+    <div>
+      <label class="pt-label" for="xray-loc">Location (optional)</label>
+      <input id="xray-loc" class="pt-input" type="text" x-model="location" placeholder='e.g. "San Francisco"' @input.debounce.300ms="_trackFirstInteraction('input')" />
+    </div>
+  </div>
+
+  <div class="pt-output-wrap">
+    <label class="pt-label" for="xray-out">Google query</label>
+    <textarea id="xray-out" class="pt-output" readonly x-text="query"></textarea>
+    <div class="pt-charcount level-ok" x-text="charCount + ' characters'"></div>
+    <div class="pt-actions">
+      <button type="button" class="pt-btn primary" @click="copy()">
+        <span x-show="!copied">Copy query</span>
+        <span x-show="copied" x-cloak>Copied</span>
+      </button>
+      <a class="pt-btn secondary" :href="googleUrl" target="_blank" rel="noopener noreferrer nofollow" @click="_track('blog_tool_deep_link_clicked', { destination: 'google' }); _trackFirstInteraction('deep_link')">Open in Google</a>
+      <button type="button" class="pt-btn secondary" @click="copyLink()">
+        <span x-show="!linkCopied">Copy share link</span>
+        <span x-show="linkCopied" x-cloak>Link copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="reset()">Reset</button>
+    </div>
+  </div>
+
+  <div class="pt-howto">
+    <strong>How to use:</strong>
+    <ol>
+      <li>Pick the site your target candidates are most active on — engineers often live on GitHub or Stack Overflow, designers on Dribbble/Behance, European roles on Xing.</li>
+      <li>Titles are joined with OR — add variants (e.g. "senior software engineer" + "staff engineer" + "backend engineer") to widen recall.</li>
+      <li>Required skills are forced into the query quoted; keywords are optional OR terms that boost ranking without filtering.</li>
+      <li>Use the exclude field for obvious noise terms like "recruiter" or "intern".</li>
+      <li>Click Open in Google to run the search, or copy the query to save for later.</li>
+    </ol>
+  </div>
+
+  <p class="pt-source">
+    Built by Pin. Pin indexes 850M+ candidate profiles across these sources — <a href="https://www.pin.com/">pin.com</a>.
+  </p>
+</section>

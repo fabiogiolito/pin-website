@@ -1,0 +1,42 @@
+---
+import Layout from '../../../layouts/Layout.astro'
+import BlogListing from '../../../components/blog/BlogListing.astro'
+import { getUnifiedBlogPosts, getAllUnifiedPosts, getAllUnifiedTags, getTagCounts } from '../../../lib/posts'
+
+export async function getStaticPaths() {
+  const { totalPages } = await getUnifiedBlogPosts({ page: 1 })
+  return Array.from({ length: totalPages - 1 }, (_, i) => ({ params: { page: String(i + 2) } }))
+}
+
+const currentPage = parseInt(Astro.params.page ?? '2', 10)
+
+const [{ posts, totalPages }, allPosts, allTags, tagCounts] = await Promise.all([
+  getUnifiedBlogPosts({ page: currentPage }),
+  getAllUnifiedPosts(),
+  getAllUnifiedTags(),
+  getTagCounts(),
+])
+
+const featuredPosts = allPosts.filter((p) => p.featured).slice(0, 6)
+---
+
+<Layout
+  title={`Blog - Page ${currentPage} - Pin`}
+  description={`Insights and guides about AI-powered recruiting, sourcing strategies, and hiring best practices. Page ${currentPage}.`}
+>
+  <BlogListing
+    mode="all"
+    posts={posts}
+    allTags={allTags}
+    tagCounts={tagCounts}
+    activeTag="all"
+    activeTagName="All"
+    currentPage={currentPage}
+    totalPages={totalPages}
+    paginationBase="/blog/page"
+    paginationIndexUrl="/blog/"
+    totalArticleCount={allPosts.length}
+    lastPublishedAt={allPosts[0]?.published_at}
+    featuredPosts={featuredPosts}
+  />
+</Layout>

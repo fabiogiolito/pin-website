@@ -1,0 +1,143 @@
+---
+// Illustrative assistant session using the real Pin MCP tool names. Tabs switch scenes; nothing autoplays.
+import { Check, XCircle, CheckCircle2, Wrench, Brain } from "@lucide/astro";
+
+type Call = { tool: string; args: [string, string][]; result: string };
+const scenes: { id: string; label: string; prompt: string; calls: Call[]; reply: string }[] = [
+  {
+    id: "kickoff",
+    label: "Start a search",
+    prompt: "Here's the Greenhouse link for our Senior iOS role. Scrape it, start the search, and pull me the first batch of 10.",
+    calls: [
+      { tool: "scrape_job_description", args: [["url", "boards.greenhouse.io/acme/…"]], result: "Senior iOS Engineer · New York, NY" },
+      { tool: "create_job", args: [["title", "Senior iOS Engineer"], ["company", "Acme"]], result: "Search created · sourcing in the background" },
+      { tool: "get_candidates", args: [["limit", "10"]], result: "10 unreviewed candidates" },
+    ],
+    reply: "Here's the first batch. Maya and Jamal both have years of production SwiftUI. Want to go through them one at a time?",
+  },
+  {
+    id: "review",
+    label: "Review together",
+    prompt: "For each candidate in this batch: 2–3 sentence fit summary, predict accept or reject, then ask me. Skip the preamble.",
+    calls: [{ tool: "get_candidates", args: [["job", "Senior iOS Engineer"]], result: "Batch loaded with fit hints" }],
+    reply: "Maya Chen: 9 years of iOS, ships SwiftUI daily, Brooklyn-based. I'd predict accept. Accept or pass?",
+  },
+  {
+    id: "memory",
+    label: "Tune & remember",
+    prompt: "You've noticed I've rejected 5 in a row for the same reason. Lock in what I prefer, recalibrate the ranker, and go again.",
+    calls: [
+      { tool: "update_job_memory", args: [["note", "Never below 5 yrs of production Swift"]], result: "Memory saved for this job" },
+      { tool: "recalibrate_search", args: [["signal", "5 rejects · seniority"]], result: "Ranker updated" },
+      { tool: "get_candidates", args: [["limit", "10"]], result: "Fresh, better-matching batch" },
+    ],
+    reply: "Saved. I'll skip anyone under five years of production Swift from now on, here and in future sessions. New batch is ready.",
+  },
+];
+const candidates = [
+  { name: "Maya Chen", meta: "Brooklyn, NY · 9 yrs", tags: ["Swift", "SwiftUI"], fit: "Yes" },
+  { name: "Jamal Okafor", meta: "Manhattan, NY · 11 yrs", tags: ["Swift", "UIKit"], fit: "Yes" },
+  { name: "Priya Shankar", meta: "Jersey City, NJ · 8 yrs", tags: ["SwiftUI", "Accessibility"], fit: "Maybe" },
+];
+const tone: Record<string, string> = { Yes: "text-app-pos", Maybe: "text-app-warn" };
+---
+
+<div x-data="{ scene: 'kickoff' }" class="font-sans">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="inline-flex flex-wrap gap-1 rounded-full bg-white/70 p-1" role="tablist" aria-label="Example sessions">
+      {scenes.map((s) => (
+        <button
+          type="button"
+          role="tab"
+          class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
+          x-bind:class={`scene === '${s.id}' ? 'bg-white text-ink shadow-app' : 'text-ink-2 hover:text-ink'`}
+          x-bind:aria-selected={`(scene === '${s.id}').toString()`}
+          x-on:click={`scene = '${s.id}'`}
+        >{s.label}</button>
+      ))}
+    </div>
+    <span class="text-xs font-medium uppercase tracking-wide text-ink-3">Illustrative</span>
+  </div>
+
+  {scenes.map((s) => (
+    <div x-show={`scene === '${s.id}'`} x-transition.opacity.duration.200ms style={s.id === "kickoff" ? "" : "display:none"} class="mt-6 grid items-start gap-5 text-[14px] lg:grid-cols-[1.25fr_1fr] lg:gap-8" role="tabpanel">
+      <!-- Chat -->
+      <div class="panel space-y-4 p-4 md:p-5">
+        <p class="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-app-bg3 px-4 py-3 leading-relaxed">{s.prompt}</p>
+        <div class="space-y-2">
+          {s.calls.map((c) => (
+            <div class="rounded-xl border border-app-border px-3 py-2.5">
+              <p class="flex flex-wrap items-center gap-2 text-[13px]">
+                <Wrench size={13} class="text-app-ai" />
+                <span class="text-app-fg2">Pin</span>
+                <code class="merge font-mono text-[12.5px] text-app-fg">{c.tool}</code>
+                <span class="ml-auto inline-flex items-center gap-1 text-app-pos"><Check size={13} /> done</span>
+              </p>
+              <p class="mt-1.5 font-mono text-[12px] text-app-fg3">{c.args.map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>
+              <p class="mt-1 text-[13px] text-app-fg2">{c.result}</p>
+            </div>
+          ))}
+        </div>
+        <p class="leading-relaxed text-app-fg">{s.reply}</p>
+      </div>
+
+      <!-- Tool result -->
+      {s.id === "kickoff" && (
+        <div class="relative">
+          <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">From 850M+ profiles</span>
+          <div class="panel p-4 pt-6">
+            <p class="font-semibold">get_candidates <span class="font-normal text-app-fg3">· 10 results</span></p>
+            <ul class="mt-3 divide-y divide-app-border">
+              {candidates.map((c) => (
+                <li class="flex items-center gap-3 py-2.5">
+                  <div class="min-w-0 flex-1">
+                    <p class="font-medium">{c.name}</p>
+                    <p class="text-[12.5px] text-app-fg2">{c.meta}</p>
+                  </div>
+                  <span class="hidden gap-1 sm:flex">{c.tags.map((t) => <span class="rounded-md border border-app-border px-1.5 py-0.5 text-[11.5px] text-app-fg2">{t}</span>)}</span>
+                  <span class:list={["text-[12.5px] font-semibold", tone[c.fit]]}>{c.fit}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+      {s.id === "review" && (
+        <div class="panel p-4 md:p-5">
+          <div class="flex flex-wrap items-start gap-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-[16px] font-semibold">Maya Chen</p>
+              <p class="text-app-fg2">Brooklyn, NY</p>
+            </div>
+            <div class="flex gap-1.5 text-[12px] font-medium">
+              <span class="flex w-[68px] flex-col items-center gap-1 rounded-lg px-2 py-2 text-app-neg shadow-app"><XCircle size={16} /> Reject</span>
+              <span class="flex w-[68px] flex-col items-center gap-1 rounded-lg px-2 py-2 text-app-pos shadow-app ring-2 ring-app-pos/30"><CheckCircle2 size={16} /> Accept</span>
+            </div>
+          </div>
+          <div class="mt-4 space-y-1.5">
+            <p class="flex gap-2 leading-snug"><span class="mt-[7px] size-1.5 shrink-0 rounded-full bg-app-pos"></span><span><b class="font-semibold">Production SwiftUI?</b> <span class="font-semibold text-app-pos">Yes</span><span class="text-app-fg2">, ships it daily.</span></span></p>
+            <p class="flex gap-2 leading-snug"><span class="mt-[7px] size-1.5 shrink-0 rounded-full bg-app-pos"></span><span><b class="font-semibold">NYC or remote?</b> <span class="font-semibold text-app-pos">Yes</span><span class="text-app-fg2">, Brooklyn.</span></span></p>
+          </div>
+          <div class="mt-4 rounded-xl bg-app-bg3 px-3 py-2.5 text-[13px]">
+            <p class="text-app-fg2">You: “Accept Maya — she's exactly the shape.”</p>
+            <p class="mt-1.5 flex items-center gap-2"><code class="merge font-mono text-[12.5px]">accept_candidate</code><span class="text-app-fg2">confirmed by you · outreach queued</span></p>
+          </div>
+        </div>
+      )}
+      {s.id === "memory" && (
+        <div class="relative">
+          <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Remembered next session</span>
+          <div class="panel p-4 pt-6 md:p-5 md:pt-6">
+            <p class="flex items-center gap-2 font-semibold"><Brain size={15} class="text-app-ai" /> Job memory · Senior iOS Engineer</p>
+            <ul class="mt-3 space-y-2">
+              {["Never below 5 yrs of production Swift", "De-rank bootcamp-only backgrounds", "NYC metro or remote only"].map((m) => (
+                <li class="flex gap-2 leading-snug"><Check size={13} class="mt-0.5 shrink-0 text-app-pos" />{m}</li>
+              ))}
+            </ul>
+            <p class="mt-4 border-t border-app-border pt-3 text-[13px] text-app-fg2">Loaded with <code class="font-mono">read_job_memory</code> at the start of the next session.</p>
+          </div>
+        </div>
+      )}
+    </div>
+  ))}
+</div>

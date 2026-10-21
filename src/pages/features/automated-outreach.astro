@@ -1,0 +1,139 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import FAQ from "../../components/ui/FAQ.astro";
+import CTABand from "../../components/ui/CTABand.astro";
+import Tools from "../../components/ui/Tools.astro";
+import SequenceEditor from "../../components/features/SequenceEditor.astro";
+import JourneyStrip from "../../components/features/JourneyStrip.astro";
+import Section from "../../components/features/Section.astro";
+import Compare from "../../components/features/Compare.astro";
+import Grid from "../../components/features/Grid.astro";
+import Quotes from "../../components/features/Quotes.astro";
+import Reading from "../../components/features/Reading.astro";
+import { faqJsonLd } from "../../components/ui/faq";
+import { featurePageSchema } from "../../components/features/schema";
+import { X, Check } from "@lucide/astro";
+
+const faq = [
+  {
+    question: "How does automated candidate outreach work?",
+    answer: "Approve a candidate and Pin writes them a personal sequence: emails, plus LinkedIn and text steps. Emails go out from your own Gmail or Outlook, as you, on schedule, until the candidate replies. You can edit any step, choose whether each email sends automatically or waits for your review, and take over any conversation.",
+  },
+  {
+    question: "Is the outreach actually personalized?",
+    answer: "Yes. Pin reads each candidate's profile and writes messages that reference their specific skills, experience and background. It isn't a mail merge with {first_name} tokens; each message is unique to the candidate.",
+  },
+  {
+    question: "What channels does automated recruiting outreach support?",
+    answer: "Email, LinkedIn and text, in one sequence. Emails send from your inbox. LinkedIn steps show up as tasks for you, like \"Connect on LinkedIn\", with the message drafted. Text messages are drafted per candidate and you click send.",
+  },
+  {
+    question: "What happens when a candidate replies?",
+    answer: "The sequence stops. Pin archives \"not interested\" replies with a thank-you, answers questions it knows from your knowledge base, asks you on Slack about new ones, and offers interview times to anyone who says yes.",
+  },
+  {
+    question: "How does Pin's outreach compare to recruiter email automation tools?",
+    answer: "Basic recruiter email automation tools send templated blasts to a list. Pin writes a unique message for each candidate, runs sequences across email, LinkedIn and text, and connects directly to your sourcing. Candidates you approve in Pin flow straight into outreach, with no CSV exports or tool switching.",
+  },
+  {
+    question: "Can recruiting agencies use automated outreach for multiple clients?",
+    answer: "Yes. Pin runs outreach across multiple clients and roles at once, with separate pipelines and clear visibility into each one. Agencies use it to scale without adding headcount; most report doubling placements per recruiter.",
+  },
+];
+
+const jsonLd = [
+  ...featurePageSchema({
+    name: "Automated Candidate Outreach: Personal Sequences From Your Inbox",
+    path: "/features/automated-outreach/",
+    description: "Pin's automated candidate outreach writes a personal sequence for every approved candidate and sends it from your Gmail or Outlook, with LinkedIn and text steps. From $99/mo.",
+    crumb: "Automated Candidate Outreach",
+    dateModified: "2026-10-21",
+  }),
+  faqJsonLd(faq),
+];
+
+const signals = [
+  { title: "Reads the profile", desc: "Pin picks the detail most worth mentioning: the system they scaled, the team they built, the company they left." },
+  { title: "From your inbox, as you", desc: "Emails send from your own Gmail or Outlook, in your name. Replies land where you already work." },
+  { title: "Stops when they reply", desc: "Every channel stays in one thread. The moment a candidate answers, the remaining steps stand down." },
+  { title: "Their morning, not yours", desc: "Messages land in the candidate's local working hours, wherever they are." },
+  { title: "Every channel, one plan", desc: "Emails, LinkedIn steps and texts in one sequence, each with its message drafted and its day set." },
+  { title: "Your call, every step", desc: "Send automatically or review first. Edit any message. Take over any conversation, any time." },
+];
+
+const rows = [
+  ["Messages", "Written for each candidate", "Templates with merge tags", "Written by hand"],
+  ["Channels", "Email, LinkedIn tasks and text", "Email only", "Whatever you remember"],
+  ["Sent from", "Your Gmail or Outlook", "Varies by tool", "Your inbox"],
+  ["Candidates", "Straight from Pin sourcing", "CSV import", "Copy and paste"],
+  ["Follow-ups", "On schedule until they reply", "On schedule", "When you find time"],
+  ["Replies", "Sorted, answered and booked", "Land in your inbox", "Land in your inbox"],
+];
+---
+
+<Layout
+  title="Automated Candidate Outreach: Personal Sequences From Your Inbox | Pin"
+  description="Automated candidate outreach that sounds like you. Pin writes a personal email, LinkedIn and text sequence for every candidate and sends it from your inbox. From $99/mo."
+  jsonLd={jsonLd}
+>
+  <PageHero
+    eyebrow="Automated candidate outreach"
+    title="Outreach that sounds like you, because it's from you."
+    sub="Approve a candidate and Pin writes the whole sequence: personal emails from your Gmail or Outlook, plus LinkedIn and text steps. It follows up on schedule until they reply."
+  >
+    <SequenceEditor />
+  </PageHero>
+
+  <JourneyStrip current={[2]} />
+
+  <Section eyebrow="Templates vs. Pin" title="Candidates can spot a mail merge three lines in." tint="clay" class="mt-8">
+    <p slot="copy">A merge tag fills in a first name. Pin fills in the reason you're actually writing.</p>
+    <div class="grid items-start gap-5 text-[14px] md:grid-cols-2 md:gap-8">
+      <div class="panel p-5 md:p-6">
+        <p class="flex items-center gap-2 font-semibold"><X size={15} class="text-app-neg" /> Merge-tag template</p>
+        <div class="mt-3 space-y-3 rounded-lg bg-app-bg3 p-4 leading-relaxed text-app-fg2">
+          <p>Hi <span class="font-mono text-[13px]">{"{first_name}"}</span>,</p>
+          <p>I hope this finds you well! I came across your profile and was impressed by your background. We have an exciting opportunity at <span class="font-mono text-[13px]">{"{company}"}</span> that I think could be a great fit.</p>
+          <p>Do you have 15 minutes to chat?</p>
+        </div>
+      </div>
+      <div class="relative">
+        <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Written for one person</span>
+        <div class="panel p-5 pt-7 md:p-6 md:pt-7">
+          <p class="flex items-center gap-2 font-semibold"><Check size={15} class="text-app-pos" /> Pin</p>
+          <div class="mt-3 space-y-3 rounded-lg border border-app-border p-4 leading-relaxed">
+            <p>Hi <span class="merge">Daniel</span>,</p>
+            <p>Your event pipeline at <span class="merge">Plaid</span> handles <span class="merge">2B+ events a day</span>, which is about where ByteLogic's ledger is headed next year. We need someone who has already lived through that scale.</p>
+            <p>Open to a 20-minute chat next week?</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="mt-6 text-center text-sm text-ink-3">Illustrative example</p>
+  </Section>
+
+  <Section eyebrow="Personal at scale" title="Six things Pin does that a template can't.">
+    <p slot="copy">Every sequence is written for one person and sent like you sent it. You decide how much runs on its own.</p>
+    <Grid items={signals} />
+  </Section>
+
+  <Section eyebrow="Compared" title="Pin vs. email automation tools.">
+    <p slot="copy">Most outreach tools start from a list and a template. Pin starts from the candidate.</p>
+    <Compare head={["", "Pin", "Email automation tools", "Manual outreach"]} rows={rows} />
+  </Section>
+
+  <Quotes names={["Ben Caggia", "Miles Randle", "Fahad Hassan"]} title="Teams that let Pin write the first message" />
+
+  <Tools />
+
+  <FAQ items={faq} title="Automated outreach questions" />
+
+  <Reading items={[
+    { label: "Automated candidate outreach, explained", href: "/blog/automated-candidate-outreach/", description: "How multi-channel sequences outperform templated cold outreach, with benchmarks." },
+    { label: "LinkedIn outreach response rates with AI", href: "/blog/ai-linkedin-outreach-response-rate/", description: "What actually moves LinkedIn reply rates when templated InMail is dying." },
+    { label: "Cold email templates that still work for recruiters", href: "/blog/engage-passive-candidates/", description: "The openers, subjects and follow-ups that survived the AI email flood." },
+  ]} />
+
+  <CTABand title="Spend your time on the replies, not the follow-ups." body="See Pin write a sequence for one of your open roles, sent from your own inbox." track="automated_outreach_cta" />
+</Layout>

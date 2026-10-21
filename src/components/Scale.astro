@@ -1,0 +1,95 @@
+---
+const roles = ["Staff ML Engineer · SF", "ICU Nurse · Columbus", "VP of Sales · Austin", "Warehouse Lead · Dallas", "Founding Designer · NYC", "Controller · Chicago", "SRE · Remote", "Paralegal · Miami", "CNC Machinist · Detroit", "Pharmacist · Phoenix", "iOS Engineer · Seattle", "Store Manager · Atlanta"];
+
+const stats = [
+  { n: 83, s: "%", label: "Match acceptance", sub: "Candidates approved into pipelines" },
+  { n: 5, s: "x", label: "Higher reply rate", sub: "Sent from your inbox, across channels" },
+  { n: 12, s: " hrs", label: "Saved every week", sub: "14-day average time-to-fill" },
+];
+const quotes = [
+  {
+    quote: "As a small people and talent team, we don't have a ton of time to spend hours sourcing and messaging. Pin has made it possible for us to focus on the people side of things!",
+    name: "Miles Randle", title: "Head of People & Talent at Flip CX", img: "milesrandle_photo.jpg",
+  },
+  {
+    quote: "What I love about Pin is that it takes the critical thinking your brain already does and puts it on steroids. I can let the software handle the strategic sourcing I'd normally have to do on my own.",
+    name: "Colleen Riccinto", title: "Founder & President at Cyber Talent Search", img: "colleen_photo.png",
+  },
+  {
+    quote: "Pin delivered exactly what we needed. Within just two weeks of using the product, we hired both a software engineer and a financial planner. The speed and accuracy were unmatched.",
+    name: "Fahad Hassan", title: "CEO & Co-founder at Range", img: "fahadhassan_photo.jpg",
+  },
+];
+const tile = "rounded-3xl bg-white p-7 shadow-[0_1px_0_rgb(0_0_0/0.02),0_10px_30px_-14px_rgb(115_70_38/0.18)] md:p-8";
+---
+
+{/* Stat and quote tiles are interleaved so numbers sit next to the people behind them. */}
+<section id="scale" class="bg-bg-secondary/60 py-24 md:py-32">
+  <div class="mx-auto max-w-7xl px-4 md:px-8">
+    <div class="mx-auto max-w-3xl text-center">
+      <p data-reveal class="text-sm font-medium tracking-wide text-green">Scale & outcomes</p>
+      <h2 data-reveal style="--i:1" class="mt-3 text-[32px] font-medium leading-[1.1] tracking-[-0.02em] text-balance md:text-[48px]">
+        No position is too big or too small for Pin.
+      </h2>
+    </div>
+
+    <div class="mt-14 grid gap-4 md:grid-cols-3">
+      <!-- Hero stat: spans two columns, roles drift behind the number -->
+      <div data-reveal class="relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-3xl bg-green-lighter p-7 md:col-span-2 md:p-8">
+        <div class="relative">
+          <p class="text-[64px] font-medium leading-none tracking-[-0.04em] tabular-nums text-green-accessible md:text-[88px]"><span data-count="850" data-suffix="M+">850M+</span></p>
+          <p class="mt-3 text-lg font-medium">Candidate resumes</p>
+          <p class="text-ink-2">100% North America & Europe coverage</p>
+        </div>
+        <div class="relative -mx-7 mt-8 [mask-image:linear-gradient(90deg,transparent,black_10%,black_90%,transparent)] md:-mx-8" aria-hidden="true">
+          <div class="marquee flex w-max gap-2">
+            {[...roles, ...roles].map((r) => <span class="whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-sm text-ink-2">{r}</span>)}
+          </div>
+        </div>
+      </div>
+
+      <div data-reveal style="--i:1" class:list={[tile, "flex flex-col justify-end"]}>
+        <p class="text-[56px] font-medium leading-none tracking-[-0.04em] tabular-nums md:text-[64px]"><span data-count={stats[0].n} data-suffix={stats[0].s}>{stats[0].n}{stats[0].s}</span></p>
+        <p class="mt-3 text-lg font-medium">{stats[0].label}</p>
+        <p class="text-ink-2">{stats[0].sub}</p>
+      </div>
+
+      <figure data-reveal style="--i:2" class:list={[tile, "flex flex-col"]}>
+        <blockquote class="flex-1 text-lg leading-relaxed">“{quotes[0].quote}”</blockquote>
+        <figcaption class="mt-6 flex items-center gap-3">
+          <img src={`/images/testimonials/${quotes[0].img}`} alt="" width="40" height="40" loading="lazy" class="size-10 rounded-full object-cover outline outline-1 -outline-offset-1 outline-black/10" />
+          <span><span class="block font-medium">{quotes[0].name}</span><span class="block text-sm text-ink-2">{quotes[0].title}</span></span>
+        </figcaption>
+      </figure>
+
+      <div data-reveal style="--i:3" class:list={[tile, "flex flex-col justify-end bg-clay-light!"]}>
+        <p class="text-[56px] font-medium leading-none tracking-[-0.04em] tabular-nums md:text-[64px]"><span data-count={stats[1].n} data-suffix={stats[1].s}>{stats[1].n}{stats[1].s}</span></p>
+        <p class="mt-3 text-lg font-medium">{stats[1].label}</p>
+        <p class="text-ink-2">{stats[1].sub}</p>
+      </div>
+
+      <figure data-reveal style="--i:4" class:list={[tile, "flex flex-col"]}>
+        <blockquote class="flex-1 text-lg leading-relaxed">“{quotes[1].quote}”</blockquote>
+        <figcaption class="mt-6 flex items-center gap-3">
+          <img src={`/images/testimonials/${quotes[1].img}`} alt="" width="40" height="40" loading="lazy" class="size-10 rounded-full object-cover outline outline-1 -outline-offset-1 outline-black/10" />
+          <span><span class="block font-medium">{quotes[1].name}</span><span class="block text-sm text-ink-2">{quotes[1].title}</span></span>
+        </figcaption>
+      </figure>
+
+      <div data-reveal style="--i:5" class:list={[tile, "flex flex-col justify-end"]}>
+        <p class="text-[56px] font-medium leading-none tracking-[-0.04em] tabular-nums md:text-[64px]"><span data-count={stats[2].n} data-suffix={stats[2].s}>{stats[2].n}{stats[2].s}</span></p>
+        <p class="mt-3 text-lg font-medium">{stats[2].label}</p>
+        <p class="text-ink-2">{stats[2].sub}</p>
+      </div>
+
+      <!-- Featured quote: spans two columns -->
+      <figure data-reveal style="--i:6" class:list={[tile, "flex flex-col justify-between md:col-span-2"]}>
+        <blockquote class="text-xl font-medium leading-snug tracking-[-0.01em] text-balance md:text-[26px]">“{quotes[2].quote}”</blockquote>
+        <figcaption class="mt-8 flex items-center gap-3">
+          <img src={`/images/testimonials/${quotes[2].img}`} alt="" width="44" height="44" loading="lazy" class="size-11 rounded-full object-cover outline outline-1 -outline-offset-1 outline-black/10" />
+          <span><span class="block font-medium">{quotes[2].name}</span><span class="block text-sm text-ink-2">{quotes[2].title}</span></span>
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+</section>

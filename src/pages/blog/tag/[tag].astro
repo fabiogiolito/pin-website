@@ -1,0 +1,65 @@
+---
+import Layout from '../../../layouts/Layout.astro'
+import BlogListing from '../../../components/blog/BlogListing.astro'
+import { breadcrumbJsonLd } from '../../../components/blog/utils'
+import {
+  getUnifiedBlogPosts,
+  getUnifiedFeaturedPostsByTag,
+  getAllUnifiedTags,
+  getTagCounts,
+  getLastPublishedAt,
+  getUnifiedRelatedTags,
+} from '../../../lib/posts'
+import { getTagMeta } from '../../../data/tags'
+
+export async function getStaticPaths() {
+  const tags = await getAllUnifiedTags()
+  return tags.map((tag) => ({ params: { tag: tag.slug } }))
+}
+
+const { tag } = Astro.params
+
+const [result, featuredPostsForTag, allTags, tagCounts, lastPublishedAt, relatedTags] = await Promise.all([
+  getUnifiedBlogPosts({ tag, page: 1 }),
+  getUnifiedFeaturedPostsByTag(tag!),
+  getAllUnifiedTags(),
+  getTagCounts(),
+  getLastPublishedAt(tag),
+  getUnifiedRelatedTags(tag!, 4),
+])
+
+const tagName = allTags.find((t) => t.slug === tag)?.name ?? tag ?? ''
+
+// Per-tag SEO overrides (H1, subtitle, intro, meta description) live in src/data/tags.ts.
+const meta = getTagMeta(tag)
+const pageTitle = meta?.h1 ? `${meta.h1} - Pin Blog` : `${tagName} - Pin Blog`
+const pageDescription = meta?.metaDescription ?? `Articles tagged with ${tagName} on the Pin blog.`
+
+const breadcrumb = breadcrumbJsonLd([
+  { name: 'Home', url: 'https://www.pin.com/' },
+  { name: 'Blog', url: 'https://www.pin.com/blog/' },
+  { name: meta?.h1 ?? tagName, url: `https://www.pin.com/blog/tag/${tag}/` },
+])
+---
+
+<Layout title={pageTitle} description={pageDescription} jsonLd={breadcrumb}>
+  <BlogListing
+    mode="tag"
+    posts={result.posts}
+    allTags={allTags}
+    tagCounts={tagCounts}
+    activeTag={tag!}
+    activeTagName={tagName}
+    currentPage={1}
+    totalPages={result.totalPages}
+    paginationBase={`/blog/tag/${tag}`}
+    paginationIndexUrl={`/blog/tag/${tag}/`}
+    customH1={meta?.h1}
+    customSubtitle={meta?.description}
+    intro={meta?.intro}
+    totalArticleCount={tagCounts.get(tag!) ?? 0}
+    lastPublishedAt={lastPublishedAt}
+    featuredPosts={featuredPostsForTag.slice(0, 6)}
+    relatedTags={relatedTags}
+  />
+</Layout>

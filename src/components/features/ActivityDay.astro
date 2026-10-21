@@ -1,0 +1,74 @@
+---
+// A day on the desk: 24h ribbon of what Pin did per lane vs. the recruiter's few check-ins. Hover or tap a block for details.
+const lanes = ["Sourcing", "Outreach", "Replies", "Scheduling", "You"];
+// [startHour, durationHours, lane, label, detail]
+const events: [number, number, number, string, string][] = [
+  [0.5, 2, 0, "Search", "Searched for 3 open roles and queued 61 new matches for review"],
+  [6, 1.5, 0, "Re-rank", "Re-ranked the shortlist with yesterday's approvals and declines"],
+  [14, 1.5, 0, "Refresh", "Added 18 matches for the Product Designer role"],
+  [20, 2, 0, "Search", "Found 25 new profiles that fit the Staff SRE role"],
+  [7, 2, 1, "42 sent", "Step 1 emails from your inbox, timed to each candidate's morning"],
+  [10, 2.2, 1, "18 nudges", "Step 3 follow-ups in the same threads, for people who haven't replied"],
+  [13, 1.4, 1, "Tasks", "Queued 6 Connect on LinkedIn tasks for you, notes drafted"],
+  [18.5, 1.5, 1, "Nudges", "Sent 11 evening follow-ups to candidates on the West Coast"],
+  [8.5, 2, 2, "9 sorted", "Archived 3 not-interested replies with a thank-you, flagged 4 interested"],
+  [11, 1.4, 2, "Slack", "Asked you once: 3 people asked about equity"],
+  [15, 2, 2, "Answers", "Reused your equity answer for 2 more candidates"],
+  [12, 1.5, 3, "Offered", "Offered your free times to 4 interested candidates"],
+  [14.4, 1.9, 3, "2 booked", "Handled the back-and-forth and sent calendar invites"],
+  [16.5, 1.6, 3, "Moved", "A candidate asked to move; Pin found a new time in the thread"],
+  [9, 0.6, 4, "Approved 12", "You approved 12 matches over coffee (5 min)"],
+  [11.3, 0.4, 4, "Slack reply", "You answered the equity question once (1 min)"],
+  [17, 0.6, 4, "Reviewed calls", "You checked tomorrow's interviews (6 min)"],
+];
+const ticks = [0, 3, 6, 9, 12, 15, 18, 21, 24];
+const fmt = (h: number) => (h % 24 === 0 ? "12a" : h === 12 ? "12p" : h < 12 ? `${h}a` : `${h - 12}p`);
+const LANE = 40;
+---
+
+<div id="activity-day" class="panel p-4 md:p-6">
+  <div class="overflow-x-auto">
+    <div class="min-w-[880px] text-[12px]">
+      <div class="relative ml-[92px] h-5 text-app-fg3">
+        {ticks.map((h) => <span class:list={["absolute", h === 0 ? "" : h === 24 ? "-translate-x-full" : "-translate-x-1/2"]} style={`left:${(h / 24) * 100}%`}>{fmt(h)}</span>)}
+      </div>
+      <div class="relative mt-1" style={`height:${lanes.length * LANE}px`}>
+        {lanes.map((l, i) => (
+          <div class:list={["absolute inset-x-0 flex items-center border-t border-app-border", i === 4 && "bg-app-bg3"]} style={`top:${i * LANE}px;height:${LANE}px`}>
+            <span class:list={["w-[92px] pl-2 font-medium", i === 4 ? "text-app-fg" : "text-app-fg2"]}>{l}</span>
+          </div>
+        ))}
+        <div class="absolute inset-y-0 left-[92px] right-0">
+          {events.map(([h, d, lane, label, detail]) => (
+            <button
+              type="button"
+              data-detail={`${fmt(Math.floor(h))} · ${detail}`}
+              class:list={["ev absolute overflow-hidden truncate rounded-md px-1 text-[11px] text-left font-medium transition-[filter,scale] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-app-tint", lane === 4 ? "bg-app-tint text-white" : "bg-app-pos/12 text-app-pos"]}
+              style={`left:${(h / 24) * 100}%;width:calc(${(d / 24) * 100}% - 3px);top:${lane * LANE + 6}px;height:${LANE - 12}px`}
+              aria-label={`${label}: ${detail}`}
+              title={label}
+            >{d >= 1 ? label : ""}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="detail mt-4 min-h-[44px] rounded-lg bg-app-bg3 px-4 py-3 text-app-fg2" aria-live="polite">Hover or tap any block to see what happened.</p>
+  <p class="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-app-fg2">
+    <span><b class="font-semibold text-app-pos">14</b> things Pin did</span>
+    <span><b class="font-semibold text-app-tint-fg">12 min</b> of your day</span>
+    <span class="text-app-fg3">Illustrative example</span>
+  </p>
+</div>
+
+<script>
+  const root = document.getElementById("activity-day")!;
+  const detail = root.querySelector<HTMLElement>(".detail")!;
+  const show = (e: Event) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>(".ev");
+    if (b) detail.textContent = b.dataset.detail!;
+  };
+  root.addEventListener("mouseover", show);
+  root.addEventListener("focusin", show);
+  root.addEventListener("click", show);
+</script>

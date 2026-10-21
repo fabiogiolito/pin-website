@@ -1,0 +1,263 @@
+---
+import "./tools.css";
+// LinkedIn Swap / Cost Calculator — highest-intent Pin conversion tool.
+// Input LinkedIn Recruiter seats, contract years, and optional spend override
+// → see 3-year cost vs. equivalent Pin setup + savings estimate.
+---
+
+<script is:inline>
+  window.linkedInSwapCalculator = function () {
+    // Public pricing references (conservative list prices — most customers
+    // negotiate 10-20% off). Tune when we refresh the figures.
+    const LINKEDIN_CORP_PER_SEAT_YR = 10800;   // ~$900/mo list, often quoted higher
+    const LINKEDIN_LITE_PER_SEAT_YR = 2400;    // Recruiter Lite, per seat per year
+    const PIN_PER_SEAT_YR = 2400;              // Pin list-price equivalent
+    const PIN_REDUCTION_PCT = 91;              // The stat cited in the blog
+
+    return {
+      corpSeats: 3,
+      liteSeats: 0,
+      years: 3,
+      spendOverride: 0,   // 0 = use list-price estimates; non-zero overrides corp+lite totals
+      copied: false,
+      linkCopied: false,
+      _trackedFirst: false,
+      _viewTracked: false,
+
+      _track(event, props = {}) {
+        try {
+          const root = this.$root;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event,
+            tool_slug: (root && root.dataset && root.dataset.pinToolSlug) || '',
+            tool_name: (root && root.dataset && root.dataset.pinToolName) || '',
+            post_slug: (location.pathname.split('/').filter(Boolean).pop() || ''),
+            page_path: location.pathname,
+            ...props,
+          });
+        } catch (e) {}
+      },
+      _trackFirstInteraction(type) {
+        if (this._trackedFirst) return;
+        this._trackedFirst = true;
+        this._track('blog_tool_first_interaction', { interaction_type: type });
+      },
+
+      hydrate() {
+        try {
+          const s = new URLSearchParams(window.location.search).get('li');
+          if (s) {
+            const state = JSON.parse(decodeURIComponent(atob(s)));
+            for (const k of Object.keys(state)) {
+              if (k in this && typeof state[k] === 'number') this[k] = state[k];
+            }
+            this._track('blog_tool_shared_state_loaded');
+          }
+        } catch (e) {}
+        if (!this._viewTracked && typeof IntersectionObserver !== 'undefined') {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._viewTracked = true;
+              this._track('blog_tool_viewed');
+              io.disconnect();
+            }
+          }, { threshold: 0.3 });
+          io.observe(this.$root);
+        }
+      },
+
+      applyPreset(id) {
+        if (id === 'small-team')   { this.corpSeats = 2; this.liteSeats = 1; this.years = 1; this.spendOverride = 0; }
+        else if (id === 'mid-team') { this.corpSeats = 5; this.liteSeats = 2; this.years = 3; this.spendOverride = 0; }
+        else if (id === 'enterprise') { this.corpSeats = 12; this.liteSeats = 6; this.years = 3; this.spendOverride = 0; }
+        this._track('blog_tool_preset_selected', { preset_id: id });
+        this._trackFirstInteraction('preset');
+      },
+
+      reset() {
+        this.corpSeats = 3; this.liteSeats = 0; this.years = 3; this.spendOverride = 0;
+        this._track('blog_tool_reset_clicked');
+      },
+
+      get linkedinAnnual() {
+        if (this.spendOverride > 0) return this.spendOverride;
+        return this.corpSeats * LINKEDIN_CORP_PER_SEAT_YR + this.liteSeats * LINKEDIN_LITE_PER_SEAT_YR;
+      },
+      get linkedinTotal() { return this.linkedinAnnual * this.years; },
+      get pinAnnual() { return (this.corpSeats + this.liteSeats) * PIN_PER_SEAT_YR; },
+      get pinTotal() { return this.pinAnnual * this.years; },
+      get savings() { return this.linkedinTotal - this.pinTotal; },
+      get savingsPct() {
+        if (this.linkedinTotal <= 0) return 0;
+        return Math.round((this.savings / this.linkedinTotal) * 100);
+      },
+      get savingsPerSeatPerYear() {
+        const seats = this.corpSeats + this.liteSeats;
+        if (seats <= 0 || this.years <= 0) return 0;
+        return Math.round(this.savings / seats / this.years);
+      },
+
+      get summary() {
+        const f = (n) => '$' + Math.round(n).toLocaleString();
+        const lines = [
+          'LinkedIn Recruiter vs. Pin cost comparison',
+          '──────────────────────────────────────────',
+          '',
+          'Your setup',
+          '  Recruiter Corporate seats: ' + this.corpSeats,
+          '  Recruiter Lite seats:      ' + this.liteSeats,
+          '  Contract term:             ' + this.years + ' year' + (this.years === 1 ? '' : 's'),
+          this.spendOverride > 0
+            ? '  Actual annual spend (override): ' + f(this.spendOverride)
+            : '  Using list-price estimates',
+          '',
+          'LinkedIn total cost',
+          '  Annual:    ' + f(this.linkedinAnnual),
+          '  ' + this.years + '-year:    ' + f(this.linkedinTotal),
+          '',
+          'Pin equivalent',
+          '  Annual:    ' + f(this.pinAnnual),
+          '  ' + this.years + '-year:    ' + f(this.pinTotal),
+          '',
+          'You would save',
+          '  Total ' + this.years + '-year: ' + f(this.savings) + '  (' + this.savingsPct + '%)',
+          '  Per seat per year:   ' + f(this.savingsPerSeatPerYear),
+        ];
+        return lines.join('\n');
+      },
+
+      shareUrl() {
+        try {
+          const state = { corpSeats: this.corpSeats, liteSeats: this.liteSeats, years: this.years, spendOverride: this.spendOverride };
+          const s = btoa(encodeURIComponent(JSON.stringify(state)));
+          const url = new URL(window.location.href);
+          url.searchParams.set('li', s);
+          return url.toString();
+        } catch (e) { return window.location.href; }
+      },
+
+      _copyText(text, flag) {
+        const ok = () => { this[flag] = true; setTimeout(() => this[flag] = false, 1500); };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(ok).catch(() => {});
+          return;
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      },
+      copy() {
+        this._copyText(this.summary, 'copied');
+        this._track('blog_tool_output_copied', { savings: this.savings });
+      },
+      copyLink() {
+        const url = this.shareUrl();
+        try { history.replaceState(null, '', url); } catch (e) {}
+        this._copyText(url, 'linkCopied');
+        this._track('blog_tool_share_link_copied');
+      },
+      _onInput() { this._trackFirstInteraction('input'); },
+    };
+  };
+</script>
+
+<section
+  class="pin-tool"
+  data-pin-tool-slug="linkedin-swap-calculator"
+  data-pin-tool-name="LinkedIn Recruiter vs Pin Cost Calculator"
+  x-data="linkedInSwapCalculator()"
+  x-init="hydrate()"
+>
+  <h2 class="pt-title" id="pin-tool-linkedin-swap-calculator">
+    LinkedIn Recruiter vs Pin Cost Calculator
+    <span class="pt-tool-badge" aria-hidden="true">Tool</span>
+  </h2>
+  <p class="pt-intro">
+    Enter your LinkedIn Recruiter seats and contract term. See side-by-side list-price costs vs. the equivalent Pin setup, plus a savings number you can bring to procurement. Optionally override with your actual negotiated spend for a defensible number.
+  </p>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Preset</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" @click="applyPreset('small-team')">Small team · 3 seats</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('mid-team')">Mid team · 7 seats · 3yr</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('enterprise')">Enterprise · 18 seats · 3yr</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="li-corp">LinkedIn Recruiter Corporate seats</label>
+      <input id="li-corp" class="pt-input" type="number" min="0" step="1" x-model.number="corpSeats" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="li-lite">LinkedIn Recruiter Lite seats</label>
+      <input id="li-lite" class="pt-input" type="number" min="0" step="1" x-model.number="liteSeats" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="li-yr">Contract term (years)</label>
+      <input id="li-yr" class="pt-input" type="number" min="1" max="5" step="1" x-model.number="years" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="li-ov">Actual annual spend — optional override ($)</label>
+      <input id="li-ov" class="pt-input" type="number" min="0" step="500" placeholder="Leave 0 to use list-price estimate" x-model.number="spendOverride" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-calc-grid">
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">LinkedIn annual</span>
+      <span class="pt-calc-value" x-text="'$' + linkedinAnnual.toLocaleString()"></span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Pin annual</span>
+      <span class="pt-calc-value" x-text="'$' + pinAnnual.toLocaleString()"></span>
+    </div>
+    <div class="pt-calc-card pt-calc-total">
+      <span class="pt-calc-label" x-text="years + '-year savings'"></span>
+      <span class="pt-calc-value" x-text="'$' + savings.toLocaleString()"></span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">% reduction</span>
+      <span class="pt-calc-value" x-text="savingsPct + '%'"></span>
+    </div>
+  </div>
+
+  <div class="pt-output-wrap">
+    <label class="pt-label" for="li-out">Summary for procurement</label>
+    <textarea id="li-out" class="pt-output" readonly x-text="summary"></textarea>
+    <div class="pt-actions">
+      <button type="button" class="pt-btn primary" @click="copy()">
+        <span x-show="!copied">Copy for procurement</span>
+        <span x-show="copied" x-cloak>Copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="copyLink()">
+        <span x-show="!linkCopied">Copy share link</span>
+        <span x-show="linkCopied" x-cloak>Link copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="isGettingStartedModalOpen = 'demo'; _track('blog_tool_deep_link_clicked', { destination: 'book-a-demo' }); _trackFirstInteraction('deep_link')">Book a Pin demo</button>
+      <button type="button" class="pt-btn secondary" @click="reset()">Reset</button>
+    </div>
+  </div>
+
+  <div class="pt-howto">
+    <strong>How to use:</strong>
+    <ol>
+      <li>Count your current LinkedIn Recruiter seats (Corporate for recruiters, Lite for hiring managers or part-time users).</li>
+      <li>Enter your contract term — most enterprise deals are locked in 1 or 3 years.</li>
+      <li>If you know your actual negotiated spend, paste it into the override field for a defensible number. Otherwise list-price estimates are used.</li>
+      <li>Copy the full summary into a procurement doc or Slack thread — the 3-year variance is the figure finance cares about.</li>
+    </ol>
+  </div>
+
+  <p class="pt-source">
+    Built by Pin. Customers save an average of 91% vs. LinkedIn Recruiter spend — see <a href="https://www.pin.com/">pin.com</a>.
+  </p>
+</section>

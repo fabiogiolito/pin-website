@@ -1,0 +1,381 @@
+---
+import "./tools.css";
+// JD Bias Scanner — client-side analysis of a pasted job description.
+// v1: static wordlist for bias/jargon + Flesch-Kincaid readability + length
+// + required-keyword coverage. The LLM-powered rewriter is a v2 follow-up per
+// docs/tool-ideas.md — the "fix this" UI in v1 shows suggested replacements
+// inline for each flagged term.
+---
+
+<script is:inline>
+  window.jdBiasScanner = function () {
+    // Reference wordlists. Suggested replacements are deliberate rewrites, not
+    // dogma — recruiters should review before accepting.
+    const LEX = {
+      gendered: [
+        ['rockstar',     'high-performing contributor'],
+        ['ninja',        'expert'],
+        ['guru',         'expert'],
+        ['he/him',       'they/them (unless referencing a specific person)'],
+        ['she/her',      'they/them (unless referencing a specific person)'],
+        ['guys',         'team / everyone'],
+        ['chairman',     'chairperson / chair'],
+        ['manpower',     'workforce / staffing'],
+        ['manhours',     'work hours'],
+        ['salesman',     'salesperson / account executive'],
+        ['dominant',     'leading / influential'],
+        ['aggressive',   'driven / proactive'],
+        ['competitive',  'ambitious / goal-oriented'],
+        ['fearless',     'decisive / confident'],
+      ],
+      ageist: [
+        ['digital native',      'comfortable with digital tools'],
+        ['young and energetic', 'motivated / engaged'],
+        ['recent grad',         'early-career (include years of experience instead)'],
+        ['energetic',           'engaged / motivated'],
+        ['young',               'early-career'],
+        ['mature',              'experienced'],
+      ],
+      ableist: [
+        ['crazy',         'surprising / unexpected'],
+        ['insane',        'substantial / significant'],
+        ['crippled',      'limited / constrained'],
+        ['dumb',          'unintuitive'],
+        ['lame',          'suboptimal'],
+        ['tone deaf',     'out of sync'],
+        ['blind spot',    'gap / oversight'],
+      ],
+      jargonOrVague: [
+        ['synergy',           'coordinated work / collaboration'],
+        ['move the needle',   'produce measurable impact'],
+        ['wear many hats',    'take on varied responsibilities (list them)'],
+        ['self-starter',      'proactive (describe a behavior)'],
+        ['thrive in ambiguity', 'make decisions with incomplete information'],
+        ['fast-paced',        'high velocity (describe cadence)'],
+        ['work hard play hard', '—remove; implies long hours culture'],
+        ['family',            'team'],
+        ['tribe',             'team'],
+        ['culture fit',       'culture add'],
+      ],
+      exclusionary: [
+        ['must have a degree',       '(degree only if legally required — prefer "or equivalent experience")'],
+        ['native english speaker',   'strong written and spoken English'],
+        ['10+ years',                '(steep requirements filter out diverse candidates — list outcomes instead)'],
+      ],
+    };
+
+    const ALL_FLAGS = [];
+    for (const [cat, arr] of Object.entries(LEX)) {
+      for (const [term, suggestion] of arr) {
+        ALL_FLAGS.push({ category: cat, term, suggestion });
+      }
+    }
+
+    const syllableCount = (word) => {
+      word = word.toLowerCase().replace(/[^a-z]/g, '');
+      if (word.length <= 3) return 1;
+      word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+      word = word.replace(/^y/, '');
+      const m = word.match(/[aeiouy]{1,2}/g);
+      return (m ? m.length : 1);
+    };
+
+    const fleschKincaid = (text) => {
+      const sentences = (text.match(/[.!?]+/g) || ['.']).length;
+      const words = text.trim().split(/\s+/).filter(Boolean);
+      const wordCount = words.length || 1;
+      const syllables = words.reduce((a, w) => a + syllableCount(w), 0);
+      const grade = 0.39 * (wordCount / sentences) + 11.8 * (syllables / wordCount) - 15.59;
+      return { grade: Math.round(grade * 10) / 10, wordCount, sentences };
+    };
+
+    const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapeHtml = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] || c);
+
+    return {
+      jd: 'We are looking for a rockstar senior engineer who thrives in ambiguity and can wear many hats. The successful candidate must be a self-starter with 10+ years of experience, a digital native, and a great culture fit for our fast-paced family. Native English speaker required.',
+      keywords: ['Python', 'Kubernetes', 'AWS'],
+      copied: false,
+      linkCopied: false,
+      _trackedFirst: false,
+      _viewTracked: false,
+
+      _track(event, props = {}) {
+        try {
+          const root = this.$root;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event,
+            tool_slug: (root && root.dataset && root.dataset.pinToolSlug) || '',
+            tool_name: (root && root.dataset && root.dataset.pinToolName) || '',
+            post_slug: (location.pathname.split('/').filter(Boolean).pop() || ''),
+            page_path: location.pathname,
+            ...props,
+          });
+        } catch (e) {}
+      },
+      _trackFirstInteraction(type) {
+        if (this._trackedFirst) return;
+        this._trackedFirst = true;
+        this._track('blog_tool_first_interaction', { interaction_type: type });
+      },
+
+      hydrate() {
+        if (!this._viewTracked && typeof IntersectionObserver !== 'undefined') {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._viewTracked = true;
+              this._track('blog_tool_viewed');
+              io.disconnect();
+            }
+          }, { threshold: 0.3 });
+          io.observe(this.$root);
+        }
+      },
+
+      loadSample() {
+        this.jd = 'We are looking for a rockstar senior engineer who thrives in ambiguity and can wear many hats. The successful candidate must be a self-starter with 10+ years of experience, a digital native, and a great culture fit for our fast-paced family. Native English speaker required.';
+        this.keywords = ['Python', 'Kubernetes', 'AWS'];
+        this._track('blog_tool_preset_selected', { preset_id: 'sample' });
+        this._trackFirstInteraction('preset');
+      },
+
+      reset() {
+        this.jd = '';
+        this.keywords = [];
+        this._track('blog_tool_reset_clicked');
+      },
+
+      addKeyword(evt) {
+        const raw = (evt.target.value || '').trim();
+        if (raw && !this.keywords.includes(raw)) this.keywords.push(raw);
+        evt.target.value = '';
+        this._trackFirstInteraction('chip_add');
+      },
+      removeKeyword(i) { this.keywords.splice(i, 1); },
+
+      get flags() {
+        const text = this.jd || '';
+        const hits = [];
+        for (const f of ALL_FLAGS) {
+          const re = new RegExp('\\b' + escapeRe(f.term) + '\\b', 'gi');
+          const matches = text.match(re);
+          if (matches) hits.push({ ...f, count: matches.length });
+        }
+        return hits;
+      },
+      get flagCountByCategory() {
+        const c = { gendered: 0, ageist: 0, ableist: 0, jargonOrVague: 0, exclusionary: 0 };
+        for (const f of this.flags) c[f.category] += f.count;
+        return c;
+      },
+      get readability() {
+        return fleschKincaid(this.jd || '');
+      },
+      get readabilityStatus() {
+        const g = this.readability.grade;
+        if (g <= 10) return { level: 'ok',   text: 'Grade ' + g + ' — easy to read (sweet spot 8–10).' };
+        if (g <= 13) return { level: 'warn', text: 'Grade ' + g + ' — slightly hard; aim for 8–10.' };
+        return                 { level: 'over', text: 'Grade ' + g + ' — too hard; shorten sentences, simplify vocabulary.' };
+      },
+      get wordCount() { return this.readability.wordCount; },
+      get lengthStatus() {
+        const n = this.wordCount;
+        if (n < 200)  return { level: 'warn', text: n + ' words — probably too short to describe the role.' };
+        if (n <= 700) return { level: 'ok',   text: n + ' words — good length.' };
+        if (n <= 1000) return { level: 'warn', text: n + ' words — on the long side; trim to keep applicants.' };
+        return                  { level: 'over', text: n + ' words — too long; JDs over 700 words lose 40%+ of applicants.' };
+      },
+      get keywordCoverage() {
+        if (!this.keywords.length) return { found: 0, missing: [], pct: 100 };
+        const text = (this.jd || '').toLowerCase();
+        const missing = [];
+        let found = 0;
+        for (const kw of this.keywords) {
+          if (text.includes(kw.toLowerCase())) found++;
+          else missing.push(kw);
+        }
+        const pct = Math.round((found / this.keywords.length) * 100);
+        return { found, missing, pct };
+      },
+      get coverageStatus() {
+        if (!this.keywords.length) return { level: 'ok', text: 'No required keywords set.' };
+        const c = this.keywordCoverage;
+        if (c.pct === 100) return { level: 'ok',   text: 'All ' + this.keywords.length + ' keywords present.' };
+        if (c.pct >= 60)   return { level: 'warn', text: c.found + ' of ' + this.keywords.length + ' keywords present — add: ' + c.missing.join(', ') };
+        return                     { level: 'over', text: 'Only ' + c.found + ' of ' + this.keywords.length + ' keywords present — missing: ' + c.missing.join(', ') };
+      },
+
+      get highlightedHtml() {
+        let html = escapeHtml(this.jd || '');
+        for (const f of this.flags) {
+          const re = new RegExp('\\b(' + escapeRe(f.term) + ')\\b', 'gi');
+          html = html.replace(re, '<mark class="pt-hl pt-hl-' + f.category + '" title="' + escapeHtml(f.suggestion) + '">$1</mark>');
+        }
+        return html.replace(/\n/g, '<br>');
+      },
+
+      shareUrl() {
+        try {
+          const state = { jd: this.jd, keywords: this.keywords };
+          const s = btoa(encodeURIComponent(JSON.stringify(state)));
+          const url = new URL(window.location.href);
+          url.searchParams.set('bias', s);
+          return url.toString();
+        } catch (e) { return window.location.href; }
+      },
+
+      _copyText(text, flag) {
+        const ok = () => { this[flag] = true; setTimeout(() => this[flag] = false, 1500); };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(ok).catch(() => {});
+          return;
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      },
+      copyReport() {
+        const lines = [
+          'JD Bias Scan Report',
+          '──────────────────────',
+          '',
+          'Length:       ' + this.wordCount + ' words — ' + this.lengthStatus.text,
+          'Readability:  ' + this.readabilityStatus.text,
+          'Keywords:     ' + this.coverageStatus.text,
+          '',
+          'Flagged terms (' + this.flags.length + '):',
+          ...this.flags.map((f) => '  - "' + f.term + '" (' + f.category + ', ×' + f.count + ') — suggest: ' + f.suggestion),
+        ];
+        this._copyText(lines.join('\n'), 'copied');
+        this._track('blog_tool_output_copied', { flag_count: this.flags.length });
+      },
+      copyLink() {
+        const url = this.shareUrl();
+        try { history.replaceState(null, '', url); } catch (e) {}
+        this._copyText(url, 'linkCopied');
+        this._track('blog_tool_share_link_copied');
+      },
+      _onInput() { this._trackFirstInteraction('input'); },
+    };
+  };
+</script>
+
+<section
+  class="pin-tool"
+  data-pin-tool-slug="jd-bias-scanner"
+  data-pin-tool-name="JD Bias Scanner"
+  x-data="jdBiasScanner()"
+  x-init="hydrate()"
+>
+  <h2 class="pt-title" id="pin-tool-jd-bias-scanner">
+    JD Bias Scanner
+    <span class="pt-tool-badge" aria-hidden="true">Tool</span>
+  </h2>
+  <p class="pt-intro">
+    Paste your job description. Get inline highlights for gendered, age-coded, ableist, and jargon-heavy terms — with a suggested replacement for each. Also shows Flesch-Kincaid readability, length, and required-keyword coverage. v1 is scanner-only (LLM-powered rewrite coming later).
+  </p>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Sample</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" @click="loadSample()">Load sample JD</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <label class="pt-label" for="bias-jd">Paste your job description</label>
+      <textarea id="bias-jd" class="pt-input pt-jd-input" x-model="jd" @input.debounce.300ms="_onInput()"></textarea>
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <label class="pt-label">Required keywords (skills / tools that must appear)</label>
+      <div class="pt-chips" @click="$refs.kwInput.focus()">
+        <template x-for="(k, i) in keywords" :key="'k-' + i + '-' + k">
+          <span class="pt-chip">
+            <span x-text="k"></span>
+            <button type="button" aria-label="Remove" @click="removeKeyword(i)">×</button>
+          </span>
+        </template>
+        <input x-ref="kwInput" class="pt-chip-input" type="text" placeholder="e.g. Python, Kubernetes"
+          @keydown.enter.prevent="addKeyword($event)"
+          @keydown.,.prevent="addKeyword($event)" />
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-calc-grid">
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Flags</span>
+      <span class="pt-calc-value" x-text="flags.length"></span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Readability</span>
+      <span class="pt-calc-value pt-calc-small" x-text="'Grade ' + readability.grade"></span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Word count</span>
+      <span class="pt-calc-value" x-text="wordCount"></span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Keyword coverage</span>
+      <span class="pt-calc-value" x-text="keywordCoverage.pct + '%'"></span>
+    </div>
+  </div>
+
+  <div class="pt-output-wrap">
+    <label class="pt-label">Highlighted preview (hover a flag for a suggested replacement)</label>
+    <div class="pt-highlight" x-html="highlightedHtml"></div>
+    <ul class="pt-status-list">
+      <li :class="'level-' + lengthStatus.level" class="pt-charcount"><strong>Length:</strong> <span x-text="lengthStatus.text"></span></li>
+      <li :class="'level-' + readabilityStatus.level" class="pt-charcount"><strong>Readability:</strong> <span x-text="readabilityStatus.text"></span></li>
+      <li :class="'level-' + coverageStatus.level" class="pt-charcount"><strong>Keywords:</strong> <span x-text="coverageStatus.text"></span></li>
+    </ul>
+    <template x-if="flags.length">
+      <div class="pt-flag-list">
+        <strong>Flagged terms:</strong>
+        <ul>
+          <template x-for="(f, i) in flags" :key="'f-' + i + '-' + f.term">
+            <li>
+              <span class="pt-flag-term" x-text="f.term"></span>
+              <span class="pt-flag-cat" x-text="f.category"></span>
+              <span class="pt-flag-sugg" x-text="'→ ' + f.suggestion"></span>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </template>
+    <div class="pt-actions">
+      <button type="button" class="pt-btn primary" @click="copyReport()">
+        <span x-show="!copied">Copy report</span>
+        <span x-show="copied" x-cloak>Copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="copyLink()">
+        <span x-show="!linkCopied">Copy share link</span>
+        <span x-show="linkCopied" x-cloak>Link copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="reset()">Reset</button>
+    </div>
+  </div>
+
+  <div class="pt-howto">
+    <strong>How to use:</strong>
+    <ol>
+      <li>Paste any JD into the textarea — draft, published, or competitor's.</li>
+      <li>Flagged words are highlighted by category (gendered, ageist, ableist, jargon, exclusionary). Hover for a suggested replacement.</li>
+      <li>Add any required technical keywords — the tool checks they actually appear in the body.</li>
+      <li>Aim for Flesch-Kincaid Grade 8–10 and under 700 words. JDs over 700 words lose ~40% of qualified applicants.</li>
+      <li>Copy the full report for a quick rewrite pass, or share the link to put your co-writer on the same page.</li>
+    </ol>
+  </div>
+
+  <p class="pt-source">
+    Built by Pin. Bias-free JDs produce ~20% more qualified applicants on average. <a href="https://www.pin.com/">pin.com</a>.
+  </p>
+</section>

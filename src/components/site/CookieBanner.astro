@@ -1,0 +1,21 @@
+---
+// Consent logic lives in src/alpine.ts (`cookieBanner`), unchanged from new-www.
+---
+
+<div
+  x-data="cookieBanner"
+  x-init="initialize()"
+  x-show="isVisible"
+  x-transition.opacity
+  style="display: none;"
+  class="fixed bottom-4 left-4 z-50 flex w-[min(340px,calc(100vw-2rem))] flex-col gap-4 rounded-2xl bg-white p-5 shadow-[0_0_0_1px_rgb(0_0_0/0.06),0_16px_40px_-12px_rgb(84_68_58/0.3)]"
+>
+  <p class="text-sm leading-relaxed text-ink">
+    We use cookies and third-party services for analytics, personalization, and advertising.
+    <a href="/privacy/" class="underline hover:opacity-70">Privacy Policy</a>
+  </p>
+  <div class="flex items-center gap-4">
+    <button @click="accept()" class="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-85">Accept</button>
+    <button @click="optOut()" class="text-sm text-ink-2 underline transition-colors hover:text-ink">Opt out</button>
+  </div>
+</div>

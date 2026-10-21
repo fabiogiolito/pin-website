@@ -1,0 +1,210 @@
+@reference "../../styles/global.css";
+
+/* Shared styles for every blog-embeddable tool. Imported by each tool component
+   so a post that embeds a single tool still gets the full style set. */
+.pin-tool {
+  --pt-bg: --theme(--color-bg-secondary inline);
+  --pt-surface: --theme(--color-bg inline);
+  --pt-green: --theme(--color-green inline);
+  --pt-green-strong: --theme(--color-green-accessible inline);
+  --pt-green-soft: --theme(--color-green-lighter inline);
+  --pt-ink: --theme(--color-ink inline);
+  --pt-muted: --theme(--color-ink-2 inline);
+  --pt-faint: --theme(--color-ink-3 inline);
+  --pt-border: rgb(39 39 42 / 0.1);
+  --pt-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  background: var(--pt-bg);
+  border-radius: 24px;
+  padding: 24px;
+  margin: 2rem 0;
+  color: var(--pt-ink);
+  font-family: --theme(--font-sans inline);
+}
+@media (min-width: 768px) { .pin-tool { padding: 32px; } }
+.pin-tool [x-cloak] { display: none !important; }
+.pin-tool :focus-visible { outline: 2px solid var(--pt-green); outline-offset: 2px; }
+
+/* Overrides post-content h2 so the tool title stays card-styled. */
+.post-content .pin-tool h2.pt-title,
+.pin-tool h2.pt-title {
+  margin: 0 0 8px;
+  padding: 0;
+  border-top: 0;
+  font-family: inherit;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  color: var(--pt-ink);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  scroll-margin-top: 120px;
+}
+.pin-tool .pt-tool-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--pt-green-soft);
+  color: var(--pt-green-strong);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.pin-tool p.pt-intro { margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: var(--pt-muted); text-wrap: pretty; }
+.pin-tool .pt-row { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
+@media (min-width: 640px) { .pin-tool .pt-row.two { grid-template-columns: 1fr 1fr; } }
+.pin-tool label.pt-label,
+.pin-tool span.pt-label { display: block; font-size: 14px; font-weight: 500; color: var(--pt-ink); margin-bottom: 8px; }
+
+.pin-tool select.pt-input,
+.pin-tool input.pt-input,
+.pin-tool textarea.pt-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--pt-border);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 15px;
+  color: var(--pt-ink);
+  font-family: inherit;
+  transition: border-color 150ms;
+}
+.pin-tool .pt-input:hover { border-color: rgb(39 39 42 / 0.2); }
+.pin-tool .pt-input:focus,
+.pin-tool .pt-input:focus-visible { outline: 2px solid rgb(74 122 90 / 0.25); outline-offset: 0; border-color: var(--pt-green); }
+
+.pin-tool .pt-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; background: #fff; border: 1px solid var(--pt-border); border-radius: 10px; min-height: 44px; }
+.pin-tool .pt-chips:focus-within { border-color: var(--pt-green); }
+.pin-tool .pt-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px 4px 10px; background: var(--pt-green-soft); color: var(--pt-green-strong); border-radius: 999px; font-size: 14px; line-height: 1.4; }
+.pin-tool .pt-chip button { background: transparent; border: 0; color: inherit; font-size: 16px; line-height: 1; cursor: pointer; padding: 0 4px; border-radius: 999px; }
+.pin-tool .pt-chip button:hover { background: rgb(74 122 90 / 0.15); }
+.pin-tool .pt-chip-input { flex: 1; min-width: 140px; border: 0; padding: 6px 4px; font-size: 15px; color: var(--pt-ink); background: transparent; font-family: inherit; outline: none; }
+
+.pin-tool .pt-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.pin-tool .pt-preset-btn { background: #fff; border: 1px solid var(--pt-border); border-radius: 999px; padding: 6px 14px; font-size: 14px; color: var(--pt-muted); cursor: pointer; font-family: inherit; transition: border-color 150ms, color 150ms, background-color 150ms; }
+.pin-tool .pt-preset-btn:hover { border-color: var(--pt-green); color: var(--pt-green-strong); }
+.pin-tool .pt-preset-btn.active { background: var(--pt-green); color: #fff; border-color: var(--pt-green); }
+
+.pin-tool .pt-output-wrap { margin-top: 24px; }
+.pin-tool .pt-output {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 100px;
+  padding: 14px 16px;
+  background: #fff;
+  color: var(--pt-ink);
+  border: 1px solid var(--pt-border);
+  border-radius: 12px;
+  font: 14px/1.55 var(--pt-mono);
+  resize: vertical;
+}
+.pin-tool .pt-charcount { margin-top: 8px; font-size: 13px; color: var(--pt-muted); font-family: inherit; }
+.pin-tool .pt-charcount.level-empty { color: var(--pt-faint); }
+.pin-tool .pt-charcount.level-ok    { color: var(--pt-green-strong); }
+.pin-tool .pt-charcount.level-warn  { color: #a35a12; }
+.pin-tool .pt-charcount.level-over  { color: #b42318; font-weight: 500; }
+
+.pin-tool .pt-toggle { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px 12px; background: #fff; border: 1px solid var(--pt-border); border-radius: 10px; font-size: 14px; color: var(--pt-ink); line-height: 1.4; }
+.pin-tool .pt-toggle input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+.pin-tool .pt-toggle-switch { width: 32px; height: 18px; background: rgb(39 39 42 / 0.18); border-radius: 999px; position: relative; flex-shrink: 0; transition: background-color 150ms; }
+.pin-tool .pt-toggle-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgb(0 0 0 / 0.15); transition: transform 150ms; }
+.pin-tool .pt-toggle input:checked + .pt-toggle-switch { background: var(--pt-green); }
+.pin-tool .pt-toggle input:checked + .pt-toggle-switch::after { transform: translateX(14px); }
+.pin-tool .pt-toggle input:focus-visible + .pt-toggle-switch { outline: 2px solid var(--pt-green); outline-offset: 2px; }
+.pin-tool .pt-toggle-text { color: var(--pt-muted); }
+
+.pin-tool .pt-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.pin-tool .pt-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 12px; border: 1px solid transparent; font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; text-decoration: none; transition: background-color 150ms, border-color 150ms, scale 150ms; }
+.pin-tool .pt-btn:active { scale: 0.98; }
+.pin-tool .pt-btn.primary { background: var(--pt-green); color: #fff; }
+.pin-tool .pt-btn.primary:hover { background: var(--pt-green-strong); }
+.pin-tool .pt-btn.secondary { background: #fff; color: var(--pt-green-strong); border-color: rgb(74 122 90 / 0.3); }
+.pin-tool .pt-btn.secondary:hover { border-color: var(--pt-green); }
+
+.pin-tool .pt-examples { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--pt-border); }
+.pin-tool .pt-examples h4 { margin: 0 0 12px; font-size: 16px; font-weight: 500; color: var(--pt-ink); border: 0; padding: 0; }
+.pin-tool .pt-example { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; font: 13px/1.55 var(--pt-mono); color: var(--pt-ink); border: 1px solid var(--pt-border); word-break: break-word; }
+.pin-tool .pt-example strong { display: block; font-family: --theme(--font-sans inline); font-size: 13px; color: var(--pt-green-strong); margin-bottom: 4px; font-weight: 500; }
+.pin-tool .pt-howto { margin-top: 24px; padding: 0; font-size: 15px; color: var(--pt-muted); }
+.pin-tool .pt-howto strong { color: var(--pt-ink); font-weight: 500; }
+.pin-tool .pt-howto ol { padding-left: 22px; margin: 8px 0 0; list-style: decimal; }
+.pin-tool .pt-howto li { margin-bottom: 4px; line-height: 1.6; }
+.pin-tool .pt-source { margin-top: 16px; font-size: 13px; color: var(--pt-faint); }
+.pin-tool .pt-source a { color: var(--pt-green-strong); text-decoration: underline; text-underline-offset: 2px; }
+
+/* Calculators */
+.pin-tool .pt-calc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 20px 0 12px; }
+@media (min-width: 640px) { .pin-tool .pt-calc-grid { grid-template-columns: repeat(4, 1fr); } }
+.pin-tool .pt-calc-card { background: #fff; border: 1px solid var(--pt-border); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pin-tool .pt-calc-card.pt-calc-total { background: var(--pt-green-soft); border-color: rgb(74 122 90 / 0.25); }
+.pin-tool .pt-calc-label { font-size: 13px; font-weight: 500; color: var(--pt-muted); }
+.pin-tool .pt-calc-total .pt-calc-label { color: var(--pt-green-strong); }
+.pin-tool .pt-calc-value { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--pt-ink); overflow-wrap: anywhere; }
+.pin-tool .pt-calc-total .pt-calc-value { color: var(--pt-green-strong); }
+.pin-tool .pt-calc-small { font-size: 15px !important; }
+
+/* Time-to-hire stages */
+.pin-tool .pt-stages-grid { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+.pin-tool .pt-stage-row { display: grid; grid-template-columns: 1fr 100px auto; align-items: center; gap: 10px; padding: 8px 12px; background: #fff; border: 1px solid var(--pt-border); border-radius: 10px; }
+.pin-tool .pt-stage-label { font-size: 15px; font-weight: 500; color: var(--pt-ink); margin: 0; }
+.pin-tool .pt-stage-input { padding: 6px 10px !important; text-align: right; }
+.pin-tool .pt-stage-pin { font-size: 13px; color: var(--pt-faint); font-variant-numeric: tabular-nums; }
+
+/* Cold outreach */
+.pin-tool .pt-subheading { margin: 24px 0 12px; font-size: 16px; font-weight: 500; color: var(--pt-ink); border: 0; padding: 0; }
+.pin-tool .pt-variants { margin-top: 24px; }
+.pin-tool .pt-variant { background: #fff; border: 1px solid var(--pt-border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.pin-tool .pt-variant-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; flex-wrap: wrap; }
+.pin-tool .pt-variant-head .pt-charcount { margin-top: 0; }
+.pin-tool .pt-variant-angle { font-size: 14px; font-weight: 500; color: var(--pt-green-strong); }
+.pin-tool .pt-variant-body { background: var(--pt-surface); border-radius: 10px; padding: 12px 14px; margin: 0 0 10px; white-space: pre-wrap; font: 14px/1.6 --theme(--font-sans inline); color: var(--pt-ink); }
+.pin-tool .pt-subject-list { list-style: none; padding: 0; margin: 0; }
+.pin-tool .pt-subject-row { display: grid; grid-template-columns: minmax(120px, 1fr) 3fr auto auto; gap: 10px; align-items: center; padding: 8px 12px; background: #fff; border: 1px solid var(--pt-border); border-radius: 10px; margin-bottom: 6px; }
+@media (max-width: 640px) { .pin-tool .pt-subject-row { grid-template-columns: 1fr auto; } .pin-tool .pt-subject-tech { grid-column: 1 / -1; } }
+.pin-tool .pt-subject-tech { font-size: 12px; color: var(--pt-faint); font-weight: 500; }
+.pin-tool .pt-subject-text { font-size: 15px; color: var(--pt-ink); }
+.pin-tool .pt-subject-score { margin-top: 0; padding: 2px 8px; border-radius: 999px; font-size: 13px; font-variant-numeric: tabular-nums; background: var(--pt-surface); }
+.pin-tool .pt-subject-copy { padding: 4px 10px !important; font-size: 13px !important; border-radius: 8px !important; }
+
+/* Scorecard */
+.pin-tool .pt-trait-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+@media (min-width: 640px) { .pin-tool .pt-trait-grid { grid-template-columns: repeat(2, 1fr); } }
+.pin-tool .pt-trait-btn { text-align: left; background: #fff; border: 1px solid var(--pt-border); border-radius: 10px; padding: 10px 12px; cursor: pointer; font-family: inherit; color: var(--pt-ink); display: flex; flex-direction: column; gap: 2px; transition: border-color 150ms, background-color 150ms; }
+.pin-tool .pt-trait-btn:hover { border-color: var(--pt-green); }
+.pin-tool .pt-trait-btn.active { background: var(--pt-green-soft); border-color: var(--pt-green); }
+.pin-tool .pt-trait-label { font-size: 15px; font-weight: 500; }
+.pin-tool .pt-trait-btn.active .pt-trait-label { color: var(--pt-green-strong); }
+.pin-tool .pt-trait-desc { font-size: 13px; color: var(--pt-muted); }
+.pin-tool .pt-output-tall { min-height: 340px; font-size: 13px !important; }
+
+/* JD bias scanner */
+.pin-tool .pt-jd-input { min-height: 140px; font-size: 15px; line-height: 1.6; resize: vertical; }
+.pin-tool .pt-highlight { background: #fff; border: 1px solid var(--pt-border); border-radius: 12px; padding: 14px 16px; font-size: 15px; line-height: 1.65; color: var(--pt-ink); min-height: 100px; white-space: normal; }
+.pin-tool .pt-hl { padding: 1px 3px; border-radius: 3px; font-weight: 500; cursor: help; }
+.pin-tool .pt-hl-gendered      { background: #fbe4ef; color: #8b1a52; }
+.pin-tool .pt-hl-ageist        { background: #fbefc8; color: #6e5200; }
+.pin-tool .pt-hl-ableist       { background: #fadcdc; color: #8b0000; }
+.pin-tool .pt-hl-jargonOrVague { background: #e6e2e9; color: #522673; }
+.pin-tool .pt-hl-exclusionary  { background: #efe4dc; color: #734626; }
+.pin-tool .pt-status-list { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 4px; }
+.pin-tool .pt-status-list li { font-size: 14px; }
+.pin-tool .pt-flag-list { margin-top: 16px; padding: 12px 14px; background: #fff; border: 1px solid var(--pt-border); border-radius: 12px; font-size: 14px; }
+.pin-tool .pt-flag-list ul { margin: 8px 0 0; padding-left: 0; list-style: none; }
+.pin-tool .pt-flag-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--pt-border); }
+.pin-tool .pt-flag-list li:last-child { border-bottom: 0; }
+.pin-tool .pt-flag-term { font-weight: 500; color: var(--pt-ink); font-family: var(--pt-mono); }
+.pin-tool .pt-flag-cat  { font-size: 12px; color: var(--pt-faint); }
+.pin-tool .pt-flag-sugg { flex: 1; min-width: 200px; color: var(--pt-green-strong); }
+
+/* Rejection email */
+.pin-tool .pt-risky { margin-top: 10px; padding: 12px 14px; background: #fdf3e4; border: 1px solid #f0c98a; border-radius: 12px; font-size: 14px; color: #7a3f00; }
+.pin-tool .pt-risky ul { margin: 6px 0 0; padding-left: 22px; list-style: disc; }
+.pin-tool .pt-risky li { margin-bottom: 3px; }
+
+/* X-ray */
+.pin-tool .pt-site-note { margin: 6px 0 0; font-size: 13px; color: var(--pt-faint); }
+.pin-tool strong, .pin-tool b { font-weight: 500; }

@@ -1,0 +1,15 @@
+---
+// Numbered grid of short points (title + description).
+interface Props { items: { title: string; desc: string }[] }
+const { items } = Astro.props;
+---
+
+<ol class="grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+  {items.map((it, i) => (
+    <li data-reveal style={`--i:${i % 3}`} class="border-t border-ink/10 pt-5">
+      <span class="text-sm font-medium tabular-nums text-green">0{i + 1}</span>
+      <h3 class="mt-2 text-xl font-medium tracking-[-0.01em]">{it.title}</h3>
+      <p class="mt-2 leading-relaxed text-ink-2 text-pretty">{it.desc}</p>
+    </li>
+  ))}
+</ol>

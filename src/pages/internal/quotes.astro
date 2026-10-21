@@ -1,0 +1,1949 @@
+---
+// Internal tool: generates branded quote images/videos for social platforms.
+// Self-contained app-style page (no site header/footer) — everything renders
+// on a <canvas> so the PNG and video exports come from the same pixels as
+// the live preview.
+//
+// The animation is a sequence of frames: an intro (Pin logo, optional
+// partner logo), one or more quote frames, and an outro (headline + CTA).
+// Each frame holds for its own duration; transitions between frames only
+// animate the elements that actually change.
+const title = "Quote Generator | Pin Tools";
+import "../../styles/global.css";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+    <link rel="icon" href="/images/favicon-light-mode-32x32.webp" type="image/webp" sizes="32x32" />
+    <link rel="preload" href="/font-files/RethinkSans-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/font-files/RethinkSans-Medium.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <div class="app" id="app">
+      <aside class="sidebar" id="sidebar" data-kind="quote">
+        <header class="sidebar-header">
+          <a href="/internal/" class="back-link">← Internal tools</a>
+          <h1>Quote Generator</h1>
+          <p>Branded quote images &amp; videos.</p>
+        </header>
+
+        <section class="global-fields">
+          <div class="field">
+            <label>Size</label>
+            <div id="size-toggles" class="toggles"></div>
+          </div>
+
+          <div class="field field-inline">
+            <label for="input-transition">Transition <span class="hint">(seconds)</span></label>
+            <input type="number" id="input-transition" min="0.2" step="0.1" inputmode="decimal" />
+          </div>
+
+          <p class="meta">Total length: <strong id="total-length">0s</strong></p>
+        </section>
+
+        <section class="frame-fields">
+          <h2 id="frame-title" class="section-title">Currently selected</h2>
+
+          <div class="field only-quote">
+            <label for="input-quote">Text</label>
+            <textarea id="input-quote" rows="2" placeholder="Pin cut our time-to-fill in half."></textarea>
+          </div>
+
+          <div class="field field-inline only-quote">
+            <label for="input-show-quotes">Show quotes</label>
+            <input type="checkbox" id="input-show-quotes" />
+          </div>
+
+          <div class="field only-quote">
+            <label>Text alignment</label>
+            <div id="align-toggles" class="toggles toggles-3">
+              <button type="button" class="toggle" data-align="left">Left</button>
+              <button type="button" class="toggle" data-align="center">Center</button>
+              <button type="button" class="toggle" data-align="right">Right</button>
+            </div>
+          </div>
+
+          <div class="field only-quote">
+            <label for="input-name">Name</label>
+            <input type="text" id="input-name" placeholder="Jane Smith" />
+          </div>
+
+          <div class="field only-quote">
+            <label for="input-role">Role / company <span class="hint">(one per line)</span></label>
+            <textarea id="input-role" rows="2" placeholder="Head of Talent, Acme Inc."></textarea>
+          </div>
+
+          <div class="field only-quote">
+            <label>Profile photo</label>
+            <div class="photo-row">
+              <img id="photo-preview" alt="Profile photo preview" hidden />
+              <label class="btn-small" for="input-photo">Choose photo</label>
+              <input type="file" id="input-photo" accept="image/*" hidden />
+              <button id="btn-photo-remove" class="btn-small btn-small-danger" type="button" hidden>Remove</button>
+            </div>
+          </div>
+
+          <div class="field only-intro">
+            <label>Partner logo <span class="hint">(optional, shown under the Pin logo)</span></label>
+            <div class="photo-row">
+              <img id="partner-preview" class="partner-preview" alt="Partner logo preview" hidden />
+              <label class="btn-small" for="input-partner">Choose logo</label>
+              <input type="file" id="input-partner" accept="image/*" hidden />
+              <button id="btn-partner-remove" class="btn-small btn-small-danger" type="button" hidden>Remove</button>
+            </div>
+          </div>
+
+          <div class="field only-outro">
+            <label for="input-headline">Headline <span class="hint">(wrap words in ** to highlight)</span></label>
+            <textarea id="input-headline" rows="3" placeholder="Find your **perfectly matched** candidates faster"></textarea>
+          </div>
+
+          <div class="field only-outro">
+            <label for="input-button">Button label</label>
+            <input type="text" id="input-button" placeholder="Try Pin Today" />
+          </div>
+
+          <div class="field field-inline">
+            <label for="input-duration">Duration <span class="hint">(seconds)</span></label>
+            <input type="number" id="input-duration" min="0.1" step="0.1" inputmode="decimal" />
+          </div>
+
+          <div class="field">
+            <label>Color scheme <span class="hint">(this frame)</span></label>
+            <div id="scheme-swatches" class="swatches"></div>
+          </div>
+        </section>
+
+        <div class="actions">
+          <p id="status" class="status" hidden></p>
+          <button id="btn-play" class="btn btn-secondary" type="button">▶ Play animation</button>
+          <details id="export-menu" class="export">
+            <summary class="btn btn-primary">Export</summary>
+            <div class="export-options">
+              <button id="btn-export-png" type="button">Image — this frame, current size</button>
+              <button id="btn-export-png-all" type="button">Image — this frame, all sizes</button>
+              <button id="btn-export-video" type="button">Video — current size</button>
+              <button id="btn-export-video-all" type="button">Video — all sizes</button>
+            </div>
+          </details>
+        </div>
+      </aside>
+
+      <nav class="rail" id="rail" aria-label="Frames">
+        <div id="rail-list" class="rail-list"></div>
+      </nav>
+
+      <main class="preview">
+        <div class="history">
+          <button id="btn-undo" class="icon-btn" type="button" title="Undo (⌘Z)" aria-label="Undo" disabled>
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4 3 7l3 3"/><path d="M3 7h6.5a3.5 3.5 0 0 1 0 7H8"/></svg>
+          </button>
+          <button id="btn-redo" class="icon-btn" type="button" title="Redo (⇧⌘Z)" aria-label="Redo" disabled>
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m10 4 3 3-3 3"/><path d="M13 7H6.5a3.5 3.5 0 0 0 0 7H8"/></svg>
+          </button>
+        </div>
+        <div class="preview-scroll">
+          <div class="preview-inner">
+            <canvas id="canvas"></canvas>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <style is:global>
+      @font-face {
+        font-family: "Rethink Sans";
+        src: url("/font-files/RethinkSans-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Rethink Sans";
+        src: url("/font-files/RethinkSans-Medium.woff2") format("woff2");
+        font-weight: 500;
+        font-display: swap;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        font-family: var(--font-sans);
+        color: var(--color-ink);
+        background: var(--color-bg-tertiary);
+      }
+
+      .app { display: flex; height: 100vh; }
+      .app[data-busy] .rail,
+      .app[data-busy] .frame-fields,
+      .app[data-busy] .global-fields,
+      .app[data-busy] .history { pointer-events: none; opacity: 0.55; }
+
+      .sidebar {
+        width: 340px;
+        flex-shrink: 0;
+        background: var(--color-bg);
+        border-right: 1px solid rgb(39 39 42 / 0.1);
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .sidebar-header h1 { font-size: 22px; font-weight: 500; margin: 0; }
+      .sidebar-header h1 { margin-top: 6px; }
+      .sidebar-header p { font-size: 13px; color: var(--color-ink-2); margin: 4px 0 0; }
+      .history {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        z-index: 5;
+        display: flex;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 10px;
+        background: rgba(252, 250, 248, 0.9);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      }
+      .icon-btn {
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        border: 1px solid rgb(39 39 42 / 0.18);
+        background: #fff;
+        color: var(--color-ink);
+        cursor: pointer;
+        padding: 0;
+      }
+      .icon-btn:hover { border-color: var(--color-green); color: var(--color-green-accessible); }
+      .icon-btn:disabled { opacity: 0.35; pointer-events: none; }
+      .back-link { font-size: 13px; color: var(--color-green); text-decoration: none; }
+      .back-link:hover { text-decoration: underline; }
+
+      .frame-fields, .global-fields { display: flex; flex-direction: column; gap: 16px; }
+      .frame-fields { padding-top: 22px; border-top: 1px solid rgb(39 39 42 / 0.1); }
+      .section-title {
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--color-ink-2);
+        margin: 0;
+      }
+      .meta { font-size: 13px; color: var(--color-ink-2); margin: 0; }
+      .meta strong { font-weight: 500; color: var(--color-ink); }
+
+      /* Per-frame fields: only the current frame kind's controls are shown. */
+      .sidebar[data-kind="intro"] .only-quote,
+      .sidebar[data-kind="intro"] .only-outro,
+      .sidebar[data-kind="quote"] .only-intro,
+      .sidebar[data-kind="quote"] .only-outro,
+      .sidebar[data-kind="outro"] .only-quote,
+      .sidebar[data-kind="outro"] .only-intro { display: none; }
+
+      .field { display: flex; flex-direction: column; gap: 6px; }
+      .field label { font-size: 13px; font-weight: 500; }
+      .field .hint { font-weight: 400; color: var(--color-ink-2); }
+      .field input,
+      .field textarea {
+        font: inherit;
+        font-size: 14px;
+        padding: 9px 11px;
+        border: 1px solid rgb(39 39 42 / 0.18);
+        border-radius: 8px;
+        background: #fff;
+        color: inherit;
+        outline: none;
+        resize: vertical;
+      }
+      #input-quote { resize: none; max-height: 200px; overflow-y: auto; }
+      .field input:focus,
+      .field textarea:focus { border-color: var(--color-green); }
+      .field-inline { flex-direction: row; align-items: center; justify-content: space-between; }
+      .field-inline input { width: 92px; }
+      .field-inline input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--color-green); }
+
+      .photo-row { display: flex; align-items: center; gap: 8px; }
+      #photo-preview {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid rgb(39 39 42 / 0.15);
+      }
+      .partner-preview {
+        height: 44px;
+        max-width: 110px;
+        object-fit: contain;
+        border-radius: 8px;
+        padding: 4px;
+        background: #fff;
+        border: 1px solid rgb(39 39 42 / 0.15);
+      }
+      .btn-small {
+        font: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgb(39 39 42 / 0.18);
+        background: #fff;
+        color: var(--color-ink);
+        cursor: pointer;
+      }
+      .btn-small:hover { border-color: var(--color-green); color: var(--color-green-accessible); }
+      .btn-small-danger:hover { border-color: #d03a16; color: #d03a16; }
+
+      .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .toggles-3 { grid-template-columns: 1fr 1fr 1fr; }
+      .toggle {
+        font: inherit;
+        font-size: 13px;
+        padding: 9px 6px;
+        border-radius: 8px;
+        border: 1px solid rgb(39 39 42 / 0.18);
+        background: #fff;
+        color: var(--color-ink);
+        cursor: pointer;
+        text-align: center;
+        line-height: 1.3;
+      }
+      .toggle small { display: block; font-size: 11px; color: var(--color-ink-2); }
+      .toggle[aria-pressed="true"] {
+        border-color: var(--color-green);
+        background: rgba(74, 122, 90, 0.1);
+        color: var(--color-green-accessible);
+      }
+      .toggle[aria-pressed="true"] small { color: var(--color-green-accessible); }
+
+      .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+      .swatch {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        border: 2px solid rgb(39 39 42 / 0.15);
+        cursor: pointer;
+        padding: 0;
+      }
+      .swatch[aria-pressed="true"] {
+        border-color: var(--color-ink);
+        box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-ink);
+      }
+
+      .actions { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 10px; }
+      .btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 11px 14px;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        user-select: none;
+      }
+      .btn-secondary { background: rgba(74, 122, 90, 0.12); color: var(--color-green-accessible); }
+      .btn-secondary:hover { background: rgba(74, 122, 90, 0.2); }
+      .btn-primary { background: var(--color-green); color: #fff; }
+      .btn-primary:hover { background: var(--color-green-accessible); }
+      .btn:disabled, .export[data-disabled] summary { opacity: 0.5; pointer-events: none; }
+
+      .export { position: relative; }
+      .export summary { list-style: none; }
+      .export summary::-webkit-details-marker { display: none; }
+      .export-options {
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid rgb(39 39 42 / 0.12);
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        z-index: 10;
+      }
+      .export-options button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        font: inherit;
+        font-size: 14px;
+        padding: 11px 14px;
+        border: none;
+        background: none;
+        cursor: pointer;
+      }
+      .export-options button:hover { background: rgba(74, 122, 90, 0.08); }
+
+      .status { font-size: 13px; color: var(--color-ink-2); margin: 0; text-align: center; }
+
+      /* Frame rail --------------------------------------------------- */
+      .rail {
+        width: 136px;
+        flex-shrink: 0;
+        background: #f7f4f1;
+        border-right: 1px solid rgb(39 39 42 / 0.1);
+        overflow-y: auto;
+        padding: 20px 14px;
+      }
+      .rail-list { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+      .rail-item {
+        position: relative;
+        width: 100px;
+        border-radius: 10px;
+        padding: 3px;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: border-color 120ms ease;
+      }
+      .rail-item:hover { border-color: rgba(74, 122, 90, 0.4); }
+      .rail-item[aria-current="true"] { border-color: var(--color-green); }
+      .rail-item.dragging { opacity: 0.4; }
+      .rail-item.drop-before::before,
+      .rail-item.drop-after::after {
+        content: "";
+        position: absolute;
+        left: 4px;
+        right: 4px;
+        height: 3px;
+        border-radius: 3px;
+        background: var(--color-green);
+      }
+      .rail-item.drop-before::before { top: -10px; }
+      .rail-item.drop-after::after { bottom: -10px; }
+      .rail-thumb {
+        display: block;
+        width: 100%;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        background: #fff;
+      }
+      .rail-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--color-ink-2);
+        margin-top: 5px;
+        padding: 0 2px;
+      }
+      .rail-meta b { font-weight: 500; color: var(--color-ink); }
+      .rail-trash {
+        position: absolute;
+        top: 7px;
+        right: 7px;
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        border: none;
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--color-ink);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+        transition: opacity 120ms ease;
+        padding: 0;
+      }
+      .rail-item[aria-current="true"] .rail-trash, .rail-trash:focus-visible { opacity: 1; }
+      .rail-trash:hover { color: #d03a16; }
+      .rail-trash:disabled { display: none; }
+      .rail-add {
+        width: 100px;
+        height: 40px;
+        border-radius: 10px;
+        border: 1px dashed rgb(39 39 42 / 0.3);
+        background: transparent;
+        color: var(--color-green);
+        font: inherit;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .rail-add:hover { border-color: var(--color-green); background: rgba(74, 122, 90, 0.08); }
+
+      .preview { flex: 1; min-width: 0; position: relative; overflow: hidden; }
+      .preview-scroll { height: 100%; overflow: auto; padding: 32px; }
+      .preview-inner {
+        min-width: 100%;
+        min-height: 100%;
+        width: max-content;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      /* The canvas backing store is full export resolution; its CSS size is
+         set to 0.5x from JS so the preview is sharp and exports never upscale. */
+      #canvas {
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+      }
+
+      @media (max-width: 960px) {
+        .app { flex-direction: column; height: auto; }
+        .sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgb(39 39 42 / 0.1); }
+        .rail { width: 100%; border-right: none; border-bottom: 1px solid rgb(39 39 42 / 0.1); }
+        .rail-list { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+        .preview-scroll { padding: 20px; }
+        .preview-inner { min-height: 60vh; }
+      }
+          :focus-visible { outline: 2px solid var(--color-green); outline-offset: 2px; }
+    </style>
+
+    <script>
+      // ---------------------------------------------------------------
+      // Config
+      // ---------------------------------------------------------------
+      const STORAGE_KEY = "pin-tools-quotes-v2";
+      const LEGACY_STORAGE_KEY = "pin-tools-quotes-v1";
+      const MAX_HISTORY = 60;
+      const COALESCE_MS = 1500; // consecutive edits to one field merge into a single undo step
+
+      const SIZES: Record<string, { w: number; h: number; label: string; sub: string }> = {
+        square: { w: 1080, h: 1080, label: "Square 1:1", sub: "Instagram, LinkedIn" },
+        portrait: { w: 1080, h: 1350, label: "Portrait 4:5", sub: "Instagram, Facebook" },
+        story: { w: 1080, h: 1920, label: "Story 9:16", sub: "Stories, Reels, TikTok" },
+        landscape: { w: 1920, h: 1080, label: "Landscape 16:9", sub: "X, YouTube" },
+      };
+
+      // Brand palette from tailwind.config.mjs / global.css. `highlight` is
+      // used for **emphasised** words in the outro headline; `buttonBg` /
+      // `buttonText` for the outro CTA pill.
+      type Scheme = { label: string; bg: string; text: string; muted: string; accent: string; highlight: string; buttonBg: string; buttonText: string };
+      const SCHEMES: Record<string, Scheme> = {
+        cream: { label: "Cream", bg: "#FCFAF8", text: "#54443A", muted: "#8A7B70", accent: "#C9B8AB", highlight: "#4A7A5A", buttonBg: "#4A7A5A", buttonText: "#FFFFFF" },
+        clay: { label: "Clay", bg: "#EFE4DC", text: "#54443A", muted: "#8A7B70", accent: "#B39A85", highlight: "#734626", buttonBg: "#54443A", buttonText: "#FCFAF8" },
+        green: { label: "Green", bg: "#0D2617", text: "#FDFDFC", muted: "rgba(253,253,252,0.65)", accent: "#2E9D6E", highlight: "#2E9D6E", buttonBg: "#FDFDFC", buttonText: "#0D2617" },
+        purple: { label: "Purple", bg: "#2C1A3A", text: "#FDFDFC", muted: "rgba(253,253,252,0.65)", accent: "#C9B5F0", highlight: "#C9B5F0", buttonBg: "#C9B5F0", buttonText: "#2C1A3A" },
+        brown: { label: "Brown", bg: "#2F2B29", text: "#FDFDFC", muted: "rgba(253,253,252,0.65)", accent: "#C9B8AB", highlight: "#C9B8AB", buttonBg: "#FDFDFC", buttonText: "#2F2B29" },
+        blue: { label: "Blue", bg: "#3F56A9", text: "#FFFFFF", muted: "rgba(255,255,255,0.72)", accent: "#FFFFFF", highlight: "#C9B5F0", buttonBg: "#FFFFFF", buttonText: "#3F56A9" },
+        // --- Candidates sourced from the homepage / tailwind palette (review & prune) ---
+        // Light
+        sand: { label: "Sand (bgSecondary)", bg: "#F2EDE8", text: "#54443A", muted: "#8A7B70", accent: "#C9B8AB", highlight: "#4A7A5A", buttonBg: "#4A7A5A", buttonText: "#FFFFFF" },
+        mint: { label: "Mint (greenLight)", bg: "#D4DDD7", text: "#0D2617", muted: "#4A7A5A", accent: "#4A7A5A", highlight: "#3D6349", buttonBg: "#0D2617", buttonText: "#FDFDFC" },
+        lavender: { label: "Lavender (purpleLight)", bg: "#E6E2E9", text: "#2C1A3A", muted: "#6B5A7A", accent: "#522673", highlight: "#522673", buttonBg: "#522673", buttonText: "#FDFDFC" },
+        taupe: { label: "Taupe (brownLight)", bg: "#E8E4E3", text: "#2F2B29", muted: "#7A706B", accent: "#54443A", highlight: "#54443A", buttonBg: "#2F2B29", buttonText: "#FDFDFC" },
+        // Mid
+        greenMid: { label: "Green (homepage)", bg: "#4A7A5A", text: "#FDFDFC", muted: "rgba(253,253,252,0.7)", accent: "#D4DDD7", highlight: "#D4DDD7", buttonBg: "#FDFDFC", buttonText: "#4A7A5A" },
+        purpleMid: { label: "Purple (mid)", bg: "#522673", text: "#FDFDFC", muted: "rgba(253,253,252,0.65)", accent: "#C9B5F0", highlight: "#C9B5F0", buttonBg: "#FDFDFC", buttonText: "#522673" },
+        clayMid: { label: "Clay (mid)", bg: "#734626", text: "#FDFDFC", muted: "rgba(253,253,252,0.65)", accent: "#EFE4DC", highlight: "#EFE4DC", buttonBg: "#FDFDFC", buttonText: "#734626" },
+        brownMid: { label: "Brown (mid)", bg: "#54443A", text: "#FDFDFC", muted: "rgba(253,253,252,0.65)", accent: "#C9B8AB", highlight: "#C9B8AB", buttonBg: "#FDFDFC", buttonText: "#54443A" },
+      };
+
+      // Pin logo (src/icons/logo.svg), viewBox 0 0 74 32
+      const LOGO_W = 74;
+      const LOGO_H = 32;
+      // Baseline of the "Pin" letters in logo units — the ".com" suffix aligns to it.
+      const LOGO_BASELINE = 27.06;
+      const LOGO_FONT_UNITS = 30;
+      const LOGO_PATHS = [
+        "M28.2565 14.1282C28.2565 21.931 21.9311 28.2564 14.1283 28.2565V31.2724C14.1283 31.7547 13.6746 32.1089 13.2132 31.9684C6.03003 29.7816 0.685254 23.3756 0.0654526 15.6369C0.0619758 15.5935 0.0624762 15.5508 0.0666341 15.5092C0.0225555 15.0548 0 14.5942 0 14.1282C0 6.32542 6.32542 0 14.1282 0C21.931 0 28.2565 6.32542 28.2565 14.1282ZM14.1281 23.788C19.4633 23.788 23.7883 19.463 23.7883 14.1277C23.7883 8.79252 19.4633 4.46747 14.1281 4.46747C8.79284 4.46747 4.46779 8.79252 4.46779 14.1277C4.46779 19.463 8.79284 23.788 14.1281 23.788Z",
+        "M8.0362 15.3983V12.7239C8.0362 11.3958 9.11282 10.3192 10.4409 10.3192C11.7689 10.3192 12.8456 11.3958 12.8456 12.7239V15.3983H8.0362Z",
+        "M15.411 15.3983V12.7239C15.411 11.3958 16.4876 10.3192 17.8156 10.3192C19.1437 10.3192 20.2203 11.3958 20.2203 12.7239V15.3983H15.411Z",
+        "M67.0208 10.8066C70.4901 10.8066 73.4593 12.6507 73.4593 18.1514V27.059H69.0524V18.589C69.0524 15.8699 68.021 14.4322 65.8019 14.4322C63.5203 14.4322 62.2077 16.0574 62.2077 18.839V27.059H57.8008V10.9942H61.6451L62.0514 12.9945C63.0828 11.7443 64.5517 10.8066 67.0208 10.8066Z",
+        "M53.4769 9.27512C52.0392 9.27512 50.9141 8.21247 50.9141 6.80602C50.9141 5.36832 52.0392 4.30566 53.4769 4.30566C54.9146 4.30566 56.0398 5.36832 56.0398 6.80602C56.0398 8.21247 54.9146 9.27512 53.4769 9.27512ZM51.2579 27.0589V10.9941H55.696V27.0589H51.2579Z",
+        "M33.0977 27.0588V5.18066H42.0052C46.7558 5.18066 49.9125 8.02482 49.9125 12.463C49.9125 16.8698 46.7558 19.714 42.0052 19.714H37.7858V27.0588H33.0977ZM41.5676 9.08747H37.7858V15.8072H41.5676C43.7554 15.8072 45.1619 14.5257 45.1619 12.463C45.1619 10.3689 43.7554 9.08747 41.5676 9.08747Z",
+      ].map((d) => new Path2D(d));
+
+      // ---------------------------------------------------------------
+      // State
+      // ---------------------------------------------------------------
+      type IntroFrame = { kind: "intro"; id: string; duration: number; scheme: string; partnerLogo: string | null };
+      type QuoteFrame = { kind: "quote"; id: string; duration: number; scheme: string; quote: string; name: string; role: string; photo: string | null; showQuotes?: boolean; align?: Align };
+      type Align = "left" | "center" | "right";
+      type OutroFrame = { kind: "outro"; id: string; duration: number; scheme: string; headline: string; button: string };
+      type Frame = IntroFrame | QuoteFrame | OutroFrame;
+      type State = { size: string; transition: number; selected: number; frames: Frame[] };
+
+      const DEFAULT_QUOTE = "I thought I knew our potential until I used Pin. Turns out we were leaving massive money on the table. We've basically doubled our revenue in a year.";
+      const DEFAULT_HEADLINE = "Find your **perfectly matched** candidates faster";
+      const DEFAULT_BUTTON = "Try Pin Today";
+
+      const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+
+      function defaultState(): State {
+        return {
+          size: "square",
+          transition: 0.5,
+          selected: 1,
+          frames: [
+            { kind: "intro", id: newId(), duration: 1, scheme: "cream", partnerLogo: null },
+            { kind: "quote", id: newId(), duration: 2, scheme: "cream", quote: DEFAULT_QUOTE, name: "Jane Smith", role: "Head of Talent, Acme Inc.", photo: null },
+            { kind: "outro", id: newId(), duration: 2, scheme: "cream", headline: DEFAULT_HEADLINE, button: DEFAULT_BUTTON },
+          ],
+        };
+      }
+
+      function loadState(): State {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw) as Partial<State>;
+            const base = defaultState();
+            const frames = Array.isArray(parsed.frames) ? parsed.frames : base.frames;
+            if (frames[0]?.kind !== "intro" || frames[frames.length - 1]?.kind !== "outro") return base;
+            return { ...base, ...parsed, frames };
+          }
+          // Migrate the single-quote v1 tool state into the frame model.
+          const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+          if (legacy) {
+            const v1 = JSON.parse(legacy);
+            const s = defaultState();
+            if (SIZES[v1.size]) s.size = v1.size;
+            const scheme = SCHEMES[v1.scheme] ? v1.scheme : "cream";
+            for (const f of s.frames) f.scheme = scheme;
+            const q = s.frames[1] as QuoteFrame;
+            if (typeof v1.quote === "string") q.quote = v1.quote;
+            if (typeof v1.name === "string") q.name = v1.name;
+            if (typeof v1.role === "string") q.role = v1.role;
+            if (typeof v1.photo === "string") q.photo = v1.photo;
+            return s;
+          }
+        } catch { /* fall through */ }
+        return defaultState();
+      }
+
+      const state: State = loadState();
+      if (!SIZES[state.size]) state.size = "square";
+      if (!(state.transition > 0)) state.transition = 0.5;
+      for (const f of state.frames) {
+        if (!SCHEMES[f.scheme]) f.scheme = "cream";
+        if (!(f.duration > 0)) f.duration = f.kind === "intro" ? 1 : 2;
+      }
+      state.selected = Math.max(0, Math.min(state.frames.length - 1, state.selected | 0));
+
+      // `?t=<seconds>` renders one specific point of the timeline instead of
+      // the selected frame (debug/preview).
+      const params = new URLSearchParams(location.search);
+      const debugT = params.has("t") ? parseFloat(params.get("t")!) : null;
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch { /* quota exceeded / private mode — non-fatal */ }
+      }
+
+      const frames = () => state.frames;
+      const selectedFrame = () => state.frames[state.selected];
+
+      // ---------------------------------------------------------------
+      // Undo / redo — whole-state snapshots. Text edits to the same field
+      // within COALESCE_MS collapse into one step.
+      // ---------------------------------------------------------------
+      const undoStack: string[] = [];
+      const redoStack: string[] = [];
+      let lastCommit = { key: "", time: 0 };
+
+      function commit(mutate: () => void, coalesceKey?: string) {
+        const now = Date.now();
+        const coalesce = !!coalesceKey && coalesceKey === lastCommit.key && now - lastCommit.time < COALESCE_MS;
+        if (!coalesce) {
+          undoStack.push(JSON.stringify(state));
+          if (undoStack.length > MAX_HISTORY) undoStack.shift();
+          redoStack.length = 0;
+        }
+        lastCommit = { key: coalesceKey ?? "", time: now };
+        mutate();
+        afterChange();
+      }
+
+      function restore(snapshot: string) {
+        const parsed = JSON.parse(snapshot) as State;
+        state.size = parsed.size;
+        state.transition = parsed.transition;
+        state.selected = parsed.selected;
+        state.frames = parsed.frames;
+        lastCommit = { key: "", time: 0 };
+        afterChange();
+      }
+
+      function undo() {
+        if (!undoStack.length) return;
+        redoStack.push(JSON.stringify(state));
+        restore(undoStack.pop()!);
+      }
+
+      function redo() {
+        if (!redoStack.length) return;
+        undoStack.push(JSON.stringify(state));
+        restore(redoStack.pop()!);
+      }
+
+      // ---------------------------------------------------------------
+      // DOM
+      // ---------------------------------------------------------------
+      const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+      const app = $("app");
+      const sidebar = $("sidebar");
+      const canvas = $<HTMLCanvasElement>("canvas");
+      const ctx = canvas.getContext("2d")!;
+      const frameTitle = $("frame-title");
+      const inputQuote = $<HTMLTextAreaElement>("input-quote");
+      const inputName = $<HTMLInputElement>("input-name");
+      const inputShowQuotes = $<HTMLInputElement>("input-show-quotes");
+      const alignToggles = $("align-toggles");
+      const inputRole = $<HTMLTextAreaElement>("input-role");
+      const inputPhoto = $<HTMLInputElement>("input-photo");
+      const photoPreview = $<HTMLImageElement>("photo-preview");
+      const btnPhotoRemove = $<HTMLButtonElement>("btn-photo-remove");
+      const inputPartner = $<HTMLInputElement>("input-partner");
+      const partnerPreview = $<HTMLImageElement>("partner-preview");
+      const btnPartnerRemove = $<HTMLButtonElement>("btn-partner-remove");
+      const inputHeadline = $<HTMLTextAreaElement>("input-headline");
+      const inputButton = $<HTMLInputElement>("input-button");
+      const inputDuration = $<HTMLInputElement>("input-duration");
+      const inputTransition = $<HTMLInputElement>("input-transition");
+      const totalLengthEl = $("total-length");
+      const sizeToggles = $("size-toggles");
+      const swatchWrap = $("scheme-swatches");
+      const railList = $("rail-list");
+      const btnUndo = $<HTMLButtonElement>("btn-undo");
+      const btnRedo = $<HTMLButtonElement>("btn-redo");
+      const btnPlay = $<HTMLButtonElement>("btn-play");
+      const btnPng = $<HTMLButtonElement>("btn-export-png");
+      const btnPngAll = $<HTMLButtonElement>("btn-export-png-all");
+      const btnVideo = $<HTMLButtonElement>("btn-export-video");
+      const btnVideoAll = $<HTMLButtonElement>("btn-export-video-all");
+      const exportMenu = $<HTMLDetailsElement>("export-menu");
+      const statusEl = $<HTMLParagraphElement>("status");
+
+      for (const [key, size] of Object.entries(SIZES)) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "toggle";
+        btn.dataset.size = key;
+        btn.innerHTML = `${size.label}<small>${size.sub}</small>`;
+        btn.addEventListener("click", () => commit(() => { state.size = key; }));
+        sizeToggles.appendChild(btn);
+      }
+
+      for (const [key, scheme] of Object.entries(SCHEMES)) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "swatch";
+        btn.dataset.scheme = key;
+        btn.style.background = scheme.bg;
+        btn.title = scheme.label;
+        btn.setAttribute("aria-label", `${scheme.label} color scheme`);
+        btn.addEventListener("click", () => commit(() => { selectedFrame().scheme = key; }));
+        swatchWrap.appendChild(btn);
+      }
+
+      const setValue = (el: HTMLInputElement | HTMLTextAreaElement, v: string) => { if (el.value !== v) el.value = v; };
+      // Quote textarea grows with its content (capped by CSS max-height).
+      function fitQuoteBox() {
+        inputQuote.style.height = "auto";
+        inputQuote.style.height = `${Math.min(200, inputQuote.scrollHeight + 2)}px`;
+      }
+
+      function syncSidebar() {
+        const f = selectedFrame();
+        sidebar.dataset.kind = f.kind;
+        const label = f.kind === "intro" ? "Intro" : f.kind === "outro" ? "Outro" : "Quote";
+        frameTitle.textContent = `Currently selected — Frame ${state.selected + 1} (${label})`;
+        if (f.kind === "quote") {
+          setValue(inputQuote, f.quote);
+          fitQuoteBox();
+          inputShowQuotes.checked = f.showQuotes !== false;
+          alignToggles.querySelectorAll<HTMLElement>(".toggle").forEach((t) => t.setAttribute("aria-pressed", String(t.dataset.align === (f.align ?? "left"))));
+          setValue(inputName, f.name);
+          setValue(inputRole, f.role);
+          photoPreview.hidden = !f.photo;
+          btnPhotoRemove.hidden = !f.photo;
+          if (f.photo && photoPreview.src !== f.photo) photoPreview.src = f.photo;
+        } else if (f.kind === "intro") {
+          partnerPreview.hidden = !f.partnerLogo;
+          btnPartnerRemove.hidden = !f.partnerLogo;
+          if (f.partnerLogo && partnerPreview.src !== f.partnerLogo) partnerPreview.src = f.partnerLogo;
+        } else {
+          setValue(inputHeadline, f.headline);
+          setValue(inputButton, f.button);
+        }
+        setValue(inputDuration, String(f.duration));
+        setValue(inputTransition, String(state.transition));
+        sizeToggles.querySelectorAll<HTMLElement>(".toggle").forEach((t) => t.setAttribute("aria-pressed", String(t.dataset.size === state.size)));
+        swatchWrap.querySelectorAll<HTMLElement>(".swatch").forEach((s) => s.setAttribute("aria-pressed", String(s.dataset.scheme === f.scheme)));
+        totalLengthEl.textContent = `${buildTimeline().total.toFixed(1)}s`;
+        btnUndo.disabled = !undoStack.length;
+        btnRedo.disabled = !redoStack.length;
+      }
+
+      // ---------------------------------------------------------------
+      // Images — photos are center-cropped to a 512px square JPEG, partner
+      // logos are kept as PNG (transparency) capped at 1024px. Both live as
+      // data URLs in state so they survive localStorage. Decoded images are
+      // cached by URL for drawing.
+      // ---------------------------------------------------------------
+      const imgCache = new Map<string, HTMLImageElement>();
+
+      function getImg(src: string | null | undefined): HTMLImageElement | null {
+        if (!src) return null;
+        const img = imgCache.get(src);
+        return img && img.complete && img.naturalWidth ? img : null;
+      }
+
+      function loadImg(src: string): Promise<void> {
+        if (imgCache.has(src)) return Promise.resolve();
+        const img = new Image();
+        img.src = src;
+        imgCache.set(src, img);
+        return img.decode().catch(() => {});
+      }
+
+      function ensureImages(): Promise<void> {
+        const jobs: Promise<void>[] = [];
+        for (const f of frames()) {
+          if (f.kind === "quote" && f.photo) jobs.push(loadImg(f.photo));
+          if (f.kind === "intro" && f.partnerLogo) jobs.push(loadImg(f.partnerLogo));
+        }
+        return Promise.all(jobs).then(() => {});
+      }
+
+      async function readFileAsDataUrl(file: File, mode: "photo" | "logo"): Promise<string> {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.src = url;
+        try {
+          await img.decode();
+          const c = document.createElement("canvas");
+          const cc = c.getContext("2d")!;
+          if (mode === "photo") {
+            const side = Math.min(img.naturalWidth, img.naturalHeight);
+            c.width = c.height = 512;
+            cc.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, 512, 512);
+            return c.toDataURL("image/jpeg", 0.85);
+          }
+          const scale = Math.min(1, 1024 / Math.max(img.naturalWidth, img.naturalHeight));
+          c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+          c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+          cc.drawImage(img, 0, 0, c.width, c.height);
+          return c.toDataURL("image/png");
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      }
+
+      inputPhoto.addEventListener("change", async () => {
+        const file = inputPhoto.files?.[0];
+        inputPhoto.value = "";
+        if (!file) return;
+        try {
+          const dataUrl = await readFileAsDataUrl(file, "photo");
+          await loadImg(dataUrl);
+          commit(() => { const f = selectedFrame(); if (f.kind === "quote") f.photo = dataUrl; });
+        } catch {
+          setBusy(false, "Couldn't read that image file.");
+        }
+      });
+      btnPhotoRemove.addEventListener("click", () => commit(() => { const f = selectedFrame(); if (f.kind === "quote") f.photo = null; }));
+
+      inputPartner.addEventListener("change", async () => {
+        const file = inputPartner.files?.[0];
+        inputPartner.value = "";
+        if (!file) return;
+        try {
+          const dataUrl = await readFileAsDataUrl(file, "logo");
+          await loadImg(dataUrl);
+          commit(() => { const f = selectedFrame(); if (f.kind === "intro") f.partnerLogo = dataUrl; });
+        } catch {
+          setBusy(false, "Couldn't read that image file.");
+        }
+      });
+      btnPartnerRemove.addEventListener("click", () => commit(() => { const f = selectedFrame(); if (f.kind === "intro") f.partnerLogo = null; }));
+
+      // ---------------------------------------------------------------
+      // Timeline
+      // Each frame holds for `duration`; between frames a transition runs.
+      // Transition lengths are multiples of the global `transition` setting:
+      //   intro → next : logo travels to the top (1×), then content reveals (1×)
+      //   quote → next : old content slides out (0.5×), new slides in (1×)
+      // ---------------------------------------------------------------
+      type Segment = { from: number; to: number | null; start: number; end: number };
+
+      function transitionDuration(a: Frame): number {
+        return a.kind === "intro" ? state.transition * 2 : state.transition * 1.5;
+      }
+
+      function buildTimeline(): { segments: Segment[]; total: number } {
+        const segments: Segment[] = [];
+        let t = 0;
+        const fs = frames();
+        fs.forEach((f, i) => {
+          segments.push({ from: i, to: null, start: t, end: t + f.duration });
+          t += f.duration;
+          if (i < fs.length - 1) {
+            const td = transitionDuration(f);
+            segments.push({ from: i, to: i + 1, start: t, end: t + td });
+            t += td;
+          }
+        });
+        return { segments, total: t };
+      }
+
+      function resolveTime(t: number): { from: number; to: number | null; tt: number } {
+        const { segments, total } = buildTimeline();
+        if (t >= total) return { from: frames().length - 1, to: null, tt: 0 };
+        for (const s of segments) if (t < s.end) return { from: s.from, to: s.to, tt: Math.max(0, t - s.start) };
+        return { from: frames().length - 1, to: null, tt: 0 };
+      }
+
+      // ---------------------------------------------------------------
+      // Rendering helpers
+      // ---------------------------------------------------------------
+      const easeOutCubic = (p: number) => 1 - Math.pow(1 - p, 3);
+      const easeInCubic = (p: number) => p * p * p;
+      const easeInOutCubic = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+      const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+      const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
+      const FONT = '"Rethink Sans", sans-serif';
+
+      type RGBA = [number, number, number, number];
+      function parseColor(s: string): RGBA {
+        s = s.trim();
+        if (s[0] === "#") {
+          const h = s.slice(1);
+          const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+          const n = parseInt(full, 16);
+          return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1];
+        }
+        const m = s.match(/rgba?\(([^)]+)\)/);
+        if (m) {
+          const p = m[1].split(",").map(Number);
+          return [p[0], p[1], p[2], p[3] ?? 1];
+        }
+        return [0, 0, 0, 1];
+      }
+      function mixColor(a: string, b: string, p: number): string {
+        if (p <= 0 || a === b) return a;
+        if (p >= 1) return b;
+        const ca = parseColor(a);
+        const cb = parseColor(b);
+        const r = ca.map((v, i) => lerp(v, cb[i], p));
+        return `rgba(${r[0].toFixed(0)},${r[1].toFixed(0)},${r[2].toFixed(0)},${r[3].toFixed(3)})`;
+      }
+      function luminance(color: string): number {
+        const [r, g, b] = parseColor(color);
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      }
+
+      type Palette = Scheme & { lum: number };
+      function paletteAt(a: Scheme, b: Scheme, p: number): Palette {
+        const keys = ["bg", "text", "muted", "accent", "highlight", "buttonBg", "buttonText"] as const;
+        const out = { label: a.label } as Palette;
+        for (const k of keys) out[k] = mixColor(a[k], b[k], p);
+        out.lum = luminance(out.bg);
+        return out;
+      }
+
+      function wrapText(c: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+        const words = text.split(/\s+/).filter(Boolean);
+        const lines: string[] = [];
+        let line = "";
+        for (const word of words) {
+          const test = line ? `${line} ${word}` : word;
+          if (line && c.measureText(test).width > maxW) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = test;
+          }
+        }
+        if (line) lines.push(line);
+        return lines;
+      }
+
+      // Element animation primitive: alpha + vertical offset (+ horizontal
+      // scale for the avatar flip).
+      type Anim = { alpha: number; dy: number; sx?: number };
+      const REST: Anim = { alpha: 1, dy: 0 };
+      const HIDDEN: Anim = { alpha: 0, dy: 0 };
+      const slideDist = (H: number) => H * 0.035;
+      // Slide up + fade out.
+      const outAnim = (q: number, H: number): Anim => {
+        const e = easeInCubic(clamp01(q));
+        return { alpha: 1 - e, dy: -e * slideDist(H) };
+      };
+      // Slide up from below + fade in.
+      const inAnim = (q: number, H: number): Anim => {
+        const e = easeOutCubic(clamp01(q));
+        return { alpha: e, dy: (1 - e) * slideDist(H) };
+      };
+      // Staggered in-animation: `n` elements share `inLen` seconds.
+      function stagger(n: number, inLen: number) {
+        const stg = n > 1 ? Math.min(0.1 * inLen, (inLen * 0.5) / (n - 1)) : 0;
+        const dur = Math.max(0.05, inLen - (n - 1) * stg);
+        return (tIn: number, i: number, H: number) => inAnim((tIn - i * stg) / dur, H);
+      }
+
+      // Logo resting position at the top (proportions from the reference
+      // design). Vertical padding grows superlinearly with the aspect ratio
+      // so taller formats get progressively more breathing room.
+      function topLogo(W: number, H: number) {
+        const S = Math.min(W, H);
+        const aspectBoost = Math.pow(Math.max(1, H / W), 0.75);
+        return { scale: (S * 0.052) / LOGO_H, y: H * 0.12 * aspectBoost, aspectBoost };
+      }
+
+      // Dots background: /dots-bg.png scaled to fill the canvas width. It
+      // starts with its top edge at the vertical center and slides down
+      // until only the top portion of the image peeks above the bottom edge
+      // — the taller the canvas, the larger that portion. Blended with
+      // plus-lighter on dark backgrounds, plus-darker on light ones; fades
+      // out briefly while a color transition crosses mid-luminance.
+      const dotsImg = new Image();
+      dotsImg.src = "/dots-bg.png";
+      const dotsImgReady = dotsImg.decode().catch(() => {});
+
+      function drawDots(c: CanvasRenderingContext2D, W: number, H: number, slideP: number, pal: Palette) {
+        if (!dotsImg.complete || !dotsImg.naturalWidth) return;
+        const alpha = clamp01(Math.abs(pal.lum - 128) / 40);
+        if (alpha <= 0.001) return;
+        const drawH = (dotsImg.naturalHeight / dotsImg.naturalWidth) * W;
+        const visiblePct = 0.15 + Math.max(0, H / W - 1) * 0.3; // top % of the image shown at rest
+        const yStart = H * 0.5;
+        const yEnd = H - drawH * visiblePct;
+        const y = lerp(yStart, yEnd, slideP);
+        c.save();
+        const dark = pal.lum < 128;
+        const mode = dark ? "plus-lighter" : "plus-darker";
+        c.globalCompositeOperation = mode as GlobalCompositeOperation;
+        if (c.globalCompositeOperation !== mode) {
+          // plus-lighter/plus-darker aren't supported in every browser's
+          // canvas — fall back to the closest standard operation.
+          c.globalCompositeOperation = dark ? "lighter" : "multiply";
+        }
+        c.globalAlpha = alpha;
+        c.drawImage(dotsImg, 0, y, W, drawH);
+        c.restore();
+      }
+
+      // "Pin.com" lockup: logo paths + a ".com" suffix aligned to the
+      // wordmark baseline, drawn in logo units so it scales as one group.
+      function drawLogoGroup(c: CanvasRenderingContext2D, x: number, y: number, scale: number, pal: Palette) {
+        c.save();
+        c.translate(x, y);
+        c.scale(scale, scale);
+        c.fillStyle = pal.text;
+        for (const path of LOGO_PATHS) c.fill(path);
+        c.font = `400 ${LOGO_FONT_UNITS}px ${FONT}`;
+        c.textBaseline = "alphabetic";
+        c.fillStyle = pal.muted;
+        c.fillText(".com", LOGO_W + 1.5, LOGO_BASELINE);
+        c.restore();
+      }
+
+      function logoGroupWidthUnits(c: CanvasRenderingContext2D): number {
+        c.font = `400 ${LOGO_FONT_UNITS}px ${FONT}`;
+        return LOGO_W + 1.5 + c.measureText(".com").width;
+      }
+
+      // ---------------------------------------------------------------
+      // Quote frame
+      // ---------------------------------------------------------------
+      type QuoteLayout = {
+        S: number; margin: number; lines: string[]; fs: number; lineH: number; quoteStartY: number;
+        photoSize: number; attrTop: number; attrH: number; nameFs: number; roleFs: number; roleLines: string[];
+        hasName: boolean; photo: HTMLImageElement | null;
+      };
+
+      const roleLinesOf = (f: QuoteFrame) => f.role.split("\n").map((l) => l.trim()).filter(Boolean);
+      const quoteTextOf = (f: QuoteFrame) => `${f.quote.trim().replace(/^["“”']+|["“”']+$/g, "") || "Your quote here"}${f.showQuotes === false ? "" : "”"}`;
+
+      function quoteLayout(c: CanvasRenderingContext2D, W: number, H: number, f: QuoteFrame): QuoteLayout {
+        const S = Math.min(W, H);
+        const margin = W * 0.08;
+        const maxW = W - margin * 2;
+        const top = topLogo(W, H);
+
+        // Attribution block
+        const nameFs = Math.round(S * 0.044);
+        const roleFs = Math.round(S * 0.037);
+        const roleLines = roleLinesOf(f);
+        const hasName = !!f.name.trim();
+        const photo = getImg(f.photo);
+        const photoSize = photo ? S * 0.23 : 0;
+        const attrTextH = (hasName ? nameFs * 1.4 : 0) + roleLines.length * roleFs * 1.45;
+        const attrH = Math.max(photoSize, attrTextH);
+        const attrBottom = H - H * 0.13 * top.aspectBoost;
+        const attrTop = attrBottom - attrH;
+
+        // Quote block fills the space between the logo and the attribution.
+        // Base size matches the reference; shrink only when the text overflows.
+        const quoteTop = top.y + LOGO_H * top.scale + S * 0.06;
+        const quoteBottom = attrTop - S * 0.05;
+        const availH = quoteBottom - quoteTop;
+
+        const text = quoteTextOf(f);
+        const lineHRatio = 1.25;
+        let fs = Math.round(S * 0.072);
+        const minFs = Math.round(S * 0.024);
+        let lines: string[] = [];
+        while (true) {
+          c.font = `400 ${fs}px ${FONT}`;
+          lines = wrapText(c, text, maxW);
+          if (lines.length * fs * lineHRatio <= availH || fs <= minFs) break;
+          fs = Math.max(minFs, Math.round(fs * 0.95));
+        }
+        const lineH = fs * lineHRatio;
+        const blockH = lines.length * lineH;
+        const quoteStartY = quoteTop + Math.max(0, (availH - blockH) / 2) + fs * 0.78;
+
+        return { S, margin, lines, fs, lineH, quoteStartY, photoSize, attrTop, attrH, nameFs, roleFs, roleLines, hasName, photo };
+      }
+
+      type QuoteAnims = { line: (i: number) => Anim; photo: Anim; name: Anim; role: Anim };
+      const QUOTE_REST: QuoteAnims = { line: () => REST, photo: REST, name: REST, role: REST };
+
+      function drawQuote(c: CanvasRenderingContext2D, W: number, H: number, f: QuoteFrame, pal: Palette, L: QuoteLayout, anims: QuoteAnims) {
+        // Quote lines (opening mark hangs left of the text margin, on line 1)
+        c.textBaseline = "alphabetic";
+        c.font = `400 ${L.fs}px ${FONT}`;
+        const markW = c.measureText("“").width;
+        const showQuotes = f.showQuotes !== false;
+        const align = f.align ?? "left";
+        // x for a block of width w under the frame's alignment.
+        const alignX = (w: number) => align === "center" ? (W - w) / 2 : align === "right" ? W - L.margin - w : L.margin;
+        L.lines.forEach((line, i) => {
+          const { alpha, dy } = anims.line(i);
+          if (alpha <= 0.001) return;
+          const y = L.quoteStartY + i * L.lineH + dy;
+          c.globalAlpha = alpha;
+          c.font = `400 ${L.fs}px ${FONT}`;
+          const x = alignX(c.measureText(line).width);
+          if (i === 0 && showQuotes) {
+            c.fillStyle = pal.accent;
+            c.fillText("“", x - markW - L.fs * 0.06, y);
+          }
+          c.fillStyle = pal.text;
+          // Closing mark matches the opening one: accent-colored.
+          if (showQuotes && i === L.lines.length - 1 && line.endsWith("”")) {
+            const body = line.slice(0, -1);
+            c.fillText(body, x, y);
+            c.fillStyle = pal.accent;
+            c.fillText("”", x + c.measureText(body).width, y);
+          } else {
+            c.fillText(line, x, y);
+          }
+        });
+
+        // Attribution: photo left, name + role lines right (or text-only).
+        // The whole block follows the text alignment.
+        c.font = `400 ${L.nameFs}px ${FONT}`;
+        let attrTextW = L.hasName ? c.measureText(f.name.trim()).width : 0;
+        c.font = `400 ${L.roleFs}px ${FONT}`;
+        for (const line of L.roleLines) attrTextW = Math.max(attrTextW, c.measureText(line).width);
+        const photoGap = L.photoSize ? L.photoSize + L.S * 0.05 : 0;
+        const attrX = alignX(photoGap + attrTextW);
+        const textX = attrX + photoGap;
+        const attrTextH = (L.hasName ? L.nameFs * 1.4 : 0) + L.roleLines.length * L.roleFs * 1.45;
+        let textY = L.attrTop + (L.attrH - attrTextH) / 2;
+
+        if (L.photo) {
+          const { alpha, dy, sx = 1 } = anims.photo;
+          if (alpha > 0.001 && sx > 0.001) {
+            c.save();
+            c.globalAlpha = alpha;
+            const ps = L.photoSize;
+            const px = attrX;
+            const py = L.attrTop + dy;
+            // Horizontal squash around the center simulates a 3D flip.
+            c.translate(px + ps / 2, py + ps / 2);
+            c.scale(sx, 1);
+            c.translate(-(px + ps / 2), -(py + ps / 2));
+            c.beginPath();
+            c.roundRect(px, py, ps, ps, L.S * 0.022);
+            c.clip();
+            c.drawImage(L.photo, px, py, ps, ps);
+            c.restore();
+          }
+        }
+
+        if (L.hasName) {
+          const { alpha, dy } = anims.name;
+          textY += L.nameFs * 1.1;
+          if (alpha > 0.001) {
+            c.globalAlpha = alpha;
+            c.fillStyle = pal.text;
+            c.font = `400 ${L.nameFs}px ${FONT}`;
+            c.fillText(f.name.trim(), textX, textY + dy);
+          }
+          textY += L.nameFs * 0.3;
+        }
+        if (L.roleLines.length) {
+          const { alpha, dy } = anims.role;
+          c.font = `400 ${L.roleFs}px ${FONT}`;
+          c.fillStyle = pal.muted;
+          for (const line of L.roleLines) {
+            textY += L.roleFs * 1.45;
+            if (alpha > 0.001) {
+              c.globalAlpha = alpha;
+              c.fillText(line, textX, textY + dy);
+            }
+          }
+        }
+        c.globalAlpha = 1;
+      }
+
+      // Staggered slide-in of the flagged quote elements; unflagged ones
+      // stay hidden (the outgoing frame keeps drawing them at rest).
+      function quoteInAnims(L: QuoteLayout, H: number, tIn: number, inLen: number, which: { quote: boolean; photo: boolean; name: boolean; role: boolean }): QuoteAnims {
+        const counts = [
+          which.quote ? L.lines.length : 0,
+          which.photo && L.photo ? 1 : 0,
+          which.name && L.hasName ? 1 : 0,
+          which.role && L.roleLines.length ? 1 : 0,
+        ];
+        const n = counts.reduce((a, b) => a + b, 0);
+        const at = stagger(n, inLen);
+        let idx = counts[0];
+        const line = which.quote ? (i: number) => at(tIn, i, H) : () => HIDDEN;
+        const photo = counts[1] ? at(tIn, idx++, H) : HIDDEN;
+        const name = counts[2] ? at(tIn, idx++, H) : HIDDEN;
+        const role = counts[3] ? at(tIn, idx++, H) : HIDDEN;
+        return { line, photo, name, role };
+      }
+
+      const ALL = { quote: true, photo: true, name: true, role: true };
+
+      // Quote → quote: only what changed animates. Same attribution layout →
+      // avatar flips in place, name/role crossfade in place; quote slides.
+      function drawQuoteToQuote(c: CanvasRenderingContext2D, W: number, H: number, A: QuoteFrame, B: QuoteFrame, pal: Palette, tt: number, td: number) {
+        const T = state.transition;
+        const LA = quoteLayout(c, W, H, A);
+        const LB = quoteLayout(c, W, H, B);
+        const attrSame = !!LA.photo === !!LB.photo && LA.hasName === LB.hasName && LA.roleLines.length === LB.roleLines.length;
+        const quoteChanged = !attrSame || quoteTextOf(A) !== quoteTextOf(B) || (A.align ?? "left") !== (B.align ?? "left");
+        const photoChanged = A.photo !== B.photo;
+        const nameChanged = A.name.trim() !== B.name.trim();
+        const roleChanged = LA.roleLines.join("\n") !== LB.roleLines.join("\n");
+
+        const e = easeInOutCubic(clamp01(tt / td));
+        const outQ = tt / (0.5 * T);
+        const tIn = tt - 0.5 * T;
+
+        const out = (): Anim => outAnim(outQ, H);
+        const outA: QuoteAnims = {
+          line: quoteChanged ? out : () => REST,
+          photo: !attrSame ? out() : photoChanged ? { alpha: 1, dy: 0, sx: Math.cos(Math.PI * e) } : REST,
+          name: !attrSame ? out() : nameChanged ? { alpha: 1 - e, dy: 0 } : REST,
+          role: !attrSame ? out() : roleChanged ? { alpha: 1 - e, dy: 0 } : REST,
+        };
+        const inB = quoteInAnims(LB, H, tIn, T, { quote: quoteChanged, photo: !attrSame, name: !attrSame, role: !attrSame });
+        if (attrSame) {
+          if (photoChanged) inB.photo = { alpha: 1, dy: 0, sx: -Math.cos(Math.PI * e) };
+          if (nameChanged) inB.name = { alpha: e, dy: 0 };
+          if (roleChanged) inB.role = { alpha: e, dy: 0 };
+        }
+        drawQuote(c, W, H, A, pal, LA, outA);
+        drawQuote(c, W, H, B, pal, LB, inB);
+      }
+
+      // ---------------------------------------------------------------
+      // Outro frame — headline with **highlighted** words, CTA pill, "Pin.com"
+      // ---------------------------------------------------------------
+      type Word = { text: string; accent: boolean };
+      type OutroLayout = {
+        S: number; lines: Word[][]; fs: number; lineH: number; startY: number;
+        btnFs: number; btnW: number; btnH: number; btnY: number; pinFs: number; pinY: number; label: string;
+      };
+
+      function parseHighlight(text: string): Word[] {
+        const words: Word[] = [];
+        text.split("**").forEach((seg, i) => {
+          for (const w of seg.split(/\s+/).filter(Boolean)) words.push({ text: w, accent: i % 2 === 1 });
+        });
+        return words;
+      }
+
+      function wrapWords(c: CanvasRenderingContext2D, words: Word[], maxW: number): Word[][] {
+        const lines: Word[][] = [];
+        let line: Word[] = [];
+        for (const w of words) {
+          const test = [...line, w].map((x) => x.text).join(" ");
+          if (line.length && c.measureText(test).width > maxW) {
+            lines.push(line);
+            line = [w];
+          } else {
+            line.push(w);
+          }
+        }
+        if (line.length) lines.push(line);
+        return lines;
+      }
+
+      function outroLayout(c: CanvasRenderingContext2D, W: number, H: number, f: OutroFrame): OutroLayout {
+        const S = Math.min(W, H);
+        const margin = W * 0.1;
+        const maxW = W - margin * 2;
+        const top = topLogo(W, H);
+        const words = parseHighlight(f.headline.trim() || DEFAULT_HEADLINE);
+        const label = f.button.trim() || DEFAULT_BUTTON;
+        const btnFs = Math.round(S * 0.032);
+        const btnH = btnFs * 2.5;
+        const pinFs = Math.round(S * 0.026);
+        const gapPin = S * 0.035;
+        const lineHRatio = 1.15;
+
+        // Three blocks: logo at the top (shared with quote frames), the CTA
+        // block anchored to the same bottom edge as the quote attribution,
+        // and the headline centered in the page between them.
+        const bottom = H - H * 0.13 * top.aspectBoost;
+        const pinY = bottom;
+        const btnY = bottom - pinFs * 0.9 - gapPin - btnH;
+        c.font = `500 ${btnFs}px ${FONT}`;
+        const btnW = c.measureText(label).width + btnFs * 3.2;
+
+        const availTop = top.y + LOGO_H * top.scale + S * 0.06;
+        const availBottom = btnY - S * 0.06;
+        const availH = availBottom - availTop;
+
+        let fs = Math.round(S * 0.072);
+        const minFs = Math.round(S * 0.035);
+        let lines: Word[][] = [];
+        let blockH = 0;
+        while (true) {
+          c.font = `500 ${fs}px ${FONT}`;
+          lines = wrapWords(c, words, maxW);
+          blockH = lines.length * fs * lineHRatio;
+          if (blockH <= availH || fs <= minFs) break;
+          fs = Math.max(minFs, Math.round(fs * 0.95));
+        }
+        const lineH = fs * lineHRatio;
+        const groupTop = Math.min(Math.max(availTop, (H - blockH) / 2), Math.max(availTop, availBottom - blockH));
+        const startY = groupTop + fs * 0.8;
+        return { S, lines, fs, lineH, startY, btnFs, btnW, btnH, btnY, pinFs, pinY, label };
+      }
+
+      type OutroAnims = { line: (i: number) => Anim; button: Anim; pin: Anim };
+      const OUTRO_REST: OutroAnims = { line: () => REST, button: REST, pin: REST };
+
+      function outroInAnims(L: OutroLayout, H: number, tIn: number, inLen: number): OutroAnims {
+        const n = L.lines.length + 2;
+        const at = stagger(n, inLen);
+        return {
+          line: (i) => at(tIn, i, H),
+          button: at(tIn, L.lines.length, H),
+          pin: at(tIn, L.lines.length + 1, H),
+        };
+      }
+
+      function drawOutro(c: CanvasRenderingContext2D, W: number, H: number, pal: Palette, L: OutroLayout, anims: OutroAnims) {
+        c.textBaseline = "alphabetic";
+        c.font = `500 ${L.fs}px ${FONT}`;
+        const spaceW = c.measureText(" ").width;
+        L.lines.forEach((line, i) => {
+          const { alpha, dy } = anims.line(i);
+          if (alpha <= 0.001) return;
+          c.globalAlpha = alpha;
+          c.font = `500 ${L.fs}px ${FONT}`;
+          const widths = line.map((w) => c.measureText(w.text).width);
+          const total = widths.reduce((a, b) => a + b, 0) + spaceW * (line.length - 1);
+          let x = (W - total) / 2;
+          const y = L.startY + i * L.lineH + dy;
+          line.forEach((w, k) => {
+            c.fillStyle = w.accent ? pal.highlight : pal.text;
+            c.fillText(w.text, x, y);
+            x += widths[k] + spaceW;
+          });
+        });
+
+        {
+          const { alpha, dy } = anims.button;
+          if (alpha > 0.001) {
+            c.globalAlpha = alpha;
+            const x = (W - L.btnW) / 2;
+            const y = L.btnY + dy;
+            c.fillStyle = pal.buttonBg;
+            c.beginPath();
+            c.roundRect(x, y, L.btnW, L.btnH, L.btnH / 2);
+            c.fill();
+            c.fillStyle = pal.buttonText;
+            c.font = `500 ${L.btnFs}px ${FONT}`;
+            c.textAlign = "center";
+            c.textBaseline = "middle";
+            c.fillText(L.label, W / 2, y + L.btnH / 2 + L.btnFs * 0.06);
+            c.textAlign = "left";
+            c.textBaseline = "alphabetic";
+          }
+        }
+        {
+          const { alpha, dy } = anims.pin;
+          if (alpha > 0.001) {
+            c.globalAlpha = alpha;
+            c.fillStyle = pal.muted;
+            c.font = `400 ${L.pinFs}px ${FONT}`;
+            c.textAlign = "center";
+            c.fillText("Pin.com", W / 2, L.pinY + dy);
+            c.textAlign = "left";
+          }
+        }
+        c.globalAlpha = 1;
+      }
+
+      // ---------------------------------------------------------------
+      // Scene: frame `from` at rest (to = null), or `tt` seconds into the
+      // transition from → to.
+      // ---------------------------------------------------------------
+      function drawScene(c: CanvasRenderingContext2D, W: number, H: number, from: number, to: number | null, tt: number) {
+        const fs = frames();
+        const A = fs[from];
+        const B = to == null ? null : fs[to];
+        const T = state.transition;
+        const td = B ? transitionDuration(A) : 1;
+        const p = B ? clamp01(tt / td) : 0;
+        const pal = paletteAt(SCHEMES[A.scheme], SCHEMES[(B ?? A).scheme], easeInOutCubic(p));
+
+        c.clearRect(0, 0, W, H);
+        c.fillStyle = pal.bg;
+        c.fillRect(0, 0, W, H);
+
+        const S = Math.min(W, H);
+        const top = topLogo(W, H);
+        const moveP = A.kind === "intro" ? (B ? easeInOutCubic(clamp01(tt / T)) : 0) : 1;
+        drawDots(c, W, H, moveP, pal);
+
+        // Logo: centered on the intro (stacked above the partner logo when
+        // there is one), travelling to the top as the intro transitions out.
+        const groupUnits = logoGroupWidthUnits(c);
+        const scaleCenter = (S * 0.2) / LOGO_W;
+        const scale = lerp(scaleCenter, top.scale, moveP);
+        const x = (W - groupUnits * scale) / 2;
+        let yCenter = (H - LOGO_H * scaleCenter) / 2;
+        const partner = A.kind === "intro" ? getImg(A.partnerLogo) : null;
+        let partnerRect: { x: number; y: number; w: number; h: number } | null = null;
+        if (partner) {
+          const lh = LOGO_H * scaleCenter;
+          let ph = lh * 1.15;
+          let pw = (ph * partner.naturalWidth) / partner.naturalHeight;
+          const maxW = W * 0.45;
+          if (pw > maxW) {
+            pw = maxW;
+            ph = (pw * partner.naturalHeight) / partner.naturalWidth;
+          }
+          const gap = lh * 0.7;
+          const groupTop = (H - (lh + gap + ph)) / 2;
+          yCenter = groupTop;
+          partnerRect = { x: (W - pw) / 2, y: groupTop + lh + gap, w: pw, h: ph };
+        }
+        const y = lerp(yCenter, top.y, moveP);
+        drawLogoGroup(c, x, y, scale, pal);
+        if (partner && partnerRect && moveP < 1) {
+          c.globalAlpha = 1 - moveP;
+          c.drawImage(partner, partnerRect.x, partnerRect.y - moveP * slideDist(H), partnerRect.w, partnerRect.h);
+          c.globalAlpha = 1;
+        }
+
+        const drawIncoming = (F: Frame, tIn: number) => {
+          if (F.kind === "quote") {
+            const L = quoteLayout(c, W, H, F);
+            drawQuote(c, W, H, F, pal, L, quoteInAnims(L, H, tIn, T, ALL));
+          } else if (F.kind === "outro") {
+            const L = outroLayout(c, W, H, F);
+            drawOutro(c, W, H, pal, L, outroInAnims(L, H, tIn, T));
+          }
+        };
+
+        if (A.kind === "intro") {
+          if (B) drawIncoming(B, tt - T);
+        } else if (A.kind === "quote") {
+          if (!B) {
+            drawQuote(c, W, H, A, pal, quoteLayout(c, W, H, A), QUOTE_REST);
+          } else if (B.kind === "quote") {
+            drawQuoteToQuote(c, W, H, A, B, pal, tt, td);
+          } else {
+            drawQuote(c, W, H, A, pal, quoteLayout(c, W, H, A), { line: () => outAnim(tt / (0.5 * T), H), photo: outAnim(tt / (0.5 * T), H), name: outAnim(tt / (0.5 * T), H), role: outAnim(tt / (0.5 * T), H) });
+            drawIncoming(B, tt - 0.5 * T);
+          }
+        } else {
+          drawOutro(c, W, H, pal, outroLayout(c, W, H, A), OUTRO_REST);
+        }
+      }
+
+      function drawAt(c: CanvasRenderingContext2D, W: number, H: number, t: number) {
+        const { from, to, tt } = resolveTime(t);
+        drawScene(c, W, H, from, to, tt);
+      }
+
+      // The canvas backing store stays at full export resolution (so PNG and
+      // video exports are pixel-perfect); the on-screen preview is displayed
+      // at 0.5x via CSS. Resizing resets context state, so re-apply the
+      // smoothing settings every time.
+      function setCanvasSize(w: number, h: number) {
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        canvas.style.width = `${w / 2}px`;
+        canvas.style.height = `${h / 2}px`;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+      }
+
+      function drawStatic() {
+        const { w, h } = SIZES[state.size];
+        setCanvasSize(w, h);
+        if (debugT != null) drawAt(ctx, w, h, debugT);
+        else drawScene(ctx, w, h, state.selected, null, 0);
+      }
+
+      // ---------------------------------------------------------------
+      // Frame rail — thumbnails, select, drag-reorder, add, delete
+      // ---------------------------------------------------------------
+      const thumbSource = document.createElement("canvas");
+      const thumbCtx = thumbSource.getContext("2d")!;
+      const TRASH_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.7 8.5h6.6l.7-8.5M6.6 7v4M9.4 7v4"/></svg>';
+
+      let dragFrom: number | null = null;
+      let dropAt: number | null = null;
+
+      function clearDropIndicators() {
+        railList.querySelectorAll(".drop-before, .drop-after").forEach((el) => el.classList.remove("drop-before", "drop-after"));
+      }
+
+      function renderRail() {
+        railList.innerHTML = "";
+        const fs = frames();
+        fs.forEach((f, i) => {
+          if (f.kind === "outro") {
+            const add = document.createElement("button");
+            add.type = "button";
+            add.className = "rail-add";
+            add.title = "Add a frame";
+            add.setAttribute("aria-label", "Add a frame");
+            add.textContent = "+";
+            add.addEventListener("click", addFrame);
+            railList.appendChild(add);
+          }
+
+          const item = document.createElement("div");
+          item.className = "rail-item";
+          item.dataset.index = String(i);
+          item.setAttribute("role", "button");
+          item.tabIndex = 0;
+          item.setAttribute("aria-current", String(i === state.selected));
+          item.draggable = f.kind === "quote";
+
+          const thumb = document.createElement("canvas");
+          thumb.className = "rail-thumb";
+          item.appendChild(thumb);
+
+          const meta = document.createElement("div");
+          meta.className = "rail-meta";
+          const label = f.kind === "intro" ? "Intro" : f.kind === "outro" ? "Outro" : `Quote`;
+          meta.innerHTML = `<b>${i + 1}</b><span>${label}</span><span>${f.duration}s</span>`;
+          item.appendChild(meta);
+
+          if (f.kind === "quote") {
+            const trash = document.createElement("button");
+            trash.type = "button";
+            trash.className = "rail-trash";
+            trash.title = "Delete frame";
+            trash.setAttribute("aria-label", `Delete frame ${i + 1}`);
+            trash.innerHTML = TRASH_SVG;
+            trash.addEventListener("click", (e) => {
+              e.stopPropagation();
+              deleteFrame(i);
+            });
+            item.appendChild(trash);
+          }
+
+          item.addEventListener("click", () => selectFrame(i));
+          item.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              selectFrame(i);
+            }
+          });
+
+          item.addEventListener("dragstart", (e) => {
+            dragFrom = i;
+            item.classList.add("dragging");
+            e.dataTransfer?.setData("text/plain", String(i));
+            if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+          });
+          item.addEventListener("dragend", () => {
+            dragFrom = null;
+            dropAt = null;
+            item.classList.remove("dragging");
+            clearDropIndicators();
+          });
+
+          railList.appendChild(item);
+        });
+        railList.querySelectorAll<HTMLElement>(".rail-item[aria-current='true']")[0]?.scrollIntoView({ block: "nearest" });
+      }
+
+      railList.addEventListener("dragover", (e) => {
+        if (dragFrom == null) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        const target = (e.target as HTMLElement).closest<HTMLElement>(".rail-item");
+        if (!target) return;
+        const idx = Number(target.dataset.index);
+        const rect = target.getBoundingClientRect();
+        // Drop positions are the slots between intro and outro.
+        let at = e.clientY < rect.top + rect.height / 2 ? idx : idx + 1;
+        at = Math.max(1, Math.min(frames().length - 1, at));
+        if (at === dropAt) return;
+        dropAt = at;
+        clearDropIndicators();
+        const items = railList.querySelectorAll<HTMLElement>(".rail-item");
+        items[at]?.classList.add("drop-before");
+      });
+      railList.addEventListener("drop", (e) => {
+        e.preventDefault();
+        if (dragFrom != null && dropAt != null) moveFrame(dragFrom, dropAt);
+        dragFrom = null;
+        dropAt = null;
+        clearDropIndicators();
+      });
+
+      let thumbTimer = 0;
+      function scheduleThumbs() {
+        clearTimeout(thumbTimer);
+        thumbTimer = window.setTimeout(drawThumbs, 120);
+      }
+
+      function drawThumbs() {
+        const { w, h } = SIZES[state.size];
+        if (thumbSource.width !== w || thumbSource.height !== h) {
+          thumbSource.width = w;
+          thumbSource.height = h;
+        }
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const cssW = 90;
+        const cssH = Math.round((cssW * h) / w);
+        railList.querySelectorAll<HTMLElement>(".rail-item").forEach((item) => {
+          const i = Number(item.dataset.index);
+          const thumb = item.querySelector<HTMLCanvasElement>(".rail-thumb");
+          if (!thumb || !frames()[i]) return;
+          drawScene(thumbCtx, w, h, i, null, 0);
+          thumb.width = Math.round(cssW * dpr);
+          thumb.height = Math.round(cssH * dpr);
+          thumb.style.height = `${cssH}px`;
+          const tc = thumb.getContext("2d")!;
+          tc.imageSmoothingEnabled = true;
+          tc.imageSmoothingQuality = "high";
+          tc.drawImage(thumbSource, 0, 0, thumb.width, thumb.height);
+        });
+      }
+
+      function selectFrame(i: number) {
+        if (i === state.selected || !frames()[i]) return;
+        state.selected = i;
+        saveState();
+        syncSidebar();
+        renderRail();
+        drawThumbs();
+        if (!animating) drawStatic();
+      }
+
+      // New frames duplicate the selected quote frame (or the last quote
+      // frame when the intro/outro is selected) and slot in right after it.
+      // With no quote frames left, a fresh default quote goes before the outro.
+      function addFrame() {
+        const fs = frames();
+        const sel = fs[state.selected];
+        let srcIdx = sel.kind === "quote" ? state.selected : -1;
+        if (srcIdx < 0) for (let i = fs.length - 1; i >= 0; i--) if (fs[i].kind === "quote") { srcIdx = i; break; }
+        const fresh = defaultState().frames[1] as QuoteFrame;
+        fresh.scheme = fs[Math.max(0, srcIdx)].scheme;
+        const src = srcIdx >= 0 ? (fs[srcIdx] as QuoteFrame) : fresh;
+        const insertAt = srcIdx >= 0 ? srcIdx + 1 : fs.length - 1;
+        commit(() => {
+          fs.splice(insertAt, 0, { ...src, id: newId() });
+          state.selected = insertAt;
+        });
+      }
+
+      function deleteFrame(i: number) {
+        const fs = frames();
+        const f = fs[i];
+        if (!f || f.kind !== "quote") return;
+        commit(() => {
+          fs.splice(i, 1);
+          let sel = Math.min(i, fs.length - 1);
+          if (fs[sel].kind === "outro") sel = Math.max(0, sel - 1);
+          state.selected = sel;
+        });
+      }
+
+      // Move frame `from` into slot `at` (slot indices are pre-removal).
+      function moveFrame(from: number, at: number) {
+        const fs = frames();
+        if (fs[from]?.kind !== "quote") return;
+        const target = at > from ? at - 1 : at;
+        if (target === from) return;
+        commit(() => {
+          const [f] = fs.splice(from, 1);
+          fs.splice(target, 0, f);
+          state.selected = target;
+        });
+      }
+
+      // ---------------------------------------------------------------
+      // Animation + export
+      // ---------------------------------------------------------------
+      let animating = false;
+      let rafId = 0;
+      let stopPlayback: (() => void) | null = null;
+
+      function setBusy(busy: boolean, message = "") {
+        btnPlay.disabled = busy;
+        btnPng.disabled = busy;
+        btnPngAll.disabled = busy;
+        btnVideo.disabled = busy;
+        btnVideoAll.disabled = busy;
+        if (busy) {
+          exportMenu.setAttribute("data-disabled", "");
+          app.setAttribute("data-busy", "");
+        } else {
+          exportMenu.removeAttribute("data-disabled");
+          app.removeAttribute("data-busy");
+        }
+        statusEl.hidden = !message;
+        statusEl.textContent = message;
+      }
+
+      // Plays the whole timeline on the preview canvas. Resolves when done.
+      // Does not loop — ends parked on the final frame.
+      function playAnimation(sizeKey = state.size, onProgress?: (t: number, total: number) => void): Promise<void> {
+        return new Promise((resolve) => {
+          if (animating) cancelAnimationFrame(rafId);
+          animating = true;
+          const { w, h } = SIZES[sizeKey];
+          const { total } = buildTimeline();
+          setCanvasSize(w, h);
+          const startTime = performance.now();
+          const finish = () => {
+            animating = false;
+            stopPlayback = null;
+            resolve();
+          };
+          stopPlayback = () => {
+            cancelAnimationFrame(rafId);
+            finish();
+          };
+          const tick = (now: number) => {
+            const t = Math.min((now - startTime) / 1000, total);
+            drawAt(ctx, w, h, t);
+            onProgress?.(t, total);
+            if (t < total) rafId = requestAnimationFrame(tick);
+            else finish();
+          };
+          rafId = requestAnimationFrame(tick);
+        });
+      }
+
+      function download(blob: Blob, filename: string) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+
+      async function exportPngSizes(keys: string[]) {
+        exportMenu.open = false;
+        setBusy(true, "Exporting…");
+        for (const key of keys) {
+          const { w, h } = SIZES[key];
+          setCanvasSize(w, h);
+          if (debugT != null) drawAt(ctx, w, h, debugT);
+          else drawScene(ctx, w, h, state.selected, null, 0);
+          const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+          if (blob) download(blob, `pin-quote-frame${state.selected + 1}-${w}x${h}.png`);
+          // Give the browser a beat to register each download before the next.
+          await new Promise((r) => setTimeout(r, 300));
+        }
+        drawStatic();
+        setBusy(false);
+      }
+
+      function pickVideoMime(): { mime: string; ext: string } | null {
+        const candidates: [string, string][] = [
+          ["video/mp4;codecs=avc1.42E01E", "mp4"],
+          ["video/mp4", "mp4"],
+          ["video/webm;codecs=vp9", "webm"],
+          ["video/webm", "webm"],
+        ];
+        for (const [mime, ext] of candidates) {
+          if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(mime)) return { mime, ext };
+        }
+        return null;
+      }
+
+      async function recordVideo(sizeKey: string, picked: { mime: string; ext: string }, progressPrefix: string) {
+        const { w, h } = SIZES[sizeKey];
+        const stream = canvas.captureStream(60);
+        const recorder = new MediaRecorder(stream, {
+          mimeType: picked.mime,
+          videoBitsPerSecond: 12_000_000,
+        });
+        const chunks: BlobPart[] = [];
+        recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+        const stopped = new Promise<void>((resolve) => (recorder.onstop = () => resolve()));
+
+        // Park on the first frame so the recording opens on the logo.
+        setCanvasSize(w, h);
+        drawAt(ctx, w, h, 0);
+        recorder.start();
+
+        await playAnimation(sizeKey, (t, total) => {
+          statusEl.textContent = `${progressPrefix} ${t.toFixed(1)}s / ${total.toFixed(1)}s`;
+        });
+
+        recorder.stop();
+        await stopped;
+        stream.getTracks().forEach((track) => track.stop());
+        download(new Blob(chunks, { type: picked.mime }), `pin-quote-${w}x${h}.${picked.ext}`);
+      }
+
+      async function exportVideoSizes(keys: string[]) {
+        exportMenu.open = false;
+        const picked = pickVideoMime();
+        if (!picked) {
+          setBusy(false, "Video recording isn't supported in this browser.");
+          return;
+        }
+        setBusy(true, "Recording video…");
+        for (let i = 0; i < keys.length; i++) {
+          const prefix = keys.length > 1
+            ? `Recording ${SIZES[keys[i]].label} (${i + 1}/${keys.length})…`
+            : "Recording video…";
+          await recordVideo(keys[i], picked, prefix);
+        }
+        drawStatic();
+        setBusy(false);
+      }
+
+      // ---------------------------------------------------------------
+      // Wiring
+      // ---------------------------------------------------------------
+      function afterChange() {
+        state.selected = Math.max(0, Math.min(frames().length - 1, state.selected));
+        saveState();
+        syncSidebar();
+        renderRail();
+        ensureImages().then(() => {
+          if (!animating) drawStatic();
+          scheduleThumbs();
+        });
+      }
+
+      const editQuote = (apply: (f: QuoteFrame) => void, field: string) => {
+        const f = selectedFrame();
+        if (f.kind !== "quote") return;
+        commit(() => apply(f), `${f.id}:${field}`);
+      };
+      const editOutro = (apply: (f: OutroFrame) => void, field: string) => {
+        const f = selectedFrame();
+        if (f.kind !== "outro") return;
+        commit(() => apply(f), `${f.id}:${field}`);
+      };
+
+      inputQuote.addEventListener("input", () => { fitQuoteBox(); editQuote((f) => { f.quote = inputQuote.value; }, "quote"); });
+      inputName.addEventListener("input", () => editQuote((f) => { f.name = inputName.value; }, "name"));
+      inputShowQuotes.addEventListener("change", () => editQuote((f) => { f.showQuotes = inputShowQuotes.checked; }, "showQuotes"));
+      alignToggles.addEventListener("click", (e) => {
+        const align = (e.target as HTMLElement).closest<HTMLElement>("[data-align]")?.dataset.align as Align | undefined;
+        if (align) editQuote((f) => { f.align = align; }, "align");
+      });
+      inputRole.addEventListener("input", () => editQuote((f) => { f.role = inputRole.value; }, "role"));
+      inputHeadline.addEventListener("input", () => editOutro((f) => { f.headline = inputHeadline.value; }, "headline"));
+      inputButton.addEventListener("input", () => editOutro((f) => { f.button = inputButton.value; }, "button"));
+
+      inputDuration.addEventListener("input", () => {
+        const v = parseFloat(inputDuration.value);
+        if (!(v > 0)) return;
+        const f = selectedFrame();
+        commit(() => { f.duration = Math.round(v * 10) / 10; }, `${f.id}:duration`);
+      });
+      inputDuration.addEventListener("blur", () => syncSidebar());
+
+      inputTransition.addEventListener("input", () => {
+        const v = parseFloat(inputTransition.value);
+        if (!(v >= 0.2)) return;
+        commit(() => { state.transition = Math.round(v * 10) / 10; }, "transition");
+      });
+      inputTransition.addEventListener("blur", () => syncSidebar());
+
+      btnUndo.addEventListener("click", undo);
+      btnRedo.addEventListener("click", redo);
+
+      const isEditable = (el: Element | null) =>
+        !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || (el as HTMLElement).isContentEditable);
+
+      document.addEventListener("keydown", (e) => {
+        if (app.hasAttribute("data-busy")) return;
+        const mod = e.metaKey || e.ctrlKey;
+        const key = e.key.toLowerCase();
+        if (mod && key === "z") {
+          e.preventDefault();
+          if (e.shiftKey) redo();
+          else undo();
+        } else if (mod && key === "y") {
+          e.preventDefault();
+          redo();
+        } else if ((e.key === "Delete" || e.key === "Backspace") && !isEditable(document.activeElement)) {
+          e.preventDefault();
+          deleteFrame(state.selected);
+        }
+      });
+
+      // Preview playback: the Play button becomes Stop while running.
+      let previewPlaying = false;
+      btnPlay.addEventListener("click", async () => {
+        if (previewPlaying) {
+          stopPlayback?.();
+          return;
+        }
+        previewPlaying = true;
+        setBusy(true, "Playing…");
+        btnPlay.disabled = false;
+        btnPlay.textContent = "■ Stop";
+        await playAnimation(state.size, (t, total) => {
+          statusEl.textContent = `Playing… ${t.toFixed(1)}s / ${total.toFixed(1)}s`;
+        });
+        previewPlaying = false;
+        btnPlay.textContent = "▶ Play animation";
+        setBusy(false);
+        drawStatic();
+      });
+      btnPng.addEventListener("click", () => exportPngSizes([state.size]));
+      btnPngAll.addEventListener("click", () => exportPngSizes(Object.keys(SIZES)));
+      btnVideo.addEventListener("click", () => exportVideoSizes([state.size]));
+      btnVideoAll.addEventListener("click", () => exportVideoSizes(Object.keys(SIZES)));
+
+      document.addEventListener("click", (e) => {
+        if (exportMenu.open && !exportMenu.contains(e.target as Node)) exportMenu.open = false;
+      });
+
+      // First paint: wait for the brand fonts (canvas text measurement) and
+      // any saved images before drawing.
+      syncSidebar();
+      renderRail();
+      Promise.all([
+        document.fonts.load(`400 100px ${FONT}`),
+        document.fonts.load(`500 100px ${FONT}`),
+        dotsImgReady,
+        ensureImages(),
+      ]).finally(() => {
+        drawStatic();
+        drawThumbs();
+      });
+    </script>
+  </body>
+</html>

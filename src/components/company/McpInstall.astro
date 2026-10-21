@@ -1,0 +1,139 @@
+---
+// Client setup tabs; configs and steps unchanged from new-www's McpInstall.astro.
+import SectionHeader from "../ui/SectionHeader.astro";
+import { Copy, Check } from "@lucide/astro";
+
+const clients = [
+  {
+    key: "claude-desktop",
+    label: "Claude Desktop",
+    config: `{
+  "mcpServers": {
+    "pin": {
+      "type": "http",
+      "url": "https://mcp.pin.com/mcp"
+    }
+  }
+}`,
+    configLabel: "~/Library/Application Support/Claude/claude_desktop_config.json",
+    steps: [
+      "Open Claude Desktop → Settings → Developer → Edit Config.",
+      "Paste this block into claude_desktop_config.json.",
+      "Restart Claude. Approve the OAuth window when it opens.",
+      `Try: "Start a search for a senior iOS engineer."`,
+    ],
+  },
+  {
+    key: "claude-code",
+    label: "Claude Code",
+    config: `claude mcp add --transport http pin https://mcp.pin.com/mcp`,
+    configLabel: "Terminal",
+    steps: [
+      "Run this command in any shell.",
+      "A browser tab opens for the Pin OAuth flow. Approve.",
+      "Confirm with: claude mcp list",
+      "Every Claude Code session now has the Pin tools available.",
+    ],
+  },
+  {
+    key: "chatgpt",
+    label: "ChatGPT",
+    config: `Connector URL:
+https://mcp.pin.com/mcp
+
+Auth:   OAuth 2.1 (PKCE)
+Scope:  mcp`,
+    configLabel: "ChatGPT → Settings → Connectors → Add MCP",
+    steps: [
+      "Open ChatGPT → Settings → Connectors → Add.",
+      "Paste the MCP URL and hit Connect.",
+      "Sign in to Pin when redirected. Approve the mcp scope.",
+      "Pin shows up as a connector inside any ChatGPT thread.",
+    ],
+  },
+  {
+    key: "codex",
+    label: "Codex",
+    config: `# ~/.codex/config.toml
+[mcp_servers.pin]
+url = "https://mcp.pin.com/mcp"
+transport = "http"`,
+    configLabel: "~/.codex/config.toml",
+    steps: [
+      "Install or update Codex CLI (npm i -g @openai/codex).",
+      "Add this block to ~/.codex/config.toml.",
+      "Start a Codex session — you'll be prompted to OAuth on first use.",
+      "The Pin tools are now available in every Codex session.",
+    ],
+  },
+  {
+    key: "any",
+    label: "Any MCP client",
+    config: `{
+  "name": "pin",
+  "transport": "http",
+  "url": "https://mcp.pin.com/mcp",
+  "auth": {
+    "type": "oauth2",
+    "metadata_url":
+      "https://mcp.pin.com/.well-known/oauth-authorization-server"
+  }
+}`,
+    configLabel: "Generic MCP client config",
+    steps: [
+      "Any client that speaks the MCP spec over Streamable HTTP works.",
+      "Point it at https://mcp.pin.com/mcp and let it discover OAuth.",
+      "Cursor, Windsurf, Zed, Continue, and custom agents all connect.",
+      "Need a self-hosted fallback for air-gapped envs? Contact support.",
+    ],
+  },
+];
+---
+
+<section id="install" class="scroll-mt-24 py-24 md:py-32" x-data={`{ active: '${clients[0].key}', copied: '' }`} @mcp-client.window="active = $event.detail">
+  <div class="mx-auto max-w-7xl px-4 md:px-8">
+    <SectionHeader align="left" eyebrow="Install · 60 seconds" title="Connect Pin to your AI of choice." sub="One OAuth click and the Pin tools appear in your assistant. Streamable HTTP, remote hosted: no local server, no API keys, no config drift." />
+
+    <div class="mt-10 flex flex-wrap gap-1 rounded-2xl bg-bg-secondary p-1 sm:inline-flex sm:rounded-full" role="tablist" aria-label="AI client">
+      {clients.map((c) => (
+        <button
+          type="button"
+          role="tab"
+          class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
+          x-bind:class={`active === '${c.key}' ? 'bg-white text-ink shadow-app' : 'text-ink-2 hover:text-ink'`}
+          x-bind:aria-selected={`(active === '${c.key}').toString()`}
+          x-on:click={`active = '${c.key}'`}
+        >{c.label}</button>
+      ))}
+    </div>
+
+    {clients.map((c, i) => (
+      <div x-show={`active === '${c.key}'`} style={i ? "display:none" : ""} role="tabpanel" class="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_1.2fr] lg:gap-10">
+        <ol class="space-y-4">
+          {c.steps.map((s, n) => (
+            <li class="flex gap-4">
+              <span class="grid size-7 shrink-0 place-items-center rounded-full bg-green-lighter text-sm font-medium tabular-nums text-green-accessible">{n + 1}</span>
+              <span class="pt-0.5 leading-relaxed">{s}</span>
+            </li>
+          ))}
+          <li class="pl-11 text-sm text-ink-2">Full docs at <a href="https://docs.pin.com/pin-mcp" class="text-green-accessible underline decoration-green/30 underline-offset-4 hover:decoration-green">docs.pin.com/pin-mcp</a></li>
+        </ol>
+        <div class="panel min-w-0 overflow-hidden">
+          <div class="flex items-center justify-between gap-3 border-b border-app-border px-4 py-2.5">
+            <span class="truncate font-mono text-[12px] text-app-fg2">{c.configLabel}</span>
+            <button
+              type="button"
+              class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[12px] font-medium text-app-fg2 shadow-app hover:text-app-fg"
+              x-on:click={`navigator.clipboard?.writeText($refs['cfg-${c.key}'].textContent); copied = '${c.key}'; setTimeout(() => { if (copied === '${c.key}') copied = '' }, 1400)`}
+            >
+              <span x-show={`copied !== '${c.key}'`} class="inline-flex items-center gap-1.5"><Copy size={12} /> Copy</span>
+              <span x-show={`copied === '${c.key}'`} style="display:none" class="inline-flex items-center gap-1.5 text-app-pos"><Check size={12} /> Copied</span>
+            </button>
+          </div>
+          <pre class="overflow-x-auto bg-app-bg2 p-4 text-[13px] leading-relaxed"><code x-ref={`cfg-${c.key}`}>{c.config}</code></pre>
+          <p class="border-t border-app-border px-4 py-2.5 text-[12px] text-app-fg3">OAuth 2.1 via pin.com. Revoke anytime from your <a href="https://pin.com" class="underline">account settings</a>.</p>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>

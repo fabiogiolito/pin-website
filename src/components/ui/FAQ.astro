@@ -1,0 +1,29 @@
+---
+// FAQ accordion. Pages add the FAQPage JSON-LD themselves via `faqJsonLd(items)`.
+import { Plus } from "@lucide/astro";
+interface Props {
+  items: { question: string; answer: string }[];
+  title?: string;
+}
+const { items, title = "Questions" } = Astro.props;
+---
+
+<section id="faq" class="mx-auto grid max-w-7xl gap-10 px-4 py-24 md:px-8 md:py-32 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+  <div data-reveal>
+    <h2 class="text-[32px] font-medium leading-[1.1] tracking-[-0.02em] md:text-[40px]">{title}</h2>
+    <slot>
+      <p class="mt-4 text-lg leading-relaxed text-ink-2">Plans from $99/mo.<br />Free trial, no credit card. <a href="/pricing/" class="whitespace-nowrap font-medium text-green-accessible underline decoration-green/30 underline-offset-4 hover:decoration-green">See pricing</a></p>
+    </slot>
+  </div>
+  <div data-reveal style="--i:1" class="divide-y divide-ink/8 border-y border-ink/8">
+    {items.map((f) => (
+      <details class="group">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-lg font-medium [&::-webkit-details-marker]:hidden">
+          {f.question}
+          <Plus size={18} class="shrink-0 text-ink-3 transition-transform duration-300 group-open:rotate-45" />
+        </summary>
+        <p class="-mt-1 pb-5 pr-10 leading-relaxed text-ink-2" set:html={f.answer} />
+      </details>
+    ))}
+  </div>
+</section>

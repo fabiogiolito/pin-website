@@ -1,0 +1,28 @@
+---
+// Plain comparison table. First column after the label is Pin and gets emphasis.
+import { Check } from "@lucide/astro";
+interface Props { head: string[]; rows: string[][] }
+const { head, rows } = Astro.props;
+---
+
+<div data-reveal class="overflow-x-auto rounded-3xl bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.05)]">
+  <table class="w-full min-w-[640px] text-left">
+    <thead>
+      <tr class="border-b border-ink/8 text-sm text-ink-2">
+        {head.map((h, i) => <th scope="col" class:list={["px-5 py-4 font-medium md:px-6", i === 1 && "bg-green-lighter text-ink"]}>{h}</th>)}
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map(([label, ...cells]) => (
+        <tr class="border-b border-ink/8 last:border-b-0">
+          <th scope="row" class="px-5 py-4 font-medium md:px-6">{label}</th>
+          {cells.map((c, i) => (
+            <td class:list={["px-5 py-4 md:px-6", i === 0 ? "bg-green-lighter/60 font-medium" : "text-ink-2"]}>
+              {i === 0 ? <span class="inline-flex items-start gap-2"><Check size={16} class="mt-1 shrink-0 text-green" />{c}</span> : c}
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,371 @@
+---
+// Focused demo funnel (no site nav). Alpine state, /capture-email + /lookup-company calls,
+// history handling, Cal.com config and dataLayer events are unchanged from new-www's start.astro.
+import Layout from "../layouts/Layout.astro";
+import Logo from "../icons/logo.svg";
+import { CAL_LINKS } from "../lib/getCalUrl";
+import { Play } from "@lucide/astro";
+
+const link12 = CAL_LINKS['1-2']
+const link310 = CAL_LINKS['3-10']
+const link10plus = CAL_LINKS['10+']
+
+const calEmbedId = 'start-cal-embed'
+const calNamespace = 'bookademo_start'
+const calBg = '#FCFAF8'
+
+const xData = `{
+  step: 1,
+  demoVideoOpen: false,
+  emailSubmitted: false,
+  teamSize: '',
+  challenge: '',
+  email: '',
+  companyName: '',
+  calEmbedInitialized: false,
+  stepOrder: ['email', 'teamSize', 'challenge', 'calendar'],
+  get isEmailValid() { return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(this.email) },
+  get currentStep() { return this.stepOrder[this.step - 1] },
+  init() {
+    this.$nextTick(() => { this.trackStepView() })
+    var self = this
+    window.addEventListener('beforeunload', function() {
+      if (self.currentStep !== 'calendar' || !self.calEmbedInitialized) {
+        self.track('funnel_abandoned', { step_name: self.currentStep, step_number: self.step })
+      }
+    })
+    history.pushState({ step: 1 }, '')
+    window.addEventListener('popstate', function(e) {
+      if (self.step > 1) {
+        e.preventDefault()
+        self.track('funnel_back_clicked', { from_step: self.currentStep })
+        self.step--
+        self.trackStepView()
+        history.pushState({ step: self.step }, '')
+      }
+    })
+  },
+  track(event, props) {
+    var payload = Object.assign({}, props || {})
+    if (window.dataLayer) window.dataLayer.push(Object.assign({ event: event }, payload))
+  },
+  getCalLink() {
+    const links = { '1-2': '${link12}', '3-10': '${link310}', '10+': '${link10plus}' }
+    return links[this.teamSize] || '${link12}'
+  },
+  getTrackingParams() {
+    function getCookie(name) {
+      const value = '; ' + document.cookie
+      const parts = value.split('; ' + name + '=')
+      if (parts.length === 2) return parts.pop().split(';').shift()
+      return null
+    }
+    function getQueryParam(name) {
+      return new URLSearchParams(window.location.search).get(name)
+    }
+    function getTP(urlParam, cookieName, pixelCookie) {
+      return getQueryParam(urlParam) ?? getCookie(cookieName) ?? (pixelCookie ? getCookie(pixelCookie) : null) ?? null
+    }
+    const params = {}
+    const gclid = getTP('gclid', 'gclid', '_gcl_aw')
+    const fbclid = getTP('fbclid', 'fbclid', '_fbc')
+    const li_fat_id = getTP('li_fat_id', 'li_fat_id', null)
+    const msclkid = getTP('msclkid', 'msclkid', '_msclkid')
+    const utm_source = getTP('utm_source', 'us', null)
+    const utm_medium = getTP('utm_medium', 'um', null)
+    const utm_campaign = getTP('utm_campaign', 'uc', null)
+    const utm_term = getTP('utm_term', 'ut', null)
+    const utm_content = getTP('utm_content', 'uco', null)
+    if (gclid) params.gclid = gclid
+    if (fbclid) params.fbclid = fbclid
+    if (li_fat_id) params.li_fat_id = li_fat_id
+    if (msclkid) params.msclkid = msclkid
+    if (utm_source) params.utm_source = utm_source
+    if (utm_medium) params.utm_medium = utm_medium
+    if (utm_campaign) params.utm_campaign = utm_campaign
+    if (utm_term) params.utm_term = utm_term
+    if (utm_content) params.utm_content = utm_content
+    return params
+  },
+  captureEvent(fields) {
+    fetch('/capture-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: this.email, ...this.getTrackingParams(), ...fields }),
+    }).catch(() => {})
+  },
+  lookupCompany() {
+    fetch('/lookup-company', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: this.email }),
+    })
+      .then(r => r.json())
+      .then(data => { if (data.name) this.companyName = data.name })
+      .catch(() => {})
+  },
+  trackStepView() {
+    this.track('funnel_step_viewed', { step_name: this.currentStep, step_number: this.step })
+    history.pushState({ step: this.step }, '')
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  },
+  selectTeamSize(val) {
+    this.teamSize = val
+    this.track('funnel_team_size_selected', { team_size: val })
+    this.step++
+    this.trackStepView()
+  },
+  selectChallenge(val) {
+    this.challenge = val
+    this.track('funnel_challenge_selected', { challenge: val })
+    this.step++
+    this.trackStepView()
+    this.captureEvent({ numberOfRecruiters: this.teamSize, challenge: this.challenge })
+    this.track('funnel_calendar_viewed')
+    this.$nextTick(() => { this.initCalEmbed() })
+  },
+  submitEmail() {
+    if (!this.isEmailValid) return
+    this.emailSubmitted = true
+    this.lookupCompany()
+    this.track('demo_email_submitted', { demo_email: this.email })
+    this.captureEvent({})
+    this.step++
+    this.trackStepView()
+  },
+  initCalEmbed() {
+    if (this.calEmbedInitialized) return
+    this.calEmbedInitialized = true
+    const calLink = this.getCalLink()
+    const trackingParams = this.getTrackingParams()
+    const inlineConfig = {
+      ...trackingParams,
+      layout: 'month_view',
+      theme: 'light',
+      challenge: this.challenge,
+      recruiters: this.teamSize,
+      email: this.email,
+      ...(this.companyName && { company: this.companyName }),
+    }
+    Cal.config = Cal.config || {}
+    Cal.config.forwardQueryParams = true
+    Cal('init', '${calNamespace}', { origin: 'https://cal.com' })
+    Cal.ns['${calNamespace}']('inline', {
+      elementOrSelector: '#${calEmbedId}',
+      config: inlineConfig,
+      calLink: calLink,
+    })
+    Cal.ns['${calNamespace}']('ui', {
+      theme: 'light',
+      cssVarsPerTheme: {
+        light: {
+          'cal-bg':                  '${calBg}',
+          'cal-bg-muted':            '${calBg}',
+          'cal-bg-subtle':           '${calBg}',
+          'cal-bg-emphasis':         '#F2EDE8',
+          'cal-brand':               '#4A7A5A',
+          'cal-brand-emphasis':      '#3d6349',
+          'cal-brand-text':          '#FDFDFC',
+          'cal-text':                '#27272A',
+          'cal-text-muted':          '#676770',
+          'cal-border':              'rgba(49,33,33,0.13)',
+          'cal-border-subtle':       'rgba(49,33,33,0.08)',
+          'cal-border-booker':       'rgba(49,33,33,0.13)',
+          'cal-border-booker-width': '1px',
+        },
+      },
+      hideEventTypeDetails: true
+    })
+  }
+}`
+const choice = "w-full rounded-xl bg-green px-6 py-4 text-left font-medium text-white transition-colors hover:bg-green-accessible active:scale-[0.99]";
+const h = "text-[32px] font-medium leading-[1.08] tracking-[-0.02em] text-balance md:text-[40px]";
+const teamSizes = [
+  { v: "1-2", label: "Just me" },
+  { v: "3-10", label: "2 – 10" },
+  { v: "10+", label: "10+" },
+];
+const challenges = [
+  { v: "candidates", label: "Finding candidates" },
+  { v: "responses", label: "Getting responses" },
+  { v: "cost", label: "Spending too much" },
+  { v: "scheduling", label: "Scheduling & follow-ups" },
+];
+---
+
+<Layout title="Book a Demo — Pin" noindex={true} bare={true}>
+  <header class="mx-auto flex max-w-[560px] items-center justify-between border-b border-ink/8 px-4 py-4 md:px-0">
+    <a href="/" aria-label="Pin home" class="text-ink"><Logo width={70} height={30} /></a>
+    <div class="flex flex-col items-end gap-1">
+      <img src="/images/badges/g2-badge.webp" alt="G2 High Performer" width="75" height="21" class="opacity-80" />
+      <span class="text-xs text-ink-2">Trusted by 10,000+ Recruiters</span>
+    </div>
+  </header>
+
+  <div x-data={xData} class="flex flex-col items-center px-4 py-6 md:py-8">
+    <!-- Headline + video (email step only) -->
+    <div x-show="currentStep !== 'calendar' && !emailSubmitted" class="mb-8 w-full max-w-[560px]">
+      <p class="text-sm font-medium tracking-wide text-green">From job title to booked interviews</p>
+      <p class:list={[h, "mt-2"]}>The #1 rated AI Recruiting platform</p>
+      <div class="relative mt-6 overflow-hidden rounded-2xl bg-bg-tertiary">
+        <button
+          x-show="!demoVideoOpen"
+          type="button"
+          @click="demoVideoOpen = true; track('video_played', { video_source: 'start_page' })"
+          class="group relative block w-full"
+          aria-label="Watch the 2 minute demo"
+        >
+          <img src="/images/pin-intro-video-small-thumbnail.webp" alt="" width="1920" height="1066" class="block h-auto w-full" decoding="async" loading="eager" />
+          <span class="absolute inset-0 grid place-items-center">
+            <span class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-ink shadow-app transition-transform group-hover:scale-105"><Play size={14} fill="currentColor" /> Watch 2 min demo</span>
+          </span>
+        </button>
+        <video
+          x-show="demoVideoOpen"
+          x-ref="demoVideo"
+          x-effect="if (demoVideoOpen) { $nextTick(() => { $refs.demoVideo?.play() }) }"
+          @ended="demoVideoOpen = false; $refs.demoVideo.currentTime = 0"
+          class="block h-auto w-full"
+          controls
+          playsinline
+          preload="none"
+          poster="/images/pin-intro-video-small-thumbnail.webp"
+          style="display: none;"
+        >
+          <source src="/videos/pin-intro-video-large.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <p class="mt-3 text-center text-sm text-ink-2">"Pin is an <strong class="font-medium text-ink">absolute money maker</strong>" — <strong class="font-medium text-ink">Rich Rosen</strong>, Cornerstone Search</p>
+    </div>
+
+    <!-- Back (steps 2+) -->
+    <button
+      x-show="step > 1 && currentStep !== 'calendar'"
+      x-cloak
+      type="button"
+      @click="track('funnel_back_clicked', { from_step: currentStep }); step--; trackStepView()"
+      class="mb-4 w-full max-w-[560px] text-left text-sm text-ink-2 transition-colors hover:text-ink"
+    >&larr; Back</button>
+
+    <!-- Step: Team size -->
+    <div x-cloak x-show="currentStep === 'teamSize'" x-transition.opacity class="flex w-full max-w-[560px] flex-col gap-8">
+      <div>
+        <h1 class={h}>How many are hiring?</h1>
+        <p class="mt-2 text-ink-2">So we can personalize your experience.</p>
+      </div>
+      <div class="flex flex-col gap-3">
+        {teamSizes.map((t) => <button type="button" @click={`selectTeamSize('${t.v}')`} class={choice}>{t.label}</button>)}
+      </div>
+    </div>
+
+    <!-- Step: Challenge -->
+    <div x-cloak x-show="currentStep === 'challenge'" x-transition.opacity class="flex w-full max-w-[560px] flex-col gap-8">
+      <div>
+        <h1 class={h}>Biggest challenge?</h1>
+        <p class="mt-2 text-ink-2">So we show you what matters most.</p>
+      </div>
+      <div class="flex flex-col gap-3">
+        {challenges.map((c) => <button type="button" @click={`selectChallenge('${c.v}')`} class={choice}>{c.label}</button>)}
+      </div>
+    </div>
+
+    <!-- Step: Email -->
+    <div x-cloak x-show="currentStep === 'email'" x-transition.opacity class="flex w-full max-w-[560px] flex-col gap-6">
+      <div>
+        <h1 class={h}>Try for free</h1>
+        <p class="mt-2 text-ink-2">Enter your work email to continue.</p>
+      </div>
+      <form @submit.prevent="submitEmail()" class="flex flex-col gap-3">
+        <label for="start-email" class="sr-only">Work email</label>
+        <input
+          id="start-email"
+          x-model="email"
+          x-ref="emailInput"
+          type="email"
+          name="email"
+          autocomplete="email"
+          placeholder="Work email"
+          class="w-full rounded-xl border border-ink/12 bg-white px-4 py-3.5 text-base outline-none transition-colors placeholder:text-ink-3 focus:border-green"
+        />
+        <button
+          type="submit"
+          :disabled="!isEmailValid"
+          :class="isEmailValid ? 'bg-green text-white hover:bg-green-accessible' : 'bg-green-lighter text-green/50 cursor-not-allowed'"
+          class="w-full rounded-xl px-6 py-4 font-medium transition-colors"
+        >Get My Demo →</button>
+      </form>
+      <div class="flex flex-col items-center gap-3">
+        <p class="text-sm text-ink-3">or</p>
+        <button
+          type="button"
+          @click="isLoginModalOpen = true; $nextTick(() => { const i = document.getElementById('login-email'); if (i && email) i.value = email }); track('start_free_clicked', { location: 'start_page', page: '/start' })"
+          class="w-full rounded-xl border border-ink/12 bg-white px-6 py-4 font-medium transition-colors hover:border-green"
+        >Try for free</button>
+        <p class="text-xs text-ink-3">No credit card required</p>
+      </div>
+    </div>
+
+    <!-- Step: Calendar -->
+    <div x-cloak x-show="currentStep === 'calendar'" x-transition.opacity class="flex w-full max-w-[560px] flex-col gap-6">
+      <div>
+        <h1 class={h}>Pick a time that works</h1>
+        <p class="mt-2 text-ink-2">30-minute demo, personalized to your use case.</p>
+      </div>
+      <div id={calEmbedId} style="width:100%;min-height:600px;overflow:auto"></div>
+    </div>
+  </div>
+
+  <!-- Cal.com SDK loader -->
+  <script is:inline>
+    (function (C, A, L) {
+      let p = function (a, ar) { a.q.push(ar) }
+      let d = C.document
+      C.Cal = C.Cal || function () {
+        let cal = C.Cal
+        let ar = arguments
+        if (!cal.loaded) {
+          cal.ns = {}
+          cal.q = cal.q || []
+          d.head.appendChild(d.createElement('script')).src = A
+          cal.loaded = true
+        }
+        if (ar[0] === L) {
+          const api = function () { p(api, arguments) }
+          const namespace = ar[1]
+          api.q = api.q || []
+          if (typeof namespace === 'string') {
+            cal.ns[namespace] = cal.ns[namespace] || api
+            p(cal.ns[namespace], ar)
+            p(cal, ['initNamespace', namespace])
+          } else p(cal, ar)
+          return
+        }
+        p(cal, ar)
+      }
+    })(window, 'https://app.cal.com/embed/embed.js', 'init')
+  </script>
+
+  <!-- Fire demo_booked when Cal.com booking completes -->
+  <script is:inline>
+    (function waitForCal() {
+      if (!window.Cal || !window.Cal.ns || !window.Cal.ns.bookademo_start) {
+        return setTimeout(waitForCal, 200)
+      }
+      Cal.ns.bookademo_start('on', {
+        action: 'bookingSuccessful',
+        callback: function (e) {
+          window.dataLayer = window.dataLayer || []
+          window.dataLayer.push({
+            event: 'demo_booked',
+            demo_email: (e && e.detail && e.detail.data && e.detail.data.email) || '',
+            demo_source: 'start_page',
+          })
+        },
+      })
+    })()
+  </script>
+</Layout>
+
+<style>
+  [x-cloak] { display: none !important; }
+</style>

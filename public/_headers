@@ -1,0 +1,70 @@
+# Cloudflare Pages cache + security headers
+#
+# Header rules cascade — when multiple rules match, more specific paths win
+# per-header. So /_astro/* keeps its long Cache-Control even though /* below
+# also matches it.
+#
+# CDN-Cache-Control is read by Cloudflare's edge to decide how long to cache.
+# Cache-Control governs browser cache only. The combination on /* (max-age=0
+# for browsers, max-age=300 for the edge) is what gets cache hit ratio up
+# while still letting browsers revalidate via etag.
+
+# Hashed Astro asset bundles — content-addressed, safe to cache forever
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+# Self-hosted fonts (versioned by filename)
+/font-files/*
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+# Videos — large, rarely change
+/videos/*
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+# Static images — long cache, but allow revalidation if a path is reused
+/images/*
+  Cache-Control: public, max-age=2592000
+  CDN-Cache-Control: public, max-age=2592000
+
+# Favicons / icons
+/favicon.ico
+  Cache-Control: public, max-age=2592000
+  CDN-Cache-Control: public, max-age=2592000
+
+/favicons/*
+  Cache-Control: public, max-age=2592000
+  CDN-Cache-Control: public, max-age=2592000
+
+# Per-visitor geo lookup — must never be cached at the edge or shared.
+# Belt-and-suspenders: __geo.js sets these too, but Cloudflare _headers is
+# documented to win on conflict in some cases, so we set them here as well.
+/__geo
+  Cache-Control: private, no-store
+  CDN-Cache-Control: no-store
+
+# Catch-all (HTML pages + everything not matched above).
+# Browser revalidates on every navigation (etag does the actual work);
+# Cloudflare edge caches HTML for 5 minutes, which is what fixes the cache
+# hit ratio. Security headers live here so CSP, HSTS, etc. apply to every
+# document response — replacing the old functions/_middleware.js, which made
+# every response uncacheable by passing through a Worker.
+#
+# CSP is intentionally pragmatic for a GTM-heavy marketing site: external
+# network directives allow HTTPS so ad pixels can fan out without brittle host
+# lists, while high-value controls still restrict objects, base URI, embedding,
+# workers, and manifests.
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+  CDN-Cache-Control: public, max-age=300
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; script-src-elem 'self' 'unsafe-inline' https:; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; style-src-elem 'self' 'unsafe-inline' https:; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; media-src 'self' blob: https:; connect-src 'self' https:; frame-src 'self' https:; form-action 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; manifest-src 'self'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()

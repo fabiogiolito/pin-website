@@ -1,0 +1,366 @@
+---
+import "./tools.css";
+// Interview Scorecard Builder — generates a role-specific interview rubric.
+// v1: local-only output. Producing a shared-link panel-aggregation flow is a
+// v2 feature that needs a backend; this is flagged in docs/tool-ideas.md.
+---
+
+<script is:inline>
+  window.interviewScorecardBuilder = function () {
+    const TRAIT_LIBRARY = [
+      { id: 'communication',    label: 'Communication',            desc: 'Clarity of explanation and active listening.' },
+      { id: 'problem-solving',  label: 'Problem-solving',          desc: 'Approach, trade-off reasoning, assumption checks.' },
+      { id: 'technical-depth',  label: 'Technical depth',          desc: 'Mastery of core concepts and debugging instincts.' },
+      { id: 'system-design',    label: 'System design',            desc: 'Scaling reasoning, boundary choices, data flow.' },
+      { id: 'ownership',        label: 'Ownership',                desc: 'Evidence of end-to-end responsibility for outcomes.' },
+      { id: 'collaboration',    label: 'Collaboration',            desc: 'Working with peers, PM, design, stakeholders.' },
+      { id: 'leadership',       label: 'Leadership',               desc: 'Coaching, setting direction, raising the bar.' },
+      { id: 'culture-add',      label: 'Culture-add',              desc: 'Values contribution — NOT "culture fit" (different thing).' },
+      { id: 'domain-expertise', label: 'Domain expertise',         desc: 'Understanding of the specific industry/product.' },
+      { id: 'speed',            label: 'Execution speed',          desc: 'Shipping cadence and throughput.' },
+    ];
+
+    return {
+      role: 'Senior Software Engineer',
+      seniority: 'senior',
+      seniorityOptions: [
+        { id: 'junior', label: 'Junior' }, { id: 'mid', label: 'Mid' },
+        { id: 'senior', label: 'Senior' }, { id: 'staff', label: 'Staff / Principal' },
+      ],
+      scale: '1-5',
+      scaleOptions: [{ id: '1-5', label: '1 – 5' }, { id: '1-10', label: '1 – 10' }],
+      traits: ['communication', 'problem-solving', 'technical-depth', 'ownership'],
+      mustHaves: ['Ships independently within first 60 days'],
+      redFlags: ['Blames prior team for every failure'],
+      traitLibrary: TRAIT_LIBRARY,
+      copied: false,
+      linkCopied: false,
+      _trackedFirst: false,
+      _viewTracked: false,
+
+      _track(event, props = {}) {
+        try {
+          const root = this.$root;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event,
+            tool_slug: (root && root.dataset && root.dataset.pinToolSlug) || '',
+            tool_name: (root && root.dataset && root.dataset.pinToolName) || '',
+            post_slug: (location.pathname.split('/').filter(Boolean).pop() || ''),
+            page_path: location.pathname,
+            ...props,
+          });
+        } catch (e) {}
+      },
+      _trackFirstInteraction(type) {
+        if (this._trackedFirst) return;
+        this._trackedFirst = true;
+        this._track('blog_tool_first_interaction', { interaction_type: type });
+      },
+
+      hydrate() {
+        try {
+          const s = new URLSearchParams(window.location.search).get('isc');
+          if (s) {
+            const state = JSON.parse(decodeURIComponent(atob(s)));
+            if (typeof state.role === 'string') this.role = state.role;
+            if (typeof state.seniority === 'string') this.seniority = state.seniority;
+            if (typeof state.scale === 'string') this.scale = state.scale;
+            if (Array.isArray(state.traits)) this.traits = state.traits;
+            if (Array.isArray(state.mustHaves)) this.mustHaves = state.mustHaves;
+            if (Array.isArray(state.redFlags)) this.redFlags = state.redFlags;
+            this._track('blog_tool_shared_state_loaded');
+          }
+        } catch (e) {}
+        if (!this._viewTracked && typeof IntersectionObserver !== 'undefined') {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._viewTracked = true;
+              this._track('blog_tool_viewed');
+              io.disconnect();
+            }
+          }, { threshold: 0.3 });
+          io.observe(this.$root);
+        }
+      },
+
+      toggleTrait(id) {
+        const i = this.traits.indexOf(id);
+        if (i >= 0) this.traits.splice(i, 1);
+        else if (this.traits.length < 8) this.traits.push(id);
+        this._trackFirstInteraction('toggle');
+      },
+      isTraitOn(id) { return this.traits.includes(id); },
+
+      addMustHave(evt) {
+        const raw = (evt.target.value || '').trim();
+        if (raw && !this.mustHaves.includes(raw)) this.mustHaves.push(raw);
+        evt.target.value = '';
+        this._trackFirstInteraction('chip_add');
+      },
+      removeMustHave(i) { this.mustHaves.splice(i, 1); },
+      addRedFlag(evt) {
+        const raw = (evt.target.value || '').trim();
+        if (raw && !this.redFlags.includes(raw)) this.redFlags.push(raw);
+        evt.target.value = '';
+        this._trackFirstInteraction('chip_add');
+      },
+      removeRedFlag(i) { this.redFlags.splice(i, 1); },
+
+      applyPreset(id) {
+        if (id === 'software-eng') {
+          this.role = 'Senior Software Engineer'; this.seniority = 'senior'; this.scale = '1-5';
+          this.traits = ['communication', 'problem-solving', 'technical-depth', 'system-design', 'ownership'];
+          this.mustHaves = ['Ships independently within first 60 days', '5+ years of backend experience'];
+          this.redFlags = ['Cannot articulate trade-offs in system design', 'Blames prior team for every failure'];
+        } else if (id === 'product-manager') {
+          this.role = 'Product Manager'; this.seniority = 'mid'; this.scale = '1-5';
+          this.traits = ['communication', 'problem-solving', 'ownership', 'collaboration', 'domain-expertise'];
+          this.mustHaves = ['Has driven a product launch end-to-end', 'Comfortable with quant data'];
+          this.redFlags = ['Cannot name the #1 KPI for their last product'];
+        } else if (id === 'eng-manager') {
+          this.role = 'Engineering Manager'; this.seniority = 'senior'; this.scale = '1-5';
+          this.traits = ['communication', 'leadership', 'ownership', 'collaboration', 'technical-depth'];
+          this.mustHaves = ['Has managed 4+ engineers', 'Comfortable giving hard feedback'];
+          this.redFlags = ['Only reports up, never down', 'Avoids performance conversations'];
+        }
+        this._track('blog_tool_preset_selected', { preset_id: id });
+        this._trackFirstInteraction('preset');
+      },
+
+      reset() {
+        this.role = 'Senior Software Engineer'; this.seniority = 'senior'; this.scale = '1-5';
+        this.traits = ['communication', 'problem-solving', 'technical-depth', 'ownership'];
+        this.mustHaves = ['Ships independently within first 60 days'];
+        this.redFlags = ['Blames prior team for every failure'];
+        this._track('blog_tool_reset_clicked');
+      },
+
+      get scaleRange() {
+        return this.scale === '1-10' ? '1 – 10' : '1 – 5';
+      },
+      get scaleMax() { return this.scale === '1-10' ? 10 : 5; },
+
+      get scorecard() {
+        const hr = '──────────────────────────────────────────';
+        const traitBlocks = this.traits.map((id) => {
+          const t = this.traitLibrary.find((x) => x.id === id);
+          if (!t) return '';
+          return [
+            '  ' + t.label + '  (' + this.scaleRange + ')',
+            '  ' + t.desc,
+            '  Score: ____',
+            '  Evidence / example:',
+            '  ' + ' '.repeat(50),
+            '',
+          ].join('\n');
+        });
+        const mustHaveLines = this.mustHaves.length
+          ? this.mustHaves.map((m) => '  [ ] ' + m)
+          : ['  (add must-have criteria above)'];
+        const redFlagLines = this.redFlags.length
+          ? this.redFlags.map((r) => '  [ ] ' + r)
+          : ['  (add red flags above)'];
+
+        return [
+          'INTERVIEW SCORECARD',
+          hr,
+          'Role:       ' + this.role,
+          'Seniority:  ' + (this.seniorityOptions.find((o) => o.id === this.seniority)?.label || this.seniority),
+          'Scale:      ' + this.scaleRange + '  (higher is stronger)',
+          'Interviewer: ___________________________   Date: __________',
+          'Candidate:   ___________________________',
+          '',
+          'TRAITS TO EVALUATE',
+          hr,
+          '',
+          ...traitBlocks,
+          '',
+          'MUST-HAVES (binary pass/fail)',
+          hr,
+          ...mustHaveLines,
+          '',
+          'RED FLAGS (binary pass/fail)',
+          hr,
+          ...redFlagLines,
+          '',
+          'OVERALL RECOMMENDATION',
+          hr,
+          '  [ ] Strong hire',
+          '  [ ] Hire',
+          '  [ ] No hire',
+          '  [ ] Strong no hire',
+          '',
+          'Summary (2-3 sentences of evidence):',
+          '  ' + ' '.repeat(50),
+          '  ' + ' '.repeat(50),
+          '',
+        ].join('\n');
+      },
+
+      shareUrl() {
+        try {
+          const state = { role: this.role, seniority: this.seniority, scale: this.scale, traits: this.traits, mustHaves: this.mustHaves, redFlags: this.redFlags };
+          const s = btoa(encodeURIComponent(JSON.stringify(state)));
+          const url = new URL(window.location.href);
+          url.searchParams.set('isc', s);
+          return url.toString();
+        } catch (e) { return window.location.href; }
+      },
+
+      _copyText(text, flag) {
+        const ok = () => { this[flag] = true; setTimeout(() => this[flag] = false, 1500); };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(ok).catch(() => {});
+          return;
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      },
+      copy() {
+        this._copyText(this.scorecard, 'copied');
+        this._track('blog_tool_output_copied', { trait_count: this.traits.length });
+      },
+      copyLink() {
+        const url = this.shareUrl();
+        try { history.replaceState(null, '', url); } catch (e) {}
+        this._copyText(url, 'linkCopied');
+        this._track('blog_tool_share_link_copied');
+      },
+    };
+  };
+</script>
+
+<section
+  class="pin-tool"
+  data-pin-tool-slug="interview-scorecard-builder"
+  data-pin-tool-name="Interview Scorecard Builder"
+  x-data="interviewScorecardBuilder()"
+  x-init="hydrate()"
+>
+  <h2 class="pt-title" id="pin-tool-interview-scorecard-builder">
+    Interview Scorecard Builder
+    <span class="pt-tool-badge" aria-hidden="true">Tool</span>
+  </h2>
+  <p class="pt-intro">
+    Build a structured interview scorecard in 30 seconds. Pick traits, set a scoring scale, list must-haves and red flags — copy the rubric for each panelist to fill in independently. Structured interviews are ~2× more predictive than unstructured.
+  </p>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Preset</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" @click="applyPreset('software-eng')">Software engineer</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('product-manager')">Product manager</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('eng-manager')">Eng manager</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="isc-role">Role</label>
+      <input id="isc-role" class="pt-input" type="text" x-model="role" @input.debounce.300ms="_trackFirstInteraction('input')" />
+    </div>
+    <div>
+      <span class="pt-label">Seniority</span>
+      <div class="pt-presets">
+        <template x-for="o in seniorityOptions" :key="o.id">
+          <button type="button" class="pt-preset-btn" :class="seniority === o.id ? 'active' : ''" @click="seniority = o.id; _trackFirstInteraction('toggle')" x-text="o.label"></button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Scoring scale</span>
+      <div class="pt-presets">
+        <template x-for="o in scaleOptions" :key="o.id">
+          <button type="button" class="pt-preset-btn" :class="scale === o.id ? 'active' : ''" @click="scale = o.id; _trackFirstInteraction('toggle')" x-text="o.label"></button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <label class="pt-label">Traits to evaluate (pick up to 8)</label>
+      <div class="pt-trait-grid">
+        <template x-for="t in traitLibrary" :key="t.id">
+          <button
+            type="button"
+            class="pt-trait-btn"
+            :class="isTraitOn(t.id) ? 'active' : ''"
+            @click="toggleTrait(t.id)"
+          >
+            <span class="pt-trait-label" x-text="t.label"></span>
+            <span class="pt-trait-desc" x-text="t.desc"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label">Must-haves (binary pass/fail)</label>
+      <div class="pt-chips" @click="$refs.mhInput.focus()">
+        <template x-for="(m, i) in mustHaves" :key="'m-' + i + '-' + m">
+          <span class="pt-chip">
+            <span x-text="m"></span>
+            <button type="button" aria-label="Remove" @click="removeMustHave(i)">×</button>
+          </span>
+        </template>
+        <input x-ref="mhInput" class="pt-chip-input" type="text" placeholder="e.g. Ships within 60 days"
+          @keydown.enter.prevent="addMustHave($event)" />
+      </div>
+    </div>
+    <div>
+      <label class="pt-label">Red flags</label>
+      <div class="pt-chips" @click="$refs.rfInput.focus()">
+        <template x-for="(r, i) in redFlags" :key="'r-' + i + '-' + r">
+          <span class="pt-chip">
+            <span x-text="r"></span>
+            <button type="button" aria-label="Remove" @click="removeRedFlag(i)">×</button>
+          </span>
+        </template>
+        <input x-ref="rfInput" class="pt-chip-input" type="text" placeholder="e.g. Blames prior team"
+          @keydown.enter.prevent="addRedFlag($event)" />
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-output-wrap">
+    <label class="pt-label" for="isc-out">Scorecard (copy for each panelist)</label>
+    <textarea id="isc-out" class="pt-output pt-output-tall" readonly x-text="scorecard"></textarea>
+    <div class="pt-actions">
+      <button type="button" class="pt-btn primary" @click="copy()">
+        <span x-show="!copied">Copy scorecard</span>
+        <span x-show="copied" x-cloak>Copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="copyLink()">
+        <span x-show="!linkCopied">Copy share link</span>
+        <span x-show="linkCopied" x-cloak>Link copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="reset()">Reset</button>
+    </div>
+  </div>
+
+  <div class="pt-howto">
+    <strong>How to use:</strong>
+    <ol>
+      <li>Pick a preset close to your role, then edit the trait list (fewer traits = more reliable inter-rater agreement).</li>
+      <li>Must-haves are binary — either the candidate clears the bar or they don't. Keep them concrete and observable.</li>
+      <li>Red flags are things that disqualify regardless of scores — phrased as behaviors, not personality.</li>
+      <li>Copy the scorecard once per panelist, fill it in independently during or right after the interview, then debrief with scores in hand.</li>
+      <li>Share the link if you want to standardize scorecards across multiple roles on your team.</li>
+    </ol>
+  </div>
+
+  <p class="pt-source">
+    Built by Pin. Pin customers run structured interviews at scale — <a href="https://www.pin.com/">pin.com</a>.
+  </p>
+</section>

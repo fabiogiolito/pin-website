@@ -1,0 +1,305 @@
+---
+import Layout from "../layouts/Layout.astro";
+import SectionHeader from "../components/ui/SectionHeader.astro";
+import FAQ from "../components/ui/FAQ.astro";
+import CTABand from "../components/ui/CTABand.astro";
+import McpDemo from "../components/company/McpDemo.astro";
+import McpInstall from "../components/company/McpInstall.astro";
+import { breadcrumb } from "../components/company/breadcrumb";
+import { mcpFaqItems } from "../data/mcp-faq";
+import { ArrowRight, Copy, Check, ShieldCheck } from "@lucide/astro";
+
+const title = "Pin MCP — AI Recruiting MCP Server for Claude, ChatGPT, Codex & Claude Code";
+const description =
+  "The Pin MCP server gives Claude, ChatGPT, Codex, and any MCP-compatible assistant 10 recruiting tools — kick off searches across 850M+ profiles, review candidates in an accept/reject loop, and let the assistant learn your taste and run autonomously. Free on every paid Pin plan. SOC 2 Type 2.";
+
+// FAQ answers use `code` spans; render them as <code> on the page (faqJsonLd strips tags).
+const faqItems = mcpFaqItems.map((i) => ({ question: i.question, answer: i.answer.replace(/`([^`]+)`/g, "<code>$1</code>") }));
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "@id": "https://www.pin.com/mcp#software",
+    name: "Pin MCP",
+    applicationCategory: "BusinessApplication",
+    applicationSubCategory: "Recruiting Software",
+    operatingSystem: "Web, macOS, Windows, Linux",
+    url: "https://www.pin.com/mcp",
+    description:
+      "An MCP (Model Context Protocol) server that lets AI assistants — Claude, ChatGPT, Codex, Claude Code — run a Pin recruiting workflow: kicking off searches across 850M+ profiles, reviewing candidates in an accept/reject loop, tuning the ranker, and persisting per-job memory. Streamable HTTP, OAuth 2.1, stateless.",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD", description: "Included on every paid Pin plan" },
+    aggregateRating: { "@type": "AggregateRating", ratingValue: "4.8", ratingCount: "27", reviewCount: "27", bestRating: "5", url: "https://www.g2.com/products/pin/reviews" },
+    publisher: { "@id": "https://www.pin.com/#organization" },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": "https://www.pin.com/mcp#faq",
+    mainEntity: mcpFaqItems.map((item) => ({ "@type": "Question", name: item.question, acceptedAnswer: { "@type": "Answer", text: item.answer } })),
+  },
+  breadcrumb("Pin MCP", "https://www.pin.com/mcp"),
+];
+
+const stats = [
+  { n: "850M+", l: "profiles searchable" },
+  { n: "10", l: "MCP tools exposed" },
+  { n: "60s", l: "from install to first call" },
+  { n: "OAuth 2.1", l: "auth — no API keys" },
+];
+const connect = [
+  { label: "Connect to Claude", target: "claude", client: "claude-desktop" },
+  { label: "Connect to Codex", target: "codex", client: "codex" },
+  { label: "Other clients", target: "other", client: "any" },
+];
+
+const facts: [string, string][] = [
+  ["Who it's for", "Recruiters, agencies, founders, and hiring teams who already use Pin."],
+  ["What you connect", "Claude Desktop, Claude Code, ChatGPT, Codex, and any MCP-compatible client."],
+  ["How it authenticates", "OAuth 2.1 via WorkOS — one click through your pin.com account. No API keys to rotate."],
+  ["What it runs on", "A hosted, stateless Streamable HTTP endpoint at mcp.pin.com/mcp. No local install."],
+  ["What it exposes", "10 tools across 4 phases: kickoff, review, tuning, and per-job memory."],
+  ["What it costs", "Free on every paid Pin plan. No add-on fee, no metered call limit."],
+  ["Data handling", "SOC 2 Type 2. Every call is workspace-scoped and written to the audit trail."],
+];
+
+const groups = [
+  {
+    name: "Set up the search",
+    tools: [
+      { name: "list_jobs", desc: "List active candidate searches in your workspace. Used to resolve a role the recruiter mentions by name before any other call.", ex: "Pull up my open searches — I think we have one for a staff PM." },
+      { name: "scrape_job_description", desc: "Fetch a job posting from Greenhouse, Lever, Ashby, or any public job board URL. Returns the title, location, and full description.", ex: "Grab the JD from this Greenhouse link and start a search." },
+      { name: "create_job", desc: "Kick off a new candidate search from a title, description, and company. Sourcing runs in the background; call get_candidates right after.", ex: "Start a search: Senior iOS engineer at Acme, Swift + SwiftUI, NYC, remote OK." },
+    ],
+  },
+  {
+    name: "Review candidates",
+    tools: [
+      { name: "get_candidates", desc: "Return up to 10 top-ranked, unreviewed candidates for a job. Each batch ships with fit hints, pattern analysis, and anything the assistant has learned so far.", ex: "Show me the next batch — 10 at a time is fine." },
+      { name: "accept_candidate", desc: "Advance a candidate. Kicks off outreach from your Pin-configured sequence. Always confirmed — the assistant never sends silently.", ex: "Accept Maya — she's exactly the shape." },
+      { name: "reject_candidate", desc: "Decline a candidate with a standard or free-text reason. Sourcing quietly backfills a replacement so the queue never runs dry.", ex: "Pass on Robert — wrong stack. Replace him." },
+    ],
+  },
+  {
+    name: "Tune the search",
+    tools: [
+      { name: "modify_search", desc: "Adjust the search with plain-language instructions — location, seniority, skills, comp, anything. Applies before the next batch.", ex: "Only candidates in the NYC metro, drop anyone below staff level." },
+      { name: "recalibrate_search", desc: "Feed accumulated accept/reject signal back into the ranker, then pull a fresh, better-matching batch. Auto-suggested when patterns emerge.", ex: "You've rejected 5 junior people in a row — recalibrate." },
+    ],
+  },
+  {
+    name: "Persistent memory",
+    tools: [
+      { name: "read_job_memory", desc: "Load what the assistant learned about your taste for this role in prior sessions — accepted signals, decline reasons, current confidence.", ex: "What do you already know about how I evaluate for this one?" },
+      { name: "update_job_memory", desc: "Persist the running summary — patterns spotted, predicted criteria, confidence level — so the next session doesn't re-learn from scratch.", ex: "Remember: never below 5 yrs of production Swift; de-rank bootcamp-only." },
+    ],
+  },
+];
+
+const recipes = [
+  { title: "Start a search from a JD link", tag: "Kickoff", prompt: "Here's the Greenhouse link for our Senior iOS role. Scrape it, start the search, and pull me the first batch of 10.", tools: ["scrape_job_description", "create_job", "get_candidates"] },
+  { title: "Resume an in-flight search", tag: "Review", prompt: "What's open right now? Find my Staff PM role, load what you remember about my criteria, and show me the next batch.", tools: ["list_jobs", "read_job_memory", "get_candidates"] },
+  { title: "Tell me why — then decide together", tag: "Review", prompt: "For each candidate in this batch: 2–3 sentence fit summary, predict accept or reject, then ask me. Skip the preamble.", tools: ["get_candidates", "accept_candidate", "reject_candidate"] },
+  { title: "Tighten the search mid-flow", tag: "Tuning", prompt: "Require 5+ years of production Swift, drop anyone in an agency background, and keep NYC / remote only. Then get a fresh batch.", tools: ["modify_search", "get_candidates"] },
+  { title: "Recalibrate after a rejection streak", tag: "Tuning", prompt: "You've noticed I've rejected 5 in a row for the same reason. Lock in what I prefer, recalibrate the ranker, and go again.", tools: ["update_job_memory", "recalibrate_search", "get_candidates"] },
+  { title: "Go autonomous for the rest", tag: "Autonomous", prompt: "You've predicted my last 4 decisions correctly. Take over — accept the next 10 you're confident on. Surface anything you're unsure about.", tools: ["get_candidates", "accept_candidate", "reject_candidate", "update_job_memory"] },
+];
+
+const compareRows: [string, string, string][] = [
+  ["Interface", "Your chat window", "pin.com dashboard"],
+  ["Best for", "Hands-free review, autonomous mode, batching", "Deep review sessions, hiring-manager collaboration"],
+  ["Starting a search", "Natural language or scraped JD URL", "Faceted form + boolean"],
+  ["Reviewing candidates", `Accept/reject loop, "tell me why" as you go`, "Card grid, keyboard shortcuts"],
+  ["Taste learning", "Per-job memory; predicts your decisions", "Implicit — stays in your head"],
+  ["Autonomous mode", "Offered after 3 correct predictions", "Not applicable"],
+  ["Outreach", "Fires on accept — always confirmed", "Template picker, one-click send"],
+  ["Collaboration", "Decisions sync back to Pin", "Comments, mentions, assignments"],
+];
+
+const safeguards = [
+  { label: "mcp", desc: "The only OAuth scope the Pin MCP requests. Grants tool access inside your Pin workspace — and nothing else. Billing, team membership, and org admin are never exposed to the server." },
+  { label: "workspace-scoped", desc: "Every tool call is tagged with your user + org on the server before it ever touches the database. An assistant connected to your account cannot see, list, or modify data in another workspace." },
+  { label: "confirm-on-write", desc: "Accepts, rejects, and memory writes only fire when the assistant calls the tool — which your client shows you first. There is no way for the MCP to send outreach silently." },
+  { label: "audit trail", desc: "Every tool call is logged with userId, orgId, tool name, arguments, and result status. Visible to workspace admins; exportable for compliance." },
+  { label: "revocable", desc: "Revoke a connected assistant from Settings → Connected Apps. The bearer token is invalidated on the spot; in-flight calls fail with 401." },
+];
+
+const tile = "rounded-3xl bg-white p-6 shadow-[0_0_0_1px_rgb(0_0_0/0.04),0_10px_30px_-14px_rgb(115_70_38/0.18)] md:p-7";
+const link = "font-medium text-green-accessible underline decoration-green/30 underline-offset-4 hover:decoration-green";
+---
+
+<Layout title={title} description={description} jsonLd={jsonLd}>
+  <!-- Hero -->
+  <section class="mx-auto max-w-7xl px-4 pb-16 pt-12 md:px-8 md:pb-24 md:pt-20">
+    <SectionHeader
+      as="h1"
+      eyebrow="Pin MCP server"
+      title="The recruiting MCP for Claude, Codex, and everything else."
+      sub="Run Pin from the assistant you already work in. Start a search, review candidates with it, let it learn your taste, and hand it the rest when you're ready. Same Pin, same 850M+ profiles, in plain language."
+    >
+      <div data-reveal style="--i:3" class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+        {connect.map((c, i) => (
+          <a
+            href="#install"
+            class:list={[
+              "group inline-flex items-center justify-center gap-2 rounded-xl px-6 py-4 font-medium transition-[background-color,border-color,scale] active:scale-[0.98]",
+              i === 0 ? "bg-green text-white hover:bg-green-accessible" : "border border-green/30 bg-white text-green-accessible hover:border-green",
+            ]}
+            x-on:click={`$dispatch('mcp-client', '${c.client}'); window.dataLayer?.push({ event: 'mcp_connect_clicked', target: '${c.target}', page: window.location.pathname })`}
+          >{c.label}{i === 0 && <ArrowRight size={18} class="transition-transform group-hover:translate-x-0.5" />}</a>
+        ))}
+      </div>
+      <p data-reveal style="--i:4" class="mt-5 text-sm text-ink-2">Included on every paid Pin plan · <a href="/pricing/" class={link}>See pricing</a></p>
+    </SectionHeader>
+
+    <dl class="mx-auto mt-14 grid max-w-4xl grid-cols-2 gap-4 md:grid-cols-4">
+      {stats.map((s, i) => (
+        <div data-reveal style={`--i:${i}`} class="rounded-2xl bg-bg-secondary px-5 py-5 text-center">
+          <dt class="sr-only">{s.l}</dt>
+          <dd class="text-[28px] font-medium leading-none tracking-[-0.02em] md:text-[32px]">{s.n}</dd>
+          <dd class="mt-2 text-sm text-ink-2">{s.l}</dd>
+        </div>
+      ))}
+    </dl>
+  </section>
+
+  <!-- Demo -->
+  <section class="mx-auto max-w-7xl px-4 md:px-8">
+    <div class="grid gap-5 md:grid-cols-2 md:items-end md:gap-16">
+      <div>
+        <p data-reveal class="text-sm font-medium tracking-wide text-green">In your chat window</p>
+        <h2 data-reveal style="--i:1" class="mt-3 text-[30px] font-medium leading-[1.08] tracking-[-0.02em] text-balance md:text-[44px]">Brief and match, without leaving your assistant.</h2>
+      </div>
+      <p data-reveal style="--i:2" class="text-lg leading-relaxed text-ink-2 text-pretty md:pb-1">Real prompts, real Pin tool calls. The assistant starts the search, explains why each person fits, and waits for your call. Accepted candidates go straight into your Pin outreach sequence.</p>
+    </div>
+    <div data-reveal style="--i:2" class="tint-purple mt-10 rounded-[28px] px-4 py-8 sm:px-8 md:rounded-[36px] md:px-12 md:py-14">
+      <McpDemo />
+    </div>
+  </section>
+
+  <!-- What is -->
+  <section class="mx-auto grid max-w-7xl gap-10 px-4 py-24 md:px-8 md:py-32 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+    <div data-reveal>
+      <p class="text-sm font-medium tracking-wide text-green">Definition</p>
+      <h2 class="mt-3 text-[32px] font-medium leading-[1.1] tracking-[-0.02em] md:text-[40px]">What is the Pin MCP?</h2>
+      <p class="mt-5 text-lg leading-relaxed text-ink-2 text-pretty"><strong class="font-medium text-ink">The Pin MCP</strong> is a Model Context Protocol server from Pin (pin.com) that lets AI assistants run a recruiting workflow on your behalf — kicking off searches, reviewing candidates in an accept/reject loop, tuning the ranker, and persisting per-job memory — using natural language.</p>
+    </div>
+    <dl data-reveal style="--i:1" class="divide-y divide-ink/8 border-y border-ink/8">
+      {facts.map(([k, v]) => (
+        <div class="grid gap-1 py-4 sm:grid-cols-[180px_1fr] sm:gap-6">
+          <dt class="font-medium">{k}</dt>
+          <dd class="text-ink-2">{v}</dd>
+        </div>
+      ))}
+    </dl>
+  </section>
+
+  <!-- Tools -->
+  <section class="bg-bg-secondary/60 py-24 md:py-32">
+    <div class="mx-auto max-w-7xl px-4 md:px-8">
+      <SectionHeader align="left" eyebrow="The 10 tools" title="Everything the assistant can actually do." sub="Four small phases, ten small tools. The assistant sets up a search, reviews candidates with you, tunes on the fly, and remembers what it learned for next time. You still approve every accept, reject, and outreach." />
+      <div class="mt-12 space-y-10">
+        {groups.map((g, gi) => (
+          <div>
+            <h3 data-reveal class="text-sm font-medium tracking-wide text-ink-2"><span class="tabular-nums text-ink-3">0{gi + 1}</span> · {g.name}</h3>
+            <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {g.tools.map((t, i) => (
+                <div data-reveal style={`--i:${i}`} class:list={[tile, "flex flex-col"]}>
+                  <code class="merge self-start font-mono text-[14px] text-ink">{t.name}</code>
+                  <p class="mt-3 flex-1 leading-relaxed text-ink-2">{t.desc}</p>
+                  <p class="mt-4 border-t border-ink/8 pt-4 text-[15px] italic text-ink">“{t.ex}”</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <McpInstall />
+
+  <!-- Prompt recipes -->
+  <section class="bg-bg-secondary/60 py-24 md:py-32" x-data="{ copied: -1 }">
+    <div class="mx-auto max-w-7xl px-4 md:px-8">
+      <SectionHeader align="left" eyebrow="Prompt recipes" title="Copy-paste your first 10 minutes." sub="Real prompts from real recruiters, tuned to get a useful result on turn one. Every recipe lists the tools the assistant will reach for." />
+      <div class="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {recipes.map((r, i) => (
+          <div data-reveal style={`--i:${i % 3}`} class:list={[tile, "flex flex-col"]}>
+            <div class="flex items-center justify-between gap-3">
+              <span class="rounded-full bg-green-lighter px-2.5 py-1 text-xs font-medium text-green-accessible">{r.tag}</span>
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-ink-2 transition-colors hover:bg-bg-tertiary hover:text-ink"
+                x-on:click={`navigator.clipboard?.writeText($refs.recipe${i}.textContent); copied = ${i}; setTimeout(() => { if (copied === ${i}) copied = -1 }, 1400)`}
+                aria-label={`Copy prompt: ${r.title}`}
+              >
+                <span x-show={`copied !== ${i}`} class="inline-flex items-center gap-1.5"><Copy size={14} /> Copy</span>
+                <span x-show={`copied === ${i}`} style="display:none" class="inline-flex items-center gap-1.5 text-green-accessible"><Check size={14} /> Copied</span>
+              </button>
+            </div>
+            <h3 class="mt-4 text-lg font-medium">{r.title}</h3>
+            <p x-ref={`recipe${i}`} class="mt-2 flex-1 leading-relaxed text-ink-2">{r.prompt}</p>
+            <p class="mt-5 flex flex-wrap gap-1.5">{r.tools.map((t) => <code class="rounded-md bg-bg-tertiary px-1.5 py-0.5 font-mono text-[12px] text-ink-2">{t}</code>)}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- MCP vs app -->
+  <section class="mx-auto max-w-7xl px-4 py-24 md:px-8 md:py-32">
+    <SectionHeader align="left" eyebrow="vs. the Pin app" title="When to reach for the MCP, when to open the app." sub="Both share the same backend. The MCP is faster for prompts and batch moves; the app still wins for deep review sessions and hiring-manager collaboration." />
+    <div data-reveal class="relative -mx-4 mt-10 overflow-x-auto px-4">
+      <table class="w-full min-w-[620px] border-collapse text-left">
+        <thead>
+          <tr class="border-b border-ink/12">
+            <th scope="col" class="w-[24%] py-4 pr-4 text-sm font-normal text-ink-3"><span class="sr-only">Aspect</span></th>
+            <th scope="col" class="w-[38%] px-4 py-4 font-medium">Pin MCP <span class="font-normal text-ink-3">(your chat)</span></th>
+            <th scope="col" class="w-[38%] px-4 py-4 font-medium">Pin app <span class="font-normal text-ink-3">(pin.com)</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {compareRows.map(([k, a, b]) => (
+            <tr class="border-b border-ink/8">
+              <th scope="row" class="py-4 pr-4 font-medium">{k}</th>
+              <td class="bg-green-lighter/50 px-4 py-4">{a}</td>
+              <td class="px-4 py-4 text-ink-2">{b}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Security -->
+  <section class="bg-bg-secondary/60 py-24 md:py-32">
+    <div class="mx-auto grid max-w-7xl gap-10 px-4 md:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <div data-reveal>
+        <p class="text-sm font-medium tracking-wide text-green">Security &amp; scopes</p>
+        <h2 class="mt-3 text-[32px] font-medium leading-[1.1] tracking-[-0.02em] text-balance md:text-[40px]">The assistant gets exactly what you let it touch — nothing more.</h2>
+        <p class="mt-5 text-lg leading-relaxed text-ink-2 text-pretty">One OAuth scope. Workspace-level tenancy. Confirmation on every write. Full audit trail in the Pin app. Revoke any connected assistant in one click.</p>
+        <div class="mt-6 flex flex-wrap gap-2 text-sm">
+          {["SOC 2 Type 2", "GDPR · CCPA", "OAuth 2.1 · WorkOS"].map((b) => (
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 font-medium shadow-app"><ShieldCheck size={14} class="text-green" />{b}</span>
+          ))}
+          <a href="https://trust.pin.com" class="inline-flex items-center rounded-full px-3 py-1.5 font-medium text-green-accessible underline decoration-green/30 underline-offset-4 hover:decoration-green">trust.pin.com</a>
+        </div>
+      </div>
+      <dl data-reveal style="--i:1" class="space-y-3">
+        {safeguards.map((s) => (
+          <div class="rounded-2xl bg-white p-5 shadow-[0_0_0_1px_rgb(0_0_0/0.04)]">
+            <dt><code class="merge font-mono text-[14px]">{s.label}</code></dt>
+            <dd class="mt-2 leading-relaxed text-ink-2">{s.desc}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+
+  <FAQ items={faqItems} title="Answers to what recruiters, developers, and LLMs keep asking.">
+    <p class="mt-4 text-lg leading-relaxed text-ink-2">Can't find what you need? <a href="mailto:support@pin.com" class={link}>Email the team</a> or drop into <a href="https://docs.pin.com/pin-mcp" class={link}>docs.pin.com/pin-mcp</a>.</p>
+  </FAQ>
+
+  <CTABand title="Bring Pin into every AI tool you use." body="New to Pin? Start a free trial, give it a role, and connect your assistant when you're ready. Or book a walkthrough and we'll set it up with you." track="mcp_final_cta" />
+</Layout>

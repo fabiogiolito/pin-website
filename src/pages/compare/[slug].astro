@@ -1,0 +1,154 @@
+---
+import { Check, ShieldCheck, ArrowUpRight, FileText, Search, Mail, MessagesSquare, CalendarCheck } from "@lucide/astro";
+import Layout from "../../layouts/Layout.astro";
+import Button from "../../components/ui/Button.astro";
+import SectionHeader from "../../components/ui/SectionHeader.astro";
+import FAQ from "../../components/ui/FAQ.astro";
+import CTABand from "../../components/ui/CTABand.astro";
+import { faqJsonLd } from "../../components/ui/faq";
+import PinAvatar from "../../components/PinAvatar.astro";
+import ComparisonTable from "../../components/segments/ComparisonTable.astro";
+import Testimonial from "../../components/segments/Testimonial.astro";
+import { comparisons } from "../../data/comparisons";
+import { compare } from "../../components/site/nav";
+import { organizationSchema, pinSoftwareSchema, SOFTWARE_ID } from "../../lib/schema";
+
+export function getStaticPaths() {
+  return comparisons.map((page) => ({ params: { slug: page.slug }, props: { page } }));
+}
+
+const { page } = Astro.props;
+const url = `https://www.pin.com/compare/${page.slug}/`;
+const lastUpdated = new Date(page.lastUpdated).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+// Structured data ported from new-www (Organization, SoftwareApplication, WebPage + ItemList, BreadcrumbList), plus FAQPage.
+const jsonLd = [
+  organizationSchema,
+  pinSoftwareSchema,
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: page.title,
+    url,
+    description: page.subtitle,
+    dateModified: page.lastUpdated,
+    mainEntity: {
+      "@type": "ItemList",
+      name: `Pin vs ${page.competitor} Comparison`,
+      numberOfItems: 2,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, item: { "@id": SOFTWARE_ID } },
+        { "@type": "ListItem", position: 2, item: { "@type": "SoftwareApplication", name: page.competitor, applicationCategory: "BusinessApplication", operatingSystem: "Web" } },
+      ],
+    },
+    speakable: { "@type": "SpeakableSpecification", cssSelector: ["h1", "table"] },
+  },
+  faqJsonLd(page.faqItems),
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.pin.com" },
+      { "@type": "ListItem", position: 2, name: `Pin vs ${page.competitor}`, item: url },
+    ],
+  },
+];
+
+const steps = [
+  { icon: FileText, stage: "Brief", text: "Give Pin a role and a company. It drafts criteria and asks clarifying questions." },
+  { icon: Search, stage: "Match", text: "850M+ profiles searched. Every match comes with the reasons it fits." },
+  { icon: Mail, stage: "Outreach", text: "Personal sequences sent from your Gmail or Outlook, plus LinkedIn and text steps." },
+  { icon: MessagesSquare, stage: "Replies", text: "No's archived, known questions answered, new ones asked once on Slack." },
+  { icon: CalendarCheck, stage: "Booked", text: "Pin offers times you're free and sends the invite." },
+];
+const others = compare.filter((c) => !c.href.includes(page.slug));
+---
+
+<Layout title={page.title} description={page.subtitle} jsonLd={jsonLd}>
+  <!-- Hero -->
+  <section class="mx-auto grid max-w-7xl gap-12 px-4 pb-16 pt-12 md:px-8 md:pt-20 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16">
+    <div>
+      <p data-reveal class="text-sm font-medium tracking-wide text-green">Compare</p>
+      <h1 data-reveal style="--i:1" class="mt-3 text-[44px] font-medium leading-[1.02] tracking-[-0.02em] text-balance md:text-[64px]">Pin vs <span class="text-green">{page.competitor}</span></h1>
+      <p data-reveal style="--i:2" class="mt-6 max-w-xl text-lg leading-relaxed text-ink-2 text-pretty md:text-xl">{page.subtitle}</p>
+      <div data-reveal style="--i:3" class="mt-8 flex flex-col gap-3 sm:flex-row">
+        <Button signup arrow track="compare_hero">Try Pin free</Button>
+        <Button href="/book-a-demo/" variant="secondary" track="compare_hero">Book a demo</Button>
+      </div>
+      <ul data-reveal style="--i:4" class="mt-6 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-ink-2">
+        {["Free trial, no credit card", "No annual commitment", "SOC 2 Type 2"].map((b) => <li class="inline-flex items-center gap-1.5"><Check size={14} class="text-green" /> {b}</li>)}
+      </ul>
+    </div>
+
+    <div data-reveal style="--i:4" class="tint-green rounded-[28px] px-4 py-8 sm:px-8 md:rounded-[36px] md:py-12">
+      <div class="panel p-5 md:p-6">
+        <p class="flex items-center gap-2.5 text-[15px] font-semibold"><PinAvatar size={26} /> Why teams choose Pin over {page.competitor}</p>
+        <ul class="mt-5 space-y-3 text-[15px]">
+          {page.advantages.map((a) => (
+            <li class="flex gap-3 rounded-xl bg-app-bg3 px-4 py-3 leading-snug"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-app-pos/10 text-app-pos"><Check size={12} stroke-width={3} /></span>{a}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- The whole job, not just search -->
+  <section class="bg-bg-secondary/60 py-24 md:py-32">
+    <div class="mx-auto max-w-7xl px-4 md:px-8">
+      <SectionHeader eyebrow="More than a search tool" title="From job title to booked interviews. Pin does everything in between." sub="Every step can be automated, or kept hands-on. You decide how much Pin does." />
+      <ol class="mt-14 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {steps.map((s, i) => (
+          <li data-reveal style={`--i:${i}`} class="rounded-3xl bg-white p-6 shadow-[0_0_0_1px_rgb(0_0_0/0.04)]">
+            <s.icon size={22} class="text-green" />
+            <p class="mt-5 text-sm font-medium text-ink-3">0{i + 1}</p>
+            <h3 class="text-lg font-medium">{s.stage}</h3>
+            <p class="mt-2 leading-relaxed text-ink-2">{s.text}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <Testimonial quote={`“${page.testimonial.quote}”`} name={page.testimonial.name} role={page.testimonial.company} avatar={page.testimonial.avatar} />
+
+  <!-- Comparison table -->
+  <section class="mx-auto max-w-5xl px-4 pb-24 md:px-8 md:pb-32">
+    <SectionHeader eyebrow="Side by side" title={`Pin vs ${page.competitor}, feature by feature`} />
+    <div data-reveal style="--i:3" class="mt-12">
+      <ComparisonTable other={page.competitor} rows={page.comparisonRows.map((r) => ({ label: r.feature, pin: r.pin, other: r.competitor }))} />
+    </div>
+    <p class="mt-4 text-sm text-ink-3">{page.disclaimer} Last updated {lastUpdated}.</p>
+  </section>
+
+  <section class="border-y border-ink/5">
+    <div class="mx-auto flex max-w-7xl flex-col items-start gap-6 px-4 py-14 md:flex-row md:items-center md:justify-between md:px-8">
+      <div data-reveal>
+        <h2 class="text-[28px] font-medium leading-tight tracking-[-0.02em] text-balance md:text-[36px]">Ready to switch from {page.competitor}?</h2>
+        <p class="mt-2 text-lg text-ink-2">Try Pin free. No annual commitment, no credit card required.</p>
+      </div>
+      <div data-reveal style="--i:1" class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+        <Button signup arrow track="compare_mid_page">Try Pin free</Button>
+        <Button href="/book-a-demo/" variant="secondary" track="mid_page">Book a demo</Button>
+      </div>
+    </div>
+  </section>
+
+  <FAQ items={page.faqItems} title={`Pin vs ${page.competitor}: questions`} />
+
+  <section class="mx-auto max-w-7xl px-4 pb-24 md:px-8 md:pb-32">
+    <h2 data-reveal class="text-[28px] font-medium tracking-[-0.02em]">Other comparisons</h2>
+    <ul class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {others.map((l, i) => (
+        <li data-reveal style={`--i:${i + 1}`}>
+          <a href={l.href} class="group flex items-center justify-between gap-4 rounded-2xl bg-bg-secondary/70 p-5 font-medium transition-colors hover:bg-bg-secondary focus-visible:outline-2 focus-visible:outline-green">
+            {l.label}
+            <ArrowUpRight size={18} class="shrink-0 text-ink-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </a>
+        </li>
+      ))}
+    </ul>
+    <p data-reveal class="mt-8 inline-flex items-center gap-2 text-sm text-ink-2"><ShieldCheck size={16} class="text-green" /> SOC 2 Type 2 · 120+ ATS integrations · 10,000+ recruiters use Pin</p>
+  </section>
+
+  <CTABand track="compare_final_cta" />
+</Layout>

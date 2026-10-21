@@ -1,0 +1,29 @@
+---
+// Primary/secondary CTA. `signup` opens the global "Try Pin free" login modal.
+import { ArrowRight } from "@lucide/astro";
+interface Props {
+  href?: string;
+  signup?: boolean;
+  variant?: "primary" | "secondary";
+  size?: "md" | "lg";
+  arrow?: boolean;
+  /** dataLayer location tag for analytics */
+  track?: string;
+  class?: string;
+}
+const { href, signup = false, variant = "primary", size = "lg", arrow = false, track = "page", class: className = "" } = Astro.props;
+const cls = [
+  "group inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-[background-color,border-color,scale] active:scale-[0.98]",
+  size === "lg" ? "px-6 py-4" : "px-4 py-2.5",
+  variant === "primary" ? "bg-green text-white hover:bg-green-accessible" : "border border-green/30 bg-white text-green-accessible hover:border-green",
+  className,
+];
+const event = signup ? "start_free_clicked" : href?.includes("book-a-demo") ? "book_demo_clicked" : "cta_clicked";
+const onClick = `${signup ? "isLoginModalOpen = true; " : ""}window.dataLayer?.push({ event: '${event}', location: '${track}', page: window.location.pathname })`;
+---
+
+{signup ? (
+  <button type="button" class:list={cls} @click={onClick}><slot />{arrow && <ArrowRight size={18} class="transition-transform group-hover:translate-x-0.5" />}</button>
+) : (
+  <a href={href} class:list={cls} x-on:click={onClick}><slot />{arrow && <ArrowRight size={18} class="transition-transform group-hover:translate-x-0.5" />}</a>
+)}

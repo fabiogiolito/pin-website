@@ -1,0 +1,149 @@
+---
+import Layout from "../layouts/Layout.astro";
+import SectionHeader from "../components/ui/SectionHeader.astro";
+import FAQ from "../components/ui/FAQ.astro";
+import CTABand from "../components/ui/CTABand.astro";
+import Tools from "../components/ui/Tools.astro";
+import { faqJsonLd } from "../components/ui/faq";
+import { breadcrumb } from "../components/company/breadcrumb";
+import { team, advisors } from "../components/company/people";
+
+const faq = [
+  {
+    question: "Does Pin offer analytics and reporting?",
+    answer: "Yes, Pin provides advanced analytics and reporting features that allow recruiters and hiring managers to gain insights into their recruitment process. From tracking the efficiency of your hiring funnel to analyzing the quality of hires and understanding diversity metrics, Pin equips you with the data you need to continuously improve your recruiting efforts.",
+  },
+  {
+    question: "How does Pin use AI to improve the recruitment process?",
+    answer: "Pin leverages AI throughout the entire recruitment workflow to help you find and engage top talent faster. Our AI-powered candidate sourcing identifies the best-fit candidates from millions of profiles, while intelligent resume screening automatically evaluates and ranks applicants based on your specific requirements. Pin's AI also optimizes outreach sequences to maximize response rates and uses smart scheduling to streamline the interview process.",
+  },
+  {
+    question: "Is Pin suitable for businesses of all sizes?",
+    answer: "Yes, Pin is designed to serve businesses of all sizes—from startups making their first hires to enterprise organizations managing high-volume recruitment. Our flexible pricing plans and scalable features ensure that whether you're a small team or a large recruiting operation, Pin adapts to your needs and grows with you.",
+  },
+  {
+    question: "How does Pin ensure the privacy and security of data?",
+    answer: "Pin ensures the privacy and security of data through robust measures including secure encryption at rest and in transit, strict access controls, network security protocols, authentication mechanisms, and client-level enforcement. Additionally, our compliance with SOC 2 Type 2 standards and third-party audits demonstrates our commitment to protecting sensitive information throughout the recruitment process.",
+  },
+  {
+    question: "How can Pin improve candidate experience?",
+    answer: "Pin enhances the candidate experience through personalized, multi-channel outreach that feels authentic and engaging. Our AI-powered sequences ensure timely follow-ups, while the unified inbox keeps all communications organized so no candidate falls through the cracks. Pin also streamlines interview scheduling, reducing back-and-forth and making the process smoother for everyone involved.",
+  },
+];
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": "https://www.pin.com/#person-steven-lu",
+    name: "Steven Lu",
+    jobTitle: "CEO & Co-Founder",
+    url: "https://www.pin.com/about/",
+    worksFor: { "@id": "https://www.pin.com/#organization" },
+    description: "CEO and Co-Founder of Pin, an AI recruitment platform and AI recruiting agent backed by Expa. Building AI recruiting tools, recruiting automation software, and skills-based hiring AI. Based in West Hollywood, California.",
+    sameAs: ["https://www.linkedin.com/in/stevenlu/"],
+    knowsAbout: ["AI recruiting", "AI talent acquisition", "AI candidate sourcing", "Recruiting automation software", "Agentic AI recruiting", "Skills-based hiring AI", "SaaS product development"],
+  },
+  breadcrumb("About", "https://www.pin.com/about/"),
+  faqJsonLd(faq),
+];
+
+const facts = [
+  { value: "2024", label: "Founded by CEO Steven Lu" },
+  { value: "$3M", label: "Seed funding from Expa" },
+  { value: "10,000+", label: "Users hiring with Pin" },
+  { value: "SOC 2", label: "Type 2 certified", href: "https://trust.pin.com" },
+];
+const logos = ["expa", "lithic", "paytient", "datapeoplesearch", "pinpointtalent", "gostaff"];
+const tile = "rounded-3xl bg-white p-6 shadow-[0_0_0_1px_rgb(0_0_0/0.04),0_10px_30px_-14px_rgb(115_70_38/0.18)] md:p-7";
+---
+
+<Layout
+  title="About Pin — AI Talent Acquisition Platform by Love Thy Recruiting"
+  description="Pin is the AI recruiter for recruiters, built by Love Thy Recruiting, Inc. Founded by Steven Lu and backed by Expa. From job title to booked interviews."
+  jsonLd={jsonLd}
+>
+  <section class="mx-auto max-w-7xl px-4 pb-16 pt-12 md:px-8 md:pb-24 md:pt-20">
+    <SectionHeader
+      as="h1"
+      eyebrow="About Pin"
+      title="We're building the AI recruiter for recruiters."
+      sub="Recruiting is a people job buried under sourcing, chasing, sorting and scheduling. Pin takes a role from job title to booked interviews and does everything in between, so recruiters get back to talking with candidates."
+    />
+
+    <div class="mt-14 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {facts.map((f, i) => {
+        const Tag = f.href ? "a" : "div";
+        return (
+          <Tag data-reveal style={`--i:${i}`} href={f.href} target={f.href && "_blank"} rel={f.href && "noopener"} class:list={[tile, "flex flex-col justify-end", i === 0 && "bg-green-lighter! shadow-none!", f.href && "transition-shadow hover:shadow-window"]}>
+            <p class="text-[40px] font-medium leading-none tracking-[-0.03em] tabular-nums md:text-[52px]">{f.value}</p>
+            <p class="mt-3 text-ink-2">{f.label}</p>
+          </Tag>
+        );
+      })}
+    </div>
+  </section>
+
+  <!-- Who we are -->
+  <section class="mx-auto grid max-w-7xl gap-8 px-4 py-16 md:px-8 md:py-24 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+    <h2 data-reveal class="text-[32px] font-medium leading-[1.1] tracking-[-0.02em] md:text-[40px]">Who we are</h2>
+    <div data-reveal style="--i:1" class="space-y-5 text-lg leading-relaxed text-ink-2 text-pretty">
+      <p>Pin is an AI recruitment platform and AI recruiting agent developed by Love Thy Recruiting, Inc. It was founded in 2024 by CEO Steven Lu and is backed by $3M in seed funding from Expa.</p>
+      <p>Give Pin a role and a company. It researches the company, drafts the criteria, searches over 850 million candidate profiles, and explains why each person matches. Then it writes the outreach, sends it from your own inbox, sorts the replies, and books the interviews. Every step can run on autopilot or wait for your approval.</p>
+      <p>Agencies, founders and enterprise talent teams use Pin, and it connects to 120+ applicant tracking systems. More than 10,000 users hire with it today, and the platform is <a href="https://trust.pin.com" target="_blank" rel="noopener" class="font-medium text-green-accessible underline decoration-green/30 underline-offset-4 hover:decoration-green">SOC 2 Type 2 certified</a>.</p>
+      <p>Join us in shaping the future of recruitment, where innovation meets impact, and every hire is a step towards success.</p>
+    </div>
+  </section>
+
+  <!-- Team -->
+  <section class="bg-bg-secondary/60 py-24 md:py-32">
+    <div class="mx-auto max-w-7xl px-4 md:px-8">
+      <SectionHeader align="left" eyebrow="Team" title="The people behind Pin" sub="Engineers, designers, and recruiting and customer people, building for the recruiters we work alongside every day." />
+      <ul class="mt-12 grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-6">
+        {team.map((p, i) => (
+          <li data-reveal style={`--i:${i % 6}`}>
+            <img src={`/images/team/${p.graphic}.webp`} alt={`Portrait of ${p.name}`} width="120" height="120" loading="lazy" decoding="async" class="size-24 rounded-full object-cover outline outline-1 -outline-offset-1 outline-black/10 md:size-28" />
+            <p class="mt-3 font-medium">{p.name}</p>
+            <p class="text-sm text-ink-2">{p.role}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- Advisors -->
+  <section class="mx-auto max-w-7xl px-4 py-24 md:px-8 md:py-32">
+    <SectionHeader align="left" eyebrow="Advisors" title="Advised by working recruiters" sub="Agency founders, podcast hosts and talent leaders who keep Pin honest about how recruiting really works." />
+    <ul class="mt-12 grid gap-4 md:grid-cols-2">
+      {advisors.map((p, i) => (
+        <li data-reveal style={`--i:${i % 2}`} class:list={[tile, "flex flex-col gap-5 sm:flex-row"]}>
+          <img src={`/images/advisors/${p.graphic}.webp`} alt={`Portrait of ${p.name}`} width="80" height="80" loading="lazy" decoding="async" class="size-20 shrink-0 rounded-full object-cover outline outline-1 -outline-offset-1 outline-black/10" />
+          <div class="min-w-0">
+            {p.linkedin ? (
+              <a href={p.linkedin} target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-lg font-medium hover:text-green-accessible">
+                {p.name}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="text-ink-3" aria-label="LinkedIn"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+              </a>
+            ) : (
+              <p class="text-lg font-medium">{p.name}</p>
+            )}
+            <p class="mt-2 text-[15px] leading-relaxed text-ink-2 [&_a]:underline [&_a]:decoration-ink/20 [&_a]:underline-offset-2 hover:[&_a]:decoration-ink" set:html={p.bio} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 pb-8 md:px-8">
+    <p data-reveal class="text-center text-sm text-ink-3">Backed by Expa and trusted by recruiting teams at</p>
+    <div data-reveal style="--i:1" class="mt-6 flex flex-wrap items-center justify-center gap-x-12 gap-y-6 opacity-60 grayscale">
+      {logos.map((l) => <img src={`/images/companies/logo-${l}.png`} alt={`${l} logo`} class="h-6 w-auto md:h-7" loading="lazy" />)}
+    </div>
+  </section>
+
+  <FAQ items={faq} />
+  <Tools />
+  <div class="pt-24 md:pt-32">
+    <CTABand title="Work with us." body="See how Pin takes a role from job title to booked interviews. Bring an open role to a 20-minute walkthrough with our team." track="about_page" />
+  </div>
+</Layout>

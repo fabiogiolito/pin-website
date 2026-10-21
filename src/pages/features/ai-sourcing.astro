@@ -1,0 +1,151 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import FAQ from "../../components/ui/FAQ.astro";
+import CTABand from "../../components/ui/CTABand.astro";
+import Brief from "../../components/chapters/Brief.astro";
+import Match from "../../components/chapters/Match.astro";
+import SourcingSearch from "../../components/features/SourcingSearch.astro";
+import JourneyStrip from "../../components/features/JourneyStrip.astro";
+import Section from "../../components/features/Section.astro";
+import Compare from "../../components/features/Compare.astro";
+import Grid from "../../components/features/Grid.astro";
+import Quotes from "../../components/features/Quotes.astro";
+import Reading from "../../components/features/Reading.astro";
+import { faqJsonLd } from "../../components/ui/faq";
+import { featurePageSchema } from "../../components/features/schema";
+import { X, Check } from "@lucide/astro";
+
+const faq = [
+  {
+    question: "How does AI candidate sourcing differ from Boolean search?",
+    answer: "Boolean search makes you build exact keyword strings and combine operators by hand. With Pin, you describe the person you want in plain English, or just give a job title and company. Pin turns that into criteria, evaluates candidates on skills and experience rather than keyword matches, and explains why each one fits. It finds people Boolean misses, especially for niche roles where titles vary across companies.",
+  },
+  {
+    question: "How many profiles can Pin search?",
+    answer: "Pin searches 850M+ profiles across multiple sources, with 100% coverage of North America and Europe. It isn't limited to a single network like LinkedIn.",
+  },
+  {
+    question: "What is skills-based hiring AI?",
+    answer: "Skills-based hiring AI evaluates candidates on demonstrated skills, experience patterns and potential rather than job-title keywords. A \"Software Engineer III\" at one company and a \"Senior Developer\" at another are correctly treated as equivalent, something keyword-based sourcing tools miss.",
+  },
+  {
+    question: "Do I need a job description to start?",
+    answer: "No. Give Pin a role and a company. It researches the company, drafts the criteria, and asks clarifying questions about seniority, must-haves, location and deal-breakers. If you have a JD, paste it, upload it, or import it from your ATS.",
+  },
+  {
+    question: "Can my hiring manager review candidates?",
+    answer: "Yes. Send a review link to the hiring manager or anyone on the team. They can approve or decline shortlisted candidates without creating a Pin account.",
+  },
+  {
+    question: "How fast does AI sourcing return results?",
+    answer: "A search typically returns a ranked shortlist within minutes. Pin customers report a 5-day average time-to-candidate from initial search to scheduled interview.",
+  },
+  {
+    question: "What does AI candidate sourcing cost?",
+    answer: "AI sourcing is included in every plan, from $99/mo. All paid plans include unlimited searches and job positions. Contact lookup credits (for revealing email and phone) start at 500/month. There's a free trial, no credit card needed.",
+  },
+];
+
+const jsonLd = [
+  ...featurePageSchema({
+    name: "AI Candidate Sourcing: Search 850M+ Profiles",
+    path: "/features/ai-sourcing/",
+    description: "Pin's AI candidate sourcing turns a job title into criteria, searches 850M+ profiles, and explains why each candidate matches. Skills-based hiring AI, no Boolean. From $99/mo.",
+    crumb: "AI Candidate Sourcing",
+    dateModified: "2026-10-21",
+  }),
+  faqJsonLd(faq),
+];
+
+const signals = [
+  { title: "Skills over titles", desc: "Pin reads what people have actually done. Titles vary across companies; skills and trajectories don't." },
+  { title: "Multi-source coverage", desc: "One search covers LinkedIn, GitHub, Crunchbase, Kaggle and more, deduplicated into a single shortlist." },
+  { title: "Passive talent included", desc: "Most of the 850M+ profiles belong to people who aren't applying anywhere. Pin finds them and Outreach reaches them." },
+  { title: "Every match explained", desc: "Each candidate comes with evaluation rows, Yes, Maybe or No, so you can see the reasoning before you approve." },
+  { title: "Criteria you can steer", desc: "Pin a must-have, ban a deal-breaker, or ask in plain English: \"avoid consultancies\", \"must have shipped at Series B+\"." },
+  { title: "Learns your bar", desc: "Every approve and decline sharpens the next batch. The shortlist gets closer to your taste as you go." },
+];
+
+const rows = [
+  ["Search method", "Plain English or just a job title", "Boolean strings", "Boolean + filters"],
+  ["Candidate database", "850M+, multi-source", "Varies by platform", "LinkedIn only"],
+  ["Matching approach", "Skills-based hiring AI", "Keyword matching", "Keyword + title matching"],
+  ["Results", "Ranked by fit, with reasons", "Alphabetical or by date", "Relevance score"],
+  ["Time to shortlist", "Minutes", "Hours", "Hours"],
+  ["Niche roles", "Finds non-obvious matches", "Misses title mismatches", "Limited to LinkedIn profiles"],
+];
+
+const boolean = `("backend engineer" OR "software engineer" OR "SWE" OR "platform engineer") AND (golang OR "go lang" OR go) AND (payments OR ledger OR fintech OR "money movement") AND ("new york" OR NYC OR brooklyn OR remote) NOT (crypto OR web3 OR blockchain) NOT (intern OR junior)`;
+---
+
+<Layout
+  title="AI Candidate Sourcing: Search 850M+ Profiles, No Boolean | Pin"
+  description="AI candidate sourcing that starts from a job title. Pin builds the criteria, searches 850M+ profiles, and explains why each person matches. From $99/mo."
+  jsonLd={jsonLd}
+>
+  <PageHero
+    eyebrow="AI candidate sourcing"
+    title="Describe who you need. Pin finds them in 850M+ profiles."
+    sub="AI candidate sourcing that starts from a job title, not a Boolean string. Pin builds the criteria, searches every profile worth searching, and tells you why each person fits."
+  >
+    <SourcingSearch />
+  </PageHero>
+
+  <JourneyStrip current={[0, 1]} />
+
+  <!-- The two steps of the journey this page covers, as on the homepage -->
+  <div class="mx-auto mt-10 max-w-7xl px-4 md:px-8">
+    <Brief />
+    <Match />
+  </div>
+
+  <Section eyebrow="Boolean vs. plain English" title="Stop writing search strings that look like code." tint="green">
+    <p slot="copy">The average LinkedIn Recruiter Boolean string is 180 characters and still misses the right people. Describe who you want instead.</p>
+    <div class="grid items-start gap-5 text-[14px] md:grid-cols-2 md:gap-8">
+      <div class="panel p-5 md:p-6">
+        <p class="flex items-center gap-2 font-semibold"><X size={15} class="text-app-neg" /> Boolean string</p>
+        <p class="mt-3 break-words rounded-lg bg-app-bg3 p-3 font-mono text-[12px] leading-relaxed text-app-fg2">{boolean}</p>
+        <ul class="mt-4 space-y-1.5 text-app-fg2">
+          <li>Misses "Member of Technical Staff" and other odd titles</li>
+          <li>Can't tell a payments expert from a keyword mention</li>
+          <li>Returns an unranked list to read one by one</li>
+        </ul>
+      </div>
+      <div class="relative">
+        <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Same search, one sentence</span>
+        <div class="panel p-5 pt-7 md:p-6 md:pt-7">
+          <p class="flex items-center gap-2 font-semibold"><Check size={15} class="text-app-pos" /> Pin</p>
+          <p class="mt-3 rounded-lg border border-app-border p-3 leading-relaxed">Senior backend engineer in NYC who has built payments systems in Go. No crypto.</p>
+          <ul class="mt-4 space-y-1.5">
+            <li class="flex gap-2"><Check size={14} class="mt-0.5 shrink-0 text-app-pos" /> Reads titles by what people actually do</li>
+            <li class="flex gap-2"><Check size={14} class="mt-0.5 shrink-0 text-app-pos" /> Weighs real payments depth, not mentions</li>
+            <li class="flex gap-2"><Check size={14} class="mt-0.5 shrink-0 text-app-pos" /> Ranks by fit and explains every match</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </Section>
+
+  <Section eyebrow="How Pin reads a profile" title="Six things Pin sees that a keyword search can't.">
+    <p slot="copy">Boolean search works on strings. Pin reads careers: the shape of someone's trajectory, the companies they chose, the work they shipped.</p>
+    <Grid items={signals} />
+  </Section>
+
+  <Section eyebrow="Compared" title="AI sourcing vs. traditional sourcing tools.">
+    <p slot="copy">Traditional sourcing is one sourcer, one platform, one query at a time. Pin runs the whole search for you.</p>
+    <Compare head={["", "Pin", "Boolean search", "LinkedIn Recruiter"]} rows={rows} />
+  </Section>
+
+  <Quotes names={["Nick Patrick", "Ryan Levy", "Josh Volinsky"]} title="Recruiters who stopped writing Boolean" />
+
+  <FAQ items={faq} title="AI sourcing questions" />
+
+  <Reading items={[
+    { label: "AI candidate matching explained", href: "/blog/ai-candidate-matching/", description: "Why skills-based ranking outperforms keyword match for recruiters." },
+    { label: "Best candidate sourcing tools for passive talent", href: "/blog/candidate-sourcing-tools/", description: "How to build a warm pipeline before a req opens." },
+    { label: "Recruit passive candidates on LinkedIn without InMail", href: "/blog/recruiting-passive-candidates-linkedin/", description: "What still works on LinkedIn, and what to supplement it with." },
+  ]} />
+
+  <CTABand title="Your next shortlist is one sentence away." body="Give Pin a job title and see who it finds in 850M+ profiles, with the reasons each person fits." track="ai_sourcing_cta" />
+</Layout>

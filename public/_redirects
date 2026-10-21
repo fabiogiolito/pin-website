@@ -1,0 +1,147 @@
+/demo /book-a-demo 301
+
+# /redesign/ was the pre-launch teaser ("Rethink"); send to homepage post-launch
+/redesign / 301
+/redesign/ / 301
+
+# Temporary redirect while Cloudflare serves the deleted Ghost post from cache.
+/blog/presence-on-linkedin /blog/ 302
+/blog/presence-on-linkedin/ /blog/ 302
+
+# Consolidated thin / zero-traffic posts → canonical hubs
+/blog/ai-candidate-sourcing-how-automation-benefits-recruiters /blog/ai-candidate-sourcing/ 301
+/blog/ai-candidate-sourcing-how-automation-benefits-recruiters/ /blog/ai-candidate-sourcing/ 301
+/blog/why-your-recruitment-sourcing-ai-isnt-as-smart-as-you-think-it-is /blog/ai-candidate-sourcing/ 301
+/blog/why-your-recruitment-sourcing-ai-isnt-as-smart-as-you-think-it-is/ /blog/ai-candidate-sourcing/ 301
+/blog/startup-hiring-how-to-interview-offer-and-keep-top-talent /blog/hiring-for-startups/ 301
+/blog/startup-hiring-how-to-interview-offer-and-keep-top-talent/ /blog/hiring-for-startups/ 301
+/blog/5-candidate-sourcing-strategies-every-recruiter-should-know /blog/talent-sourcing-strategy/ 301
+/blog/5-candidate-sourcing-strategies-every-recruiter-should-know/ /blog/talent-sourcing-strategy/ 301
+/blog/choosing-a-candidate-sourcing-tool-key-questions-to-ask /blog/candidate-sourcing-tools/ 301
+/blog/choosing-a-candidate-sourcing-tool-key-questions-to-ask/ /blog/candidate-sourcing-tools/ 301
+/blog/startup-hiring-designing-a-strategic-recruiting-plan /blog/hiring-for-startups/ 301
+/blog/startup-hiring-designing-a-strategic-recruiting-plan/ /blog/hiring-for-startups/ 301
+/blog/startup-hiring-early-stage-recruitment-strategies /blog/hiring-for-startups/ 301
+/blog/startup-hiring-early-stage-recruitment-strategies/ /blog/hiring-for-startups/ 301
+/blog/key-trends-and-challenges-shaping-candidate-sourcing-in-2025 /blog/talent-sourcing-guide/ 301
+/blog/key-trends-and-challenges-shaping-candidate-sourcing-in-2025/ /blog/talent-sourcing-guide/ 301
+/blog/recruiting-email-templates-tips-for-effective-outreach /blog/engage-passive-candidates/ 301
+/blog/recruiting-email-templates-tips-for-effective-outreach/ /blog/engage-passive-candidates/ 301
+/blog/5-recruiting-email-templates-to-engage-passive-candidates /blog/engage-passive-candidates/ 301
+/blog/5-recruiting-email-templates-to-engage-passive-candidates/ /blog/engage-passive-candidates/ 301
+/blog/how-to-write-better-job-descriptions-with-ai-prompts /blog/job-description-templates-recruiters/ 301
+/blog/how-to-write-better-job-descriptions-with-ai-prompts/ /blog/job-description-templates-recruiters/ 301
+/blog/how-to-use-ai-prompts-for-smarter-resume-parsing /blog/best-resume-parsing-tools/ 301
+/blog/how-to-use-ai-prompts-for-smarter-resume-parsing/ /blog/best-resume-parsing-tools/ 301
+/blog/ai-prompts-to-attract-startup-and-enterprise-candidates /blog/engage-passive-candidates/ 301
+/blog/ai-prompts-to-attract-startup-and-enterprise-candidates/ /blog/engage-passive-candidates/ 301
+/blog/how-to-build-candidate-profiles-for-smarter-hiring /blog/ideal-candidate-profile/ 301
+/blog/how-to-build-candidate-profiles-for-smarter-hiring/ /blog/ideal-candidate-profile/ 301
+/blog/talent-acquisition-week-2026-recap /blog/state-of-talent-acquisition-2026/ 301
+/blog/talent-acquisition-week-2026-recap/ /blog/state-of-talent-acquisition-2026/ 301
+
+# 2026-05-23 pruning: 17 underperforming posts merged into stronger topical hubs
+/blog/inclusive-job-descriptions /blog/job-description-templates-recruiters/ 301
+/blog/inclusive-job-descriptions/ /blog/job-description-templates-recruiters/ 301
+/blog/evp-employee-value-proposition /blog/employer-branding-guide/ 301
+/blog/evp-employee-value-proposition/ /blog/employer-branding-guide/ 301
+/blog/ai-workforce-planning /blog/workforce-planning-guide/ 301
+/blog/ai-workforce-planning/ /blog/workforce-planning-guide/ 301
+/blog/diversity-recruiting-strategies /blog/diversity-hiring-strategy/ 301
+/blog/diversity-recruiting-strategies/ /blog/diversity-hiring-strategy/ 301
+/blog/hr-analytics-guide /blog/talent-analytics-guide/ 301
+/blog/hr-analytics-guide/ /blog/talent-analytics-guide/ 301
+/blog/internal-mobility-hiring /blog/workforce-planning-guide/ 301
+/blog/internal-mobility-hiring/ /blog/workforce-planning-guide/ 301
+/blog/offer-letter-templates /blog/hiring-process-explained/ 301
+/blog/offer-letter-templates/ /blog/hiring-process-explained/ 301
+/blog/recruiting-email-templates /blog/engage-passive-candidates/ 301
+/blog/recruiting-email-templates/ /blog/engage-passive-candidates/ 301
+/blog/cold-email-templates-recruiters /blog/engage-passive-candidates/ 301
+/blog/cold-email-templates-recruiters/ /blog/engage-passive-candidates/ 301
+/blog/recruiting-sla-templates /blog/recruiting-team-structure/ 301
+/blog/recruiting-sla-templates/ /blog/recruiting-team-structure/ 301
+/blog/attention-to-detail-interview-questions /blog/behavioral-interview-questions/ 301
+/blog/attention-to-detail-interview-questions/ /blog/behavioral-interview-questions/ 301
+/blog/problem-solving-interview-questions /blog/strategic-interview-questions/ 301
+/blog/problem-solving-interview-questions/ /blog/strategic-interview-questions/ 301
+/blog/leadership-interview-questions /blog/structured-interviews-guide/ 301
+/blog/leadership-interview-questions/ /blog/structured-interviews-guide/ 301
+/blog/technical-interview-questions-recruiter /blog/interviewing-engineers-for-impact/ 301
+/blog/technical-interview-questions-recruiter/ /blog/interviewing-engineers-for-impact/ 301
+/blog/reduce-offer-rejection-rates /blog/candidate-experience-guide/ 301
+/blog/reduce-offer-rejection-rates/ /blog/candidate-experience-guide/ 301
+/blog/find-data-science-talent-kaggle /blog/recruit-software-engineers/ 301
+/blog/find-data-science-talent-kaggle/ /blog/recruit-software-engineers/ 301
+/blog/executive-search-guide /blog/best-executive-recruiting-firms/ 301
+/blog/executive-search-guide/ /blog/best-executive-recruiting-firms/ 301
+/blog/ai-data-annotation-hiring /blog/find-candidates-using-ai/ 301
+/blog/ai-data-annotation-hiring/ /blog/find-candidates-using-ai/ 301
+/blog/ai-labs-hiring-train-models /blog/recruit-software-engineers/ 301
+/blog/ai-labs-hiring-train-models/ /blog/recruit-software-engineers/ 301
+/blog/find-human-data-labelers /blog/find-candidates-using-ai/ 301
+/blog/find-human-data-labelers/ /blog/find-candidates-using-ai/ 301
+/blog/human-data-labeling-providers /blog/find-candidates-using-ai/ 301
+/blog/human-data-labeling-providers/ /blog/find-candidates-using-ai/ 301
+/blog/recruit-ai-tutors /blog/recruit-software-engineers/ 301
+/blog/recruit-ai-tutors/ /blog/recruit-software-engineers/ 301
+
+# /blog/all/* → consolidated under /blog/
+/blog/all /blog/ 301
+/blog/all/ /blog/ 301
+/blog/all/:page /blog/page/:page/ 301
+/blog/all/:page/ /blog/page/:page/ 301
+
+# /blog/tag/featured/* → /blog/ (featured now surfaces on the main blog page)
+/blog/tag/featured /blog/ 301
+/blog/tag/featured/ /blog/ 301
+/blog/tag/featured/:page /blog/page/:page/ 301
+/blog/tag/featured/:page/ /blog/page/:page/ 301
+
+# Legacy tag consolidation (2026-04-22 retag to 12 canonical tags)
+# Wildcard :splat catches both /blog/tag/<old>/ and paginated /blog/tag/<old>/N/.
+/blog/tag/pricing/* /blog/tag/ats-pricing/:splat 301
+/blog/tag/comparisons/* /blog/tag/ats-software/:splat 301
+/blog/tag/recruiting-agencies/* /blog/tag/agencies/:splat 301
+/blog/tag/recruiting-metrics/* /blog/tag/hiring-metrics/:splat 301
+/blog/tag/tech-recruiting/* /blog/tag/industry-roles/:splat 301
+/blog/tag/global-hiring/* /blog/tag/industry-roles/:splat 301
+/blog/tag/career/* /blog/tag/industry-roles/:splat 301
+/blog/tag/linkedin-recruiting/* /blog/tag/sourcing/:splat 301
+/blog/tag/diversity-inclusion/* /blog/tag/compliance-dei/:splat 301
+/blog/tag/ai-training/* /blog/tag/ai-recruiting/:splat 301
+/blog/tag/recruiting-tools/* /blog/tag/hiring-general/:splat 301
+/blog/tag/recruiting-automation/* /blog/tag/hiring-general/:splat 301
+/blog/tag/talent-management/* /blog/tag/hiring-general/:splat 301
+/blog/tag/research/* /blog/tag/compliance-dei/:splat 301
+/blog/tag/ats-integrations/* /blog/tag/hiring-general/:splat 301
+
+# Ghost-era tag slugs that never existed in the local canonical set.
+# Product Updates is the one exception we let through (see
+# GHOST_PASSTHROUGH_SLUGS in src/data/tags.ts); everything else below used
+# to have a tag archive page and will now 404 without a 301.
+/blog/tag/candidate-sourcing/* /blog/tag/sourcing/:splat 301
+/blog/tag/event-recaps/* /blog/tag/hiring-general/:splat 301
+/blog/tag/hiring-best-practices/* /blog/tag/hiring-general/:splat 301
+/blog/tag/recruiter-tips/* /blog/tag/hiring-general/:splat 301
+/blog/tag/templates/* /blog/tag/hiring-general/:splat 301
+
+# Merged duplicate listicles into canonical survivors (2026-05-25)
+/blog/background-check-software /blog/background-check-tools-recruiters/ 301
+/blog/background-check-software/ /blog/background-check-tools-recruiters/ 301
+/blog/recruitment-funnel /blog/recruitment-funnel-benchmarks/ 301
+/blog/recruitment-funnel/ /blog/recruitment-funnel-benchmarks/ 301
+/blog/best-people-search-apis /blog/profile-data-apis/ 301
+/blog/best-people-search-apis/ /blog/profile-data-apis/ 301
+
+# Deleted from Ghost (2026-09-03); Ghost-only post, so the slug registry
+# check doesn't cover it. Send to the Product Updates tag archive.
+/blog/april-2025-product-updates /blog/tag/product-updates/ 301
+/blog/april-2025-product-updates/ /blog/tag/product-updates/ 301
+
+# Force trailing slashes on blog URLs (non-slash → slash, 301)
+/blog /blog/ 301
+/blog/:slug /blog/:slug/ 301
+/blog/tag/:slug /blog/tag/:slug/ 301
+/blog/author/:slug /blog/author/:slug/ 301
+/blog/page/:page /blog/page/:page/ 301

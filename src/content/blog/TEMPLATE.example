@@ -1,0 +1,64 @@
+## Local Blog Post Frontmatter Template
+##
+## Copy this file, rename to <slug>.md, and fill in the fields.
+## The glob loader only picks up *.md files, so this .example file is ignored.
+
+---
+title: "Your Post Title Here (2026)"
+slug: your-post-slug
+excerpt: "A 150-160 character description with a stat or number for CTR."
+feature_image: /images/blog/your-post-slug/hero.png
+hero_alt: "Descriptive alt text for the feature image (~125 chars, no 'image of…')"
+published_at: 2026-04-19
+updated_at: 2026-04-19
+status: draft
+featured: false
+authors:
+  - steven
+tags:
+  - name: AI Recruiting
+    slug: ai-recruiting
+  - name: Sourcing
+    slug: sourcing
+canonical_url:                # optional — set to override the default canonical
+---
+
+Your markdown content here.
+
+## Section Heading
+
+Regular paragraphs, **bold**, *italic*, [links](https://example.com).
+
+Inline HTML works for tables, SVGs, and charts:
+
+<table>
+  <tr><th>Feature</th><th>Pin</th><th>Other</th></tr>
+  <tr><td>AI Sourcing</td><td>Yes</td><td>No</td></tr>
+</table>
+
+Embed an interactive tool:
+
+[tool/boolean-search-generator]
+
+Cross-link to another post (auto-links using the target's title):
+
+[[dice-boolean-search]]
+
+Images from /public/:
+
+![Alt text](/images/blog/your-post-slug/screenshot.png)
+
+## Fields Reference
+
+- title (required) — post title
+- slug (required) — URL slug → /blog/<slug>/
+- excerpt — meta description for SEO + listing cards
+- feature_image — hero image path or URL
+- hero_alt — alt text for the feature image (a11y + SEO); omit for decorative images
+- published_at (required) — ISO date
+- updated_at — last modification date
+- status — "published" or "draft" (drafts only show in dev)
+- featured — true/false for featured section
+- authors — list of author slugs (must exist in Ghost)
+- tags — list of {name, slug} objects
+- canonical_url — override canonical link (for syndicated posts)

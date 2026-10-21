@@ -1,0 +1,32 @@
+---
+// Customer quotes, verbatim from new-www (home/SectionTestimonialsGrid, home-v2/TestimonialsSection).
+interface Props { names: string[]; title?: string }
+const all = [
+  { name: "Ben Caggia", title: "Advisor at Syelo", img: "bencaggia_photo.jpg", quote: "Pin's intuitive UX made it easy to use right away, simplifying job descriptions and finding spot-on candidates. It's already outperforming other established recruiting products." },
+  { name: "Nick Patrick", title: "CEO & Co-founder at Radar", img: "nickpatrick_photo.jpg", quote: "Pin has supercharged our sourcing, helping our team build more top of funnel efficiently." },
+  { name: "Fahad Hassan", title: "CEO & Co-founder at Range", img: "fahadhassan_photo.jpg", quote: "Pin delivered exactly what we needed. Within just two weeks of using the product, we hired both a software engineer and a financial planner. The speed and accuracy were unmatched." },
+  { name: "Ryan Levy", title: "Managing Partner at Cruit Group", img: "ryanlevy_photo.jpg", quote: "It finds candidates that don't appear on L*nkedIn Recruiter." },
+  { name: "Miles Randle", title: "Head of People & Talent at Flip CX", img: "milesrandle_photo.jpg", quote: "As a small people and talent team, we don't have a ton of time to spend hours sourcing and messaging. Pin has made it possible for us to focus on the people side of things!" },
+  { name: "Josh Volinsky", title: "Co-Founder at Synergy Search", img: "joshvolinsky_photo.jpg", quote: "Pin makes sourcing candidates so natural and I love how you can just talk to it like it's a recruiter on your team and it goes hunting. By far our favorite new technology in a long time." },
+];
+const { names, title = "Hear it from recruiters" } = Astro.props;
+const quotes = names.map((n) => all.find((q) => q.name === n)!);
+---
+
+<section class="bg-bg-secondary/60 py-24 md:py-32">
+  <div class="mx-auto max-w-7xl px-4 md:px-8">
+    <h2 data-reveal class="max-w-2xl text-[32px] font-medium leading-[1.1] tracking-[-0.02em] text-balance md:text-[44px]">{title}</h2>
+    <p data-reveal style="--i:1" class="mt-3 text-lg text-ink-2">Read more reviews on <a href="https://www.g2.com/products/pin/reviews" target="_blank" rel="noopener" class="font-medium text-green-accessible underline decoration-green/30 underline-offset-4 hover:decoration-green">G2</a>.</p>
+    <div class="mt-12 grid gap-4 md:grid-cols-3">
+      {quotes.map((q, i) => (
+        <figure data-reveal style={`--i:${i + 2}`} class="flex flex-col rounded-3xl bg-white p-7 shadow-[0_1px_0_rgb(0_0_0/0.02),0_10px_30px_-14px_rgb(115_70_38/0.18)] md:p-8">
+          <blockquote class="flex-1 text-lg leading-relaxed">“{q.quote}”</blockquote>
+          <figcaption class="mt-6 flex items-center gap-3">
+            <img src={`/images/testimonials/${q.img}`} alt="" width="40" height="40" loading="lazy" class="size-10 rounded-full object-cover outline outline-1 -outline-offset-1 outline-black/10" />
+            <span><span class="block font-medium">{q.name}</span><span class="block text-sm text-ink-2">{q.title}</span></span>
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  </div>
+</section>

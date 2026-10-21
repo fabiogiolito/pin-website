@@ -1,0 +1,132 @@
+---
+import { Check, User, PenLine, SlidersHorizontal } from "@lucide/astro";
+
+type Tone = "auto" | "draft" | "you";
+const levels = [
+  {
+    name: "Hands-On Co-Pilot",
+    desc: "Pin finds and ranks candidates and drafts every message. You approve each match, review each email, and book the calls yourself.",
+  },
+  {
+    name: "Balanced Hybrid",
+    desc: "You choose who gets contacted. Pin runs the outreach, answers questions it knows, checks with you on Slack for new ones, and suggests times.",
+  },
+  {
+    name: "Full Autopilot",
+    tag: "JD → Calendar",
+    desc: "Go straight from a job description to interested candidates on your calendar, without doing any of the work in between.",
+  },
+];
+// One row per stage: [label, tone] for each level, in the same order as `levels`.
+const stages: { name: string; states: [string, Tone][] }[] = [
+  { name: "Sourcing", states: [["Automated", "auto"], ["Automated", "auto"], ["Automated", "auto"]] },
+  { name: "Match approval", states: [["You approve", "you"], ["You approve", "you"], ["Automated", "auto"]] },
+  { name: "Sequences", states: [["You review", "draft"], ["Automated", "auto"], ["Automated", "auto"]] },
+  { name: "FAQ replies", states: [["Drafted for you", "draft"], ["Automated", "auto"], ["Automated", "auto"]] },
+  { name: "Scheduling", states: [["You book", "you"], ["Suggests times", "draft"], ["Automated", "auto"]] },
+];
+const DEFAULT = 1;
+---
+
+<section id="autopilot-section" class="bg-bg-secondary">
+  <div class="mx-auto max-w-7xl px-4 py-24 md:px-8 md:py-32">
+    <div class="mx-auto max-w-2xl text-center">
+      <p data-reveal class="text-sm font-medium tracking-wide text-green">You're in control</p>
+      <h2 data-reveal style="--i:1" class="mt-3 text-[32px] font-medium leading-[1.1] tracking-[-0.02em] text-balance md:text-[48px]">
+        Automate as much or as little as you like.
+      </h2>
+      <p data-reveal style="--i:2" class="mt-5 text-lg leading-relaxed text-ink-2 text-pretty">
+        Start hands-on and let Pin take over more as you build trust. Every step has its own switch.
+      </p>
+    </div>
+
+    <div id="autopilot" data-level={DEFAULT} data-reveal style="--i:3" class="mx-auto mt-12 max-w-6xl rounded-3xl bg-white p-4 text-ink shadow-window sm:p-8 md:p-10">
+      <!-- Level picker -->
+      <div role="radiogroup" aria-label="Automation level" class="flex flex-col gap-2 sm:flex-row sm:justify-center">
+        {levels.map((l, i) => (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={i === DEFAULT ? "true" : "false"}
+            tabindex={i === DEFAULT ? 0 : -1}
+            class="level rounded-2xl border border-ink/10 px-5 py-3 font-medium text-ink-2 transition-[background-color,border-color,color,scale] duration-200 hover:border-ink/25 hover:text-ink active:scale-[0.98] aria-checked:border-green aria-checked:bg-green aria-checked:text-white md:px-6 md:text-lg"
+          >
+            {l.name}{l.tag && <span class="ml-1.5 font-normal opacity-70">({l.tag})</span>}
+          </button>
+        ))}
+      </div>
+
+      <!-- Stages -->
+      <ol class="mt-8 grid gap-2 sm:grid-cols-5 sm:gap-3">
+        {stages.map((s, i) => (
+          <li class="stage flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition-[background-color,border-color] duration-300 sm:flex-col sm:justify-center sm:px-3 sm:py-6 sm:text-center" data-tones={s.states.map(([, t]) => t).join(",")} data-tone={s.states[DEFAULT][1]}>
+            <span class="font-medium">{i + 1}. {s.name}</span>
+            <span class="grid">
+              {s.states.map(([label, tone], j) => (
+                <span class:list={["badge col-start-1 row-start-1 inline-flex items-center justify-center gap-1.5 justify-self-end rounded-full px-3 py-1 text-sm transition-[opacity,translate] duration-300 sm:justify-self-center", `tone-${tone}`]} data-for={j} aria-hidden={j === DEFAULT ? "false" : "true"}>
+                  {tone === "auto" && <Check size={13} />}
+                  {tone === "draft" && <PenLine size={13} />}
+                  {tone === "you" && <User size={13} />}
+                  {label}
+                </span>
+              ))}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      <!-- Description -->
+      <div class="mt-8 grid text-center" aria-live="polite">
+        {levels.map((l, j) => (
+          <p class="desc col-start-1 row-start-1 mx-auto max-w-3xl text-lg leading-relaxed text-ink-2 transition-[opacity,translate] duration-300 text-pretty" data-for={j}>
+            <b class="font-medium text-ink">{l.name}:</b> {l.desc}
+          </p>
+        ))}
+      </div>
+
+      <p class="mx-auto mt-8 flex w-fit items-center gap-2 rounded-full bg-bg-tertiary px-4 py-2 text-sm text-ink-2">
+        <SlidersHorizontal size={14} /> Or mix and match: turn any step on or off in settings.
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .stage[data-tone="auto"] { background: rgb(46 157 110 / 0.06); border-color: rgb(74 122 90 / 0.3); }
+  .stage[data-tone="draft"] { background: hsl(256 77% 60% / 0.05); border-color: hsl(256 77% 60% / 0.25); }
+  .stage[data-tone="you"] { background: var(--color-bg); border-color: rgb(39 39 42 / 0.1); }
+  .tone-auto { background: rgb(46 157 110 / 0.1); color: var(--color-green-accessible); }
+  .tone-draft { background: hsl(256 77% 60% / 0.1); color: hsl(256 60% 48%); }
+  .tone-you { background: rgb(39 39 42 / 0.06); color: var(--color-ink-2); }
+
+  .badge, .desc { opacity: 0; translate: 0 4px; pointer-events: none; }
+  [data-level="0"] [data-for="0"],
+  [data-level="1"] [data-for="1"],
+  [data-level="2"] [data-for="2"] { opacity: 1; translate: 0 0; pointer-events: auto; }
+</style>
+
+<script>
+  const root = document.getElementById("autopilot")!;
+  const radios = [...root.querySelectorAll<HTMLButtonElement>("[role=radio]")];
+  const stages = [...root.querySelectorAll<HTMLElement>(".stage")];
+
+  function select(i: number, focus = false) {
+    root.dataset.level = String(i);
+    radios.forEach((r, j) => {
+      r.setAttribute("aria-checked", String(j === i));
+      r.tabIndex = j === i ? 0 : -1;
+    });
+    if (focus) radios[i].focus();
+    stages.forEach((s) => (s.dataset.tone = s.dataset.tones!.split(",")[i]));
+    root.querySelectorAll<HTMLElement>(".badge").forEach((b) => b.setAttribute("aria-hidden", String(b.dataset.for !== String(i))));
+  }
+
+  radios.forEach((r, i) => r.addEventListener("click", () => select(i)));
+  root.querySelector("[role=radiogroup]")!.addEventListener("keydown", (e) => {
+    const k = (e as KeyboardEvent).key;
+    const d = k === "ArrowRight" || k === "ArrowDown" ? 1 : k === "ArrowLeft" || k === "ArrowUp" ? -1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    select((Number(root.dataset.level) + d + radios.length) % radios.length, true);
+  });
+</script>

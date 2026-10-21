@@ -1,0 +1,107 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import FAQ from "../../components/ui/FAQ.astro";
+import CTABand from "../../components/ui/CTABand.astro";
+import Tools from "../../components/ui/Tools.astro";
+import Replies from "../../components/chapters/Replies.astro";
+import SchedulingDemo from "../../components/features/SchedulingDemo.astro";
+import JourneyStrip from "../../components/features/JourneyStrip.astro";
+import Section from "../../components/features/Section.astro";
+import Grid from "../../components/features/Grid.astro";
+import Quotes from "../../components/features/Quotes.astro";
+import Reading from "../../components/features/Reading.astro";
+import { faqJsonLd } from "../../components/ui/faq";
+import { featurePageSchema } from "../../components/features/schema";
+
+const faq = [
+  {
+    question: "How does AI interview scheduling work?",
+    answer: "When a candidate replies with interest, Pin detects it, checks your calendar, accounts for time zones, and offers times you're actually free, in the same email thread. It handles the back-and-forth and sends the calendar invite. You can let Pin book automatically, or have it suggest times for you to confirm.",
+  },
+  {
+    question: "How does AI scheduling reduce time-to-hire?",
+    answer: "Manual scheduling adds days of back-and-forth to every candidate. Pin answers interested candidates within minutes, so the call is booked while they're still excited. Recruiters using Pin save 12 hours every week, with a 14-day average time-to-fill.",
+  },
+  {
+    question: "Does AI scheduling work with my existing calendar?",
+    answer: "Yes. Pin works with Google Calendar, Microsoft Outlook / Office 365, Cal.com and Calendly. Your availability stays accurate, and confirmed interviews appear on your calendar automatically, with Zoom, Google Meet or Teams links attached.",
+  },
+  {
+    question: "What happens to replies that aren't a yes?",
+    answer: "Pin sorts every reply. It archives \"not interested\" replies with a thank-you, answers questions it knows from your knowledge base, and asks you on Slack about new ones, once, even if several people asked. It saves your answer and reuses it.",
+  },
+  {
+    question: "What is an AI hiring assistant?",
+    answer: "An AI hiring assistant handles the administrative work in hiring: scheduling, follow-ups, candidate communication and coordination. Pin connects scheduling to the whole workflow: sourced candidates flow into outreach, interested replies trigger scheduling, and booked interviews land on your calendar.",
+  },
+  {
+    question: "Can AI scheduling handle high-volume recruiting?",
+    answer: "Yes. Pin schedules across unlimited roles at once. Whether 10 candidates respond today or 200, each one gets times right away without a recruiter coordinating by hand. That makes it a fit for high-volume hiring, staffing agencies, and teams running many open positions.",
+  },
+  {
+    question: "Is AI interview scheduling included in all plans?",
+    answer: "Yes. AI interview scheduling is included in every Pin plan, from $99/mo. There are no add-on fees for scheduling.",
+  },
+];
+
+const jsonLd = [
+  ...featurePageSchema({
+    name: "AI Interview Scheduling: Automated Calendar Coordination",
+    path: "/features/ai-interview-scheduling/",
+    description: "Pin's AI interview scheduling reads candidate replies, offers times you're free, handles time zones and the back-and-forth, and sends the invite. From $99/mo.",
+    crumb: "AI Interview Scheduling",
+    dateModified: "2026-10-21",
+  }),
+  faqJsonLd(faq),
+];
+
+const signals = [
+  { title: "Spots the yes", desc: "Pin reads every reply. When a candidate is interested, scheduling starts right away, with no manual triage." },
+  { title: "Only times you're free", desc: "Pin checks your calendar before it offers anything, so there's nothing to double-check." },
+  { title: "Time zones handled", desc: "Times are offered in the candidate's zone and booked in yours. No more 6 AM interviews." },
+  { title: "Stays in the thread", desc: "No scheduling link to send. Pin replies inside the email thread the candidate is already reading." },
+  { title: "Reschedules itself", desc: "If plans change, Pin finds a new time in the same thread. You hear about it once, at the new time." },
+  { title: "Your call", desc: "Let Pin book on its own, or have it suggest times and wait for your OK. Switch any time." },
+];
+---
+
+<Layout
+  title="AI Interview Scheduling: Replies Sorted, Interviews Booked | Pin"
+  description="AI interview scheduling that ends the back-and-forth. Pin reads replies, offers times you're free, handles time zones, and sends the invite. From $99/mo."
+  jsonLd={jsonLd}
+>
+  <PageHero
+    eyebrow="AI interview scheduling"
+    title="They said yes. It's already on your calendar."
+    sub="AI interview scheduling that reads every reply, offers times you're actually free, handles the back-and-forth and time zones, and sends the invite. You just show up to the call."
+  >
+    <SchedulingDemo />
+  </PageHero>
+
+  <JourneyStrip current={[3, 4]} />
+
+  <!-- The reply-sorting step that leads into booking, as on the homepage -->
+  <div class="mx-auto mt-10 max-w-7xl px-4 md:px-8">
+    <Replies />
+  </div>
+
+  <Section eyebrow="Scheduling, handled" title="Six reasons you'll never write “does Tuesday work?” again.">
+    <p slot="copy">Scheduling is where interested candidates go cold. Pin closes the gap between “yes” and a booked call.</p>
+    <Grid items={signals} />
+  </Section>
+
+  <Quotes names={["Ben Caggia", "Fahad Hassan", "Miles Randle"]} title="Teams that let Pin book the meetings" />
+
+  <Tools />
+
+  <FAQ items={faq} title="AI interview scheduling questions" />
+
+  <Reading items={[
+    { label: "AI Interview Scheduling: Cut Admin Time by 70%", href: "/blog/ai-interview-scheduling/", description: "Why 42% of candidates drop out over slow scheduling, and what actually fixes it." },
+    { label: "5 Best AI Interview Scheduling Tools for Recruiters", href: "/blog/best-ai-interview-scheduling-tools/", description: "Side-by-side comparison on pricing and ATS depth." },
+    { label: "What Is a Panel Interview? How to Run One Fairly", href: "/blog/panel-interview-guide/", description: "A 7-step fairness guide for panels of 2 to 5 evaluators." },
+  ]} />
+
+  <CTABand title="Talk to candidates. Let Pin find the time." body="Bring an open role to a 20-minute walkthrough and watch Pin go from reply to booked interview." track="ai_interview_scheduling_cta" />
+</Layout>

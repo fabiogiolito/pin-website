@@ -1,0 +1,34 @@
+---
+// Author headshot, or flat-tinted initials when Ghost has no profile image.
+interface Props {
+  author: { name?: string; slug?: string; profile_image?: string | null }
+  size?: number
+  class?: string
+  eager?: boolean
+}
+const { author, size = 28, class: className = '', eager = false } = Astro.props
+const TINTS = ['bg-green-lighter text-green-accessible', 'bg-clay-light text-clay', 'bg-purple-light text-purple', 'bg-pearl text-ink-2']
+const seed = author.slug ?? author.name ?? 'anon'
+let h = 0
+for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0
+const initials = (author.name ?? '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('') || '?'
+---
+
+{author.profile_image ? (
+  <img
+    src={author.profile_image}
+    alt={author.name ?? ''}
+    width={size}
+    height={size}
+    loading={eager ? 'eager' : 'lazy'}
+    decoding="async"
+    class:list={['shrink-0 rounded-full object-cover outline outline-1 -outline-offset-1 outline-black/10', className]}
+    style={`width:${size}px;height:${size}px`}
+  />
+) : (
+  <span
+    aria-hidden="true"
+    class:list={['inline-grid shrink-0 place-items-center rounded-full font-medium leading-none', TINTS[Math.abs(h) % TINTS.length], className]}
+    style={`width:${size}px;height:${size}px;font-size:${Math.round(size * 0.38)}px`}
+  >{initials}</span>
+)}

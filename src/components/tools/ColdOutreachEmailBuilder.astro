@@ -1,0 +1,374 @@
+---
+import "./tools.css";
+// Cold Outreach Email Builder — template-based v1. Generates three email
+// variants (hook, mutual-signal, direct-ask) + ten subject-line options, each
+// scored with rule-based heuristics. No LLM in v1.
+---
+
+<script is:inline>
+  window.coldOutreachEmailBuilder = function () {
+    // Simple rule-based reply-rate predictor. Real models do better; for v1 this
+    // gives recruiters a directional nudge on their draft before they send.
+    const scoreMessage = (text) => {
+      if (!text) return 0;
+      const words = text.trim().split(/\s+/).length;
+      let score = 50;
+      if (words >= 40 && words <= 90) score += 15;       // sweet spot length
+      else if (words < 40) score -= 10;                   // too terse feels spammy
+      else if (words > 140) score -= 15;                  // too long, won't be read
+      if (/\?/.test(text)) score += 8;                   // a question invites reply
+      if (/\{\{|\[NAME\]|\[CANDIDATE\]/i.test(text)) score -= 20; // unfilled merge tag
+      return Math.max(5, Math.min(95, score));
+    };
+
+    return {
+      role: 'Senior Backend Engineer',
+      company: 'Pin',
+      candidateTitle: 'Backend Engineer',
+      candidateCompany: 'Stripe',
+      standoutSignal: '3 years at Stripe working on payments infrastructure',
+      tone: 'warm',
+      touch: 'first',
+      recruiterName: 'Alex',
+      copied: false,
+      linkCopied: false,
+      copiedIndex: -1,
+      _trackedFirst: false,
+      _viewTracked: false,
+
+      _track(event, props = {}) {
+        try {
+          const root = this.$root;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event,
+            tool_slug: (root && root.dataset && root.dataset.pinToolSlug) || '',
+            tool_name: (root && root.dataset && root.dataset.pinToolName) || '',
+            post_slug: (location.pathname.split('/').filter(Boolean).pop() || ''),
+            page_path: location.pathname,
+            ...props,
+          });
+        } catch (e) {}
+      },
+      _trackFirstInteraction(type) {
+        if (this._trackedFirst) return;
+        this._trackedFirst = true;
+        this._track('blog_tool_first_interaction', { interaction_type: type });
+      },
+
+      hydrate() {
+        if (!this._viewTracked && typeof IntersectionObserver !== 'undefined') {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._viewTracked = true;
+              this._track('blog_tool_viewed');
+              io.disconnect();
+            }
+          }, { threshold: 0.3 });
+          io.observe(this.$root);
+        }
+      },
+
+      applyPreset(id) {
+        if (id === 'backend-warm') {
+          this.role = 'Senior Backend Engineer'; this.company = 'Acme';
+          this.candidateTitle = 'Backend Engineer'; this.candidateCompany = 'Stripe';
+          this.standoutSignal = '3 years at Stripe working on payments infrastructure';
+          this.tone = 'warm'; this.touch = 'first'; this.recruiterName = 'Alex';
+        } else if (id === 'ml-direct') {
+          this.role = 'Staff ML Engineer'; this.company = 'Acme';
+          this.candidateTitle = 'Machine Learning Engineer'; this.candidateCompany = 'OpenAI';
+          this.standoutSignal = 'co-authored a recent paper on RLHF';
+          this.tone = 'direct'; this.touch = 'first'; this.recruiterName = 'Alex';
+        } else if (id === 'follow-up') {
+          this.touch = 'follow-up';
+        }
+        this._track('blog_tool_preset_selected', { preset_id: id });
+        this._trackFirstInteraction('preset');
+      },
+
+      reset() {
+        this.role = 'Senior Backend Engineer'; this.company = 'Pin';
+        this.candidateTitle = 'Backend Engineer'; this.candidateCompany = 'Stripe';
+        this.standoutSignal = '3 years at Stripe working on payments infrastructure';
+        this.tone = 'warm'; this.touch = 'first'; this.recruiterName = 'Alex';
+        this._track('blog_tool_reset_clicked');
+      },
+
+      get subjectLines() {
+        const r = this.role;
+        const co = this.company;
+        const ct = this.candidateCompany;
+        const lines = [
+          { technique: 'Specific + short',   text: r + ' role at ' + co },
+          { technique: 'Question',           text: 'Open to a chat about ' + r + '?' },
+          { technique: 'Name-drop',          text: 'Saw your work at ' + ct },
+          { technique: 'Curiosity',          text: 'Quick question about your ' + ct + ' stack' },
+          { technique: 'Value-forward',      text: 'Why ' + co + ' wants to talk to you' },
+          { technique: 'Directional',        text: 'Exploring a move from ' + ct + '?' },
+          { technique: 'Personalized',       text: 'Fellow ' + this.candidateTitle.toLowerCase() + ' here - 2 min?' },
+          { technique: 'Candid',             text: co + ' is hiring a ' + r + ' - worth a chat?' },
+          { technique: 'Curiosity-hook',     text: 'Found you because of your ' + ct + ' work' },
+          { technique: 'Urgent (use sparingly)', text: co + ' is closing a ' + r + ' search this month' },
+        ];
+        return lines.map((l) => ({ ...l, score: scoreMessage(l.text) }));
+      },
+
+      get emails() {
+        const isFollowUp = this.touch === 'follow-up';
+        const r = this.role;
+        const co = this.company;
+        const ct = this.candidateTitle;
+        const cc = this.candidateCompany;
+        const signal = this.standoutSignal;
+        const name = this.recruiterName;
+        const tone = this.tone;
+
+        const greet = (n) => (n ? 'Hi ' + n + ',' : 'Hi [NAME],');
+
+        const hookEmail = [
+          greet('[NAME]'),
+          '',
+          'Your ' + signal + ' is exactly why I reached out. We are hiring a ' + r + ' at ' + co + ' and your path at ' + cc + ' lines up with what the team needs.',
+          '',
+          tone === 'direct'
+            ? 'Three things that make this role worth a look: (1) strong scope on day one, (2) top-quartile comp, (3) a team you would learn from. Worth 20 minutes next week?'
+            : 'If you are open to exploring, I would love to share what the scope and team look like. Even if the timing is off, the context might be useful later. 20 min next week?',
+          '',
+          'Best,',
+          name || '[RECRUITER NAME]',
+        ].join('\n');
+
+        const mutualEmail = [
+          greet('[NAME]'),
+          '',
+          'I follow work coming out of ' + cc + ' closely - ' + signal + ' caught my attention. We are building a similar problem space at ' + co + ' and looking for a ' + r + '.',
+          '',
+          tone === 'curious'
+            ? 'Curious whether you would ever consider a move, or if there is anyone in your network you would point me to. No pressure either way.'
+            : 'I would like to hear about your current setup and share what we are working on. Even a 15-min intro would be useful. Any time next week work?',
+          '',
+          'Either way - keep up the ' + cc + ' work.',
+          '',
+          name || '[RECRUITER NAME]',
+        ].join('\n');
+
+        const directEmail = [
+          greet('[NAME]'),
+          '',
+          'Straight to it: we are hiring a ' + r + ' at ' + co + ' and your background - ' + signal + ' - is a strong match.',
+          '',
+          'If the timing is right, I can share the role doc and comp range. If not, no problem. Reply with a 👍 or 👎 and I will follow up accordingly.',
+          '',
+          name || '[RECRUITER NAME]',
+        ].join('\n');
+
+        const followUp = [
+          greet('[NAME]'),
+          '',
+          'Following up on my note from last week about the ' + r + ' role at ' + co + '. Totally understand if the timing is off - should I circle back in a month, or take this off your radar for now?',
+          '',
+          'Either answer is helpful.',
+          '',
+          name || '[RECRUITER NAME]',
+        ].join('\n');
+
+        const variants = isFollowUp
+          ? [{ angle: 'Follow-up · gentle bump', body: followUp }]
+          : [
+              { angle: 'Hook · lead with candidate signal',    body: hookEmail },
+              { angle: 'Mutual-signal · shared problem space', body: mutualEmail },
+              { angle: 'Direct-ask · reply yes/no',            body: directEmail },
+            ];
+
+        return variants.map((v) => ({ ...v, score: scoreMessage(v.body) }));
+      },
+
+      shareUrl() {
+        try {
+          const state = {
+            role: this.role, company: this.company, candidateTitle: this.candidateTitle,
+            candidateCompany: this.candidateCompany, standoutSignal: this.standoutSignal,
+            tone: this.tone, touch: this.touch, recruiterName: this.recruiterName,
+          };
+          const s = btoa(encodeURIComponent(JSON.stringify(state)));
+          const url = new URL(window.location.href);
+          url.searchParams.set('co', s);
+          return url.toString();
+        } catch (e) { return window.location.href; }
+      },
+
+      _copyText(text, flag) {
+        const ok = () => { this[flag] = true; setTimeout(() => this[flag] = false, 1500); };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(ok).catch(() => {});
+          return;
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      },
+      copyEmail(i) {
+        const e = this.emails[i];
+        if (!e) return;
+        this._copyText(e.body, 'copied');
+        this.copiedIndex = i;
+        setTimeout(() => { this.copiedIndex = -1; }, 1500);
+        this._track('blog_tool_output_copied', { angle: e.angle, score: e.score });
+      },
+      copySubject(text) {
+        this._copyText(text, 'copied');
+        this._track('blog_tool_output_copied', { kind: 'subject' });
+      },
+      copyLink() {
+        const url = this.shareUrl();
+        try { history.replaceState(null, '', url); } catch (e) {}
+        this._copyText(url, 'linkCopied');
+        this._track('blog_tool_share_link_copied');
+      },
+      _onInput() { this._trackFirstInteraction('input'); },
+
+      scoreClass(n) {
+        if (n >= 65) return 'level-ok';
+        if (n >= 50) return 'level-warn';
+        return 'level-over';
+      },
+    };
+  };
+</script>
+
+<section
+  class="pin-tool"
+  data-pin-tool-slug="cold-outreach-email-builder"
+  data-pin-tool-name="Cold Outreach Email Builder"
+  x-data="coldOutreachEmailBuilder()"
+  x-init="hydrate()"
+>
+  <h2 class="pt-title" id="pin-tool-cold-outreach-email-builder">
+    Cold Outreach Email Builder
+    <span class="pt-tool-badge" aria-hidden="true">Tool</span>
+  </h2>
+  <p class="pt-intro">
+    Get three outreach email variants (each with a different angle) plus ten subject-line options, every one scored by rule-based heuristics for expected reply rate. Paste candidate signals, set a tone, and copy the one that fits.
+  </p>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Preset</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" @click="applyPreset('backend-warm')">Backend · warm first touch</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('ml-direct')">ML engineer · direct</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('follow-up')">Switch to follow-up mode</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="co-role">Role you're hiring for</label>
+      <input id="co-role" class="pt-input" type="text" x-model="role" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="co-co">Your company</label>
+      <input id="co-co" class="pt-input" type="text" x-model="company" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="co-ct">Candidate's current title</label>
+      <input id="co-ct" class="pt-input" type="text" x-model="candidateTitle" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="co-cc">Candidate's current company</label>
+      <input id="co-cc" class="pt-input" type="text" x-model="candidateCompany" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <label class="pt-label" for="co-signal">Candidate's standout signal (one sentence, specific)</label>
+      <input id="co-signal" class="pt-input" type="text" x-model="standoutSignal" @input.debounce.300ms="_onInput()" placeholder='e.g. "3 years at Stripe working on payments infrastructure"' />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <span class="pt-label">Tone</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" :class="tone === 'direct' ? 'active' : ''" @click="tone = 'direct'; _trackFirstInteraction('toggle')">Direct</button>
+        <button type="button" class="pt-preset-btn" :class="tone === 'warm' ? 'active' : ''" @click="tone = 'warm'; _trackFirstInteraction('toggle')">Warm</button>
+        <button type="button" class="pt-preset-btn" :class="tone === 'curious' ? 'active' : ''" @click="tone = 'curious'; _trackFirstInteraction('toggle')">Curious</button>
+      </div>
+    </div>
+    <div>
+      <span class="pt-label">Touch</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" :class="touch === 'first' ? 'active' : ''" @click="touch = 'first'; _trackFirstInteraction('toggle')">First touch</button>
+        <button type="button" class="pt-preset-btn" :class="touch === 'follow-up' ? 'active' : ''" @click="touch = 'follow-up'; _trackFirstInteraction('toggle')">Follow-up</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <label class="pt-label" for="co-name">Your name (signature)</label>
+      <input id="co-name" class="pt-input" type="text" x-model="recruiterName" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-variants">
+    <h3 class="pt-subheading">Email variants</h3>
+    <template x-for="(e, i) in emails" :key="'e-' + i + '-' + e.angle">
+      <div class="pt-variant">
+        <div class="pt-variant-head">
+          <span class="pt-variant-angle" x-text="e.angle"></span>
+          <span class="pt-charcount" :class="scoreClass(e.score)" x-text="'Expected reply: ' + e.score + '%'"></span>
+        </div>
+        <pre class="pt-variant-body" x-text="e.body"></pre>
+        <button type="button" class="pt-btn primary pt-variant-copy" @click="copyEmail(i)">
+          <span x-show="copiedIndex !== i">Copy this email</span>
+          <span x-show="copiedIndex === i" x-cloak>Copied</span>
+        </button>
+      </div>
+    </template>
+  </div>
+
+  <div class="pt-subjects">
+    <h3 class="pt-subheading">Subject line options</h3>
+    <ul class="pt-subject-list">
+      <template x-for="(s, i) in subjectLines" :key="'s-' + i">
+        <li class="pt-subject-row">
+          <span class="pt-subject-tech" x-text="s.technique"></span>
+          <span class="pt-subject-text" x-text="s.text"></span>
+          <span class="pt-charcount pt-subject-score" :class="scoreClass(s.score)" x-text="s.score + '%'"></span>
+          <button type="button" class="pt-btn secondary pt-subject-copy" @click="copySubject(s.text)">Copy</button>
+        </li>
+      </template>
+    </ul>
+  </div>
+
+  <div class="pt-actions">
+    <button type="button" class="pt-btn secondary" @click="copyLink()">
+      <span x-show="!linkCopied">Copy share link</span>
+      <span x-show="linkCopied" x-cloak>Link copied</span>
+    </button>
+    <button type="button" class="pt-btn secondary" @click="reset()">Reset</button>
+  </div>
+
+  <div class="pt-howto">
+    <strong>How to use:</strong>
+    <ol>
+      <li>Enter the role + your company + candidate's current title/company.</li>
+      <li>The standout signal is the most important field — be specific ("3 yrs at Stripe on payments" beats "great engineer"). Paste from their LinkedIn if needed.</li>
+      <li>Pick a tone and whether this is a first touch or a follow-up bump.</li>
+      <li>Each email gets a rule-based expected-reply score (length, specificity, question presence, merge-tag check). Use it to pick the best of the three.</li>
+      <li>Subject lines are ordered by technique — pick one that matches your tone.</li>
+    </ol>
+  </div>
+
+  <p class="pt-source">
+    Built by Pin. Pin customers average 5× the reply rate of generic sequences — <a href="https://www.pin.com/">pin.com</a>.
+  </p>
+</section>

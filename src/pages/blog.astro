@@ -1,0 +1,38 @@
+---
+import Layout from '../layouts/Layout.astro'
+import BlogListing from '../components/blog/BlogListing.astro'
+import { breadcrumbJsonLd } from '../components/blog/utils'
+import { getUnifiedBlogPosts, getAllUnifiedPosts, getAllUnifiedTags, getTagCounts } from '../lib/posts'
+
+const [{ posts, totalPages }, allPosts, allTags, tagCounts] = await Promise.all([
+  getUnifiedBlogPosts({ page: 1 }),
+  getAllUnifiedPosts(),
+  getAllUnifiedTags(),
+  getTagCounts(),
+])
+
+const featuredPosts = allPosts.filter((p) => p.featured).slice(0, 6)
+
+const breadcrumb = breadcrumbJsonLd([
+  { name: 'Home', url: 'https://www.pin.com/' },
+  { name: 'Blog', url: 'https://www.pin.com/blog/' },
+])
+---
+
+<Layout title="Pin Blog: AI Recruiting, Sourcing & Hiring Guides" description="Expert guides on AI-powered recruiting, candidate sourcing, outreach, and hiring best practices from the Pin editorial team." jsonLd={breadcrumb}>
+  <BlogListing
+    mode="all"
+    posts={posts}
+    allTags={allTags}
+    tagCounts={tagCounts}
+    activeTag="all"
+    activeTagName="All"
+    currentPage={1}
+    totalPages={totalPages}
+    paginationBase="/blog/page"
+    paginationIndexUrl="/blog/"
+    totalArticleCount={allPosts.length}
+    lastPublishedAt={allPosts[0]?.published_at}
+    featuredPosts={featuredPosts}
+  />
+</Layout>

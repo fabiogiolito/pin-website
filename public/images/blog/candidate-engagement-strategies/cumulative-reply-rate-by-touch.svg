@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" width="960" height="360" role="img" aria-label="Horizontal bar chart of cumulative reply rate across a 5-touch recruiting outreach sequence: 8.3% on touch 1, 15.8% on touch 2, 18.4% on touch 3, 20.1% on touch 4, 21.3% on touch 5. Source: Gem analysis of nearly 8 million recruiting outreach sequences, 2022.">
+  <rect width="960" height="360" fill="#E8E0D8" rx="16"/>
+  <text x="48" y="40" fill="#3B3B3B" font-size="22" font-weight="800" font-family="system-ui,sans-serif">Cumulative Reply Rate by Touch (Recruiting Sequence)</text>
+  <text x="48" y="65" fill="#5C5C5C" font-size="13" font-family="system-ui,sans-serif">A 5-step sequence delivers 2.6x the cumulative replies of a single first-touch email.</text>
+
+  <text x="180" y="105" fill="#5C5C5C" font-size="14" font-weight="500" font-family="system-ui,sans-serif" text-anchor="end">Touch 1</text>
+  <rect x="195" y="86" width="166" height="26" fill="#8B9E8F" rx="13"/>
+  <text x="371" y="105" fill="#3B3B3B" font-size="13" font-weight="700" font-family="system-ui,sans-serif">8.3%</text>
+
+  <text x="180" y="145" fill="#5C5C5C" font-size="14" font-weight="500" font-family="system-ui,sans-serif" text-anchor="end">Touch 2</text>
+  <rect x="195" y="126" width="316" height="26" fill="#6B8F71" rx="13"/>
+  <text x="521" y="145" fill="#3B3B3B" font-size="13" font-weight="700" font-family="system-ui,sans-serif">15.8%</text>
+
+  <text x="180" y="185" fill="#5C5C5C" font-size="14" font-weight="500" font-family="system-ui,sans-serif" text-anchor="end">Touch 3</text>
+  <rect x="195" y="166" width="368" height="26" fill="#6B8F71" rx="13"/>
+  <text x="573" y="185" fill="#3B3B3B" font-size="13" font-weight="700" font-family="system-ui,sans-serif">18.4%</text>
+
+  <text x="180" y="225" fill="#5C5C5C" font-size="14" font-weight="500" font-family="system-ui,sans-serif" text-anchor="end">Touch 4</text>
+  <rect x="195" y="206" width="402" height="26" fill="#4CAF50" rx="13"/>
+  <text x="607" y="225" fill="#3B3B3B" font-size="13" font-weight="700" font-family="system-ui,sans-serif">20.1%</text>
+
+  <text x="180" y="265" fill="#5C5C5C" font-size="14" font-weight="500" font-family="system-ui,sans-serif" text-anchor="end">Touch 5</text>
+  <rect x="195" y="246" width="426" height="26" fill="#4CAF50" rx="13"/>
+  <text x="631" y="265" fill="#3B3B3B" font-size="13" font-weight="700" font-family="system-ui,sans-serif">21.3%</text>
+
+  <line x1="195" y1="290" x2="780" y2="290" stroke="#C9C0B5" stroke-width="1"/>
+  <text x="195" y="310" fill="#8B8178" font-size="11" font-family="system-ui,sans-serif">0%</text>
+  <text x="385" y="310" fill="#8B8178" font-size="11" font-family="system-ui,sans-serif">10%</text>
+  <text x="585" y="310" fill="#8B8178" font-size="11" font-family="system-ui,sans-serif">20%</text>
+  <text x="745" y="310" fill="#8B8178" font-size="11" font-family="system-ui,sans-serif">30%</text>
+
+  <text x="48" y="345" fill="#8B8178" font-size="11" font-family="system-ui,sans-serif">Source: Gem analysis of nearly 8 million recruiting outreach sequences, 2022.</text>
+</svg>

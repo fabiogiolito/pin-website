@@ -1,0 +1,258 @@
+---
+// Three-step demo form: email → qualification → Cal.com inline booking.
+// Alpine logic, /capture-email + /lookup-company calls, Cal config and dataLayer events
+// are unchanged from new-www's BookADemoForm.astro (page variant).
+import { CAL_LINKS } from "../../lib/getCalUrl";
+
+const link12 = CAL_LINKS["1-2"];
+const link310 = CAL_LINKS["3-10"];
+const link10plus = CAL_LINKS["10+"];
+const calEmbedId = "book-a-demo-embed-page";
+const calNamespace = "bookademo_page";
+const calBg = "#FFFFFF";
+
+const xData = `{
+  step: 1,
+  email: '',
+  teamSize: '',
+  roles: '',
+  companyName: '',
+  calEmbedInitialized: false,
+  get isEmailValid() { return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(this.email) },
+  getCalLink() {
+    const links = { '1-2': '${link12}', '3-10': '${link310}', '10+': '${link10plus}' }
+    return links[this.teamSize]
+  },
+  getTrackingParams() {
+    function getCookie(name) {
+      const value = '; ' + document.cookie
+      const parts = value.split('; ' + name + '=')
+      if (parts.length === 2) return parts.pop().split(';').shift()
+      return null
+    }
+    function getQueryParam(name) {
+      return new URLSearchParams(window.location.search).get(name)
+    }
+    function getTrackingParam(urlParam, cookieName, pixelCookie) {
+      return getQueryParam(urlParam) ?? getCookie(cookieName) ?? (pixelCookie ? getCookie(pixelCookie) : null) ?? null
+    }
+    const params = {}
+    const gclid = getTrackingParam('gclid', 'gclid', '_gcl_aw')
+    const fbclid = getTrackingParam('fbclid', 'fbclid', '_fbc')
+    const li_fat_id = getTrackingParam('li_fat_id', 'li_fat_id', null)
+    const msclkid = getTrackingParam('msclkid', 'msclkid', '_uetmsclkid')
+    const utm_source = getTrackingParam('utm_source', 'us', null)
+    const utm_medium = getTrackingParam('utm_medium', 'um', null)
+    const utm_campaign = getTrackingParam('utm_campaign', 'uc', null)
+    const utm_term = getTrackingParam('utm_term', 'ut', null)
+    const utm_content = getTrackingParam('utm_content', 'uco', null)
+    if (gclid) params.gclid = gclid
+    if (fbclid) params.fbclid = fbclid
+    if (li_fat_id) params.li_fat_id = li_fat_id
+    if (msclkid) params.msclkid = msclkid
+    if (utm_source) params.utm_source = utm_source
+    if (utm_medium) params.utm_medium = utm_medium
+    if (utm_campaign) params.utm_campaign = utm_campaign
+    if (utm_term) params.utm_term = utm_term
+    if (utm_content) params.utm_content = utm_content
+    return params
+  },
+  lookupCompany() {
+    fetch('/lookup-company', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: this.email }),
+    })
+      .then(r => r.json())
+      .then(data => { if (data.name) this.companyName = data.name })
+      .catch(() => {})
+  },
+  captureEvent(fields) {
+    fetch('/capture-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: this.email, ...this.getTrackingParams(), ...fields }),
+    }).catch(() => {})
+  },
+  scrollToForm() {
+    var el = document.getElementById('demo-form-top')
+    if (el && window.innerWidth < 1024) {
+      this.$nextTick(() => {
+        var rect = el.getBoundingClientRect()
+        window.scrollBy({ top: rect.top - 20, behavior: 'instant' })
+      })
+    }
+  },
+  submitStep1() {
+    this.captureEvent({})
+    this.lookupCompany()
+    this.step = 2
+    window.dataLayer?.push({ event: 'demo_email_submitted', demo_email: this.email })
+    this.scrollToForm()
+  },
+  submitStep2() {
+    this.captureEvent({ numberOfRecruiters: this.teamSize, recruitingFor: this.roles })
+    this.step = 3
+    window.dataLayer?.push({ event: 'demo_qualified', demo_team_size: this.teamSize, demo_roles: this.roles })
+    this.$nextTick(() => { this.initCalEmbed() })
+    this.scrollToForm()
+  },
+  resetForm() {
+    this.step = 1
+    this.email = ''
+    this.teamSize = ''
+    this.roles = ''
+    this.companyName = ''
+    this.calEmbedInitialized = false
+  },
+  initCalEmbed() {
+    if (this.calEmbedInitialized) return
+    this.calEmbedInitialized = true
+    const calLink = this.getCalLink()
+    const trackingParams = this.getTrackingParams()
+    const inlineConfig = {
+      ...trackingParams,
+      layout: 'month_view',
+      theme: 'light',
+      'hiring-for': this.roles,
+      'recruiters': this.teamSize,
+      email: this.email,
+      ...(this.companyName && { company: this.companyName }),
+    }
+    var embedSelector = '#${calEmbedId}'
+    Cal.config = Cal.config || {}
+    Cal.config.forwardQueryParams = true
+    Cal('init', '${calNamespace}', { origin: 'https://cal.com' })
+    Cal.ns['${calNamespace}']('inline', {
+      elementOrSelector: embedSelector,
+      config: inlineConfig,
+      calLink: calLink,
+    })
+    Cal.ns['${calNamespace}']('ui', {
+      theme: 'light',
+      cssVarsPerTheme: {
+        light: {
+          'cal-bg':               '${calBg}',
+          'cal-bg-muted':         '${calBg}',
+          'cal-bg-subtle':        '${calBg}',
+          'cal-bg-emphasis':      '#F2EDE8',
+          'cal-brand':            '#4A7A5A',
+          'cal-brand-emphasis':   '#3d6349',
+          'cal-brand-text':       '#FDFDFC',
+          'cal-text':             '#27272A',
+          'cal-text-muted':       '#676770',
+          'cal-border':           'rgba(49,33,33,0.13)',
+          'cal-border-subtle':    'rgba(49,33,33,0.08)',
+          'cal-border-booker':    'rgba(49,33,33,0.13)',
+          'cal-border-booker-width': '1px',
+        },
+      },
+      hideEventTypeDetails: true
+    })
+  }
+}`
+const input = "w-full rounded-xl border border-ink/12 bg-white px-4 py-3.5 text-base outline-none transition-colors placeholder:text-ink-3 focus:border-green";
+const submit = "w-full rounded-xl px-5 py-3.5 font-medium transition-colors";
+const on = "bg-green text-white hover:bg-green-accessible";
+const off = "bg-green-lighter text-green/50 cursor-not-allowed";
+const sizes = [
+  { v: "1-2", label: "1 – 2" },
+  { v: "3-10", label: "3 – 10" },
+  { v: "10+", label: "More than 10" },
+];
+---
+
+<div x-data={xData} class="w-full overflow-hidden rounded-3xl bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.05),0_16px_40px_-16px_rgb(84_68_58/0.25)]">
+  <!-- Step 1: Email -->
+  <div x-show="step === 1" class="flex flex-col gap-6 p-6 md:p-8">
+    <div>
+      <p class="text-sm font-medium text-ink-3">Step 1 of 3</p>
+      <h2 class="mt-1 text-2xl font-medium tracking-[-0.01em]">Book a demo</h2>
+    </div>
+    <div class="flex flex-col gap-3">
+      <label for="demo-email" class="sr-only">Work email</label>
+      <input
+        id="demo-email"
+        x-model="email"
+        x-ref="emailInput"
+        x-effect="if (step === 1) $nextTick(() => $refs.emailInput.focus())"
+        @keydown.enter="if (isEmailValid) submitStep1()"
+        type="email"
+        name="email"
+        autocomplete="email"
+        placeholder="Work email"
+        class={input}
+      />
+      <button type="button" @click="submitStep1" :disabled="!isEmailValid" :class={`isEmailValid ? '${on}' : '${off}'`} class={submit}>Continue</button>
+    </div>
+    <p class="border-t border-ink/8 pt-5 text-sm text-ink-2">
+      Or contact Sales directly at <a href="mailto:sales@pin.com" class="underline decoration-ink/20 underline-offset-2 hover:decoration-ink">sales@pin.com</a>.
+    </p>
+  </div>
+
+  <!-- Step 2: Qualification -->
+  <div x-show="step === 2" x-cloak class="flex flex-col gap-6 p-6 md:p-8">
+    <div>
+      <p class="text-sm font-medium text-ink-3">Step 2 of 3</p>
+      <h2 class="mt-1 text-2xl font-medium tracking-[-0.01em]">Tell us about your company</h2>
+    </div>
+    <fieldset class="flex flex-col gap-3">
+      <legend class="mb-3 font-medium">How many recruiters are sourcing for your company today?</legend>
+      <div class="grid grid-cols-3 gap-2">
+        {sizes.map((s) => (
+          <button
+            type="button"
+            @click={`teamSize = '${s.v}'`}
+            :aria-pressed={`(teamSize === '${s.v}').toString()`}
+            :class={`teamSize === '${s.v}' ? 'border-green bg-green text-white' : 'border-ink/12 bg-white text-ink hover:border-green'`}
+            class="rounded-xl border px-2 py-3 text-sm font-medium transition-colors"
+          >{s.label}</button>
+        ))}
+      </div>
+    </fieldset>
+    <div class="flex flex-col gap-3">
+      <label for="demo-roles" class="font-medium">What type of roles/titles are you recruiting for?</label>
+      <textarea id="demo-roles" x-model="roles" rows="3" placeholder="List one or two titles you're hiring for, please be specific!" class:list={[input, "resize-none"]}></textarea>
+    </div>
+    <button type="button" @click="submitStep2" :disabled="!teamSize" :class={`teamSize ? '${on}' : '${off}'`} class={submit}>Continue</button>
+  </div>
+
+  <!-- Step 3: Cal.com inline embed -->
+  <div x-show="step === 3" x-cloak>
+    <div id={calEmbedId} style="width:100%;height:100%;overflow:scroll"></div>
+  </div>
+</div>
+
+<!-- Cal.com SDK loader (queues calls until embed.js is ready) -->
+<script is:inline>
+  (function (C, A, L) {
+    let p = function (a, ar) { a.q.push(ar) }
+    let d = C.document
+    C.Cal = C.Cal || function () {
+      let cal = C.Cal
+      let ar = arguments
+      if (!cal.loaded) {
+        cal.ns = {}
+        cal.q = cal.q || []
+        d.head.appendChild(d.createElement('script')).src = A
+        cal.loaded = true
+      }
+      if (ar[0] === L) {
+        const api = function () { p(api, arguments) }
+        const namespace = ar[1]
+        api.q = api.q || []
+        if (typeof namespace === 'string') {
+          cal.ns[namespace] = cal.ns[namespace] || api
+          p(cal.ns[namespace], ar)
+          p(cal, ['initNamespace', namespace])
+        } else p(cal, ar)
+        return
+      }
+      p(cal, ar)
+    }
+  })(window, 'https://app.cal.com/embed/embed.js', 'init')
+</script>
+
+<style>
+  [x-cloak] { display: none !important; }
+</style>

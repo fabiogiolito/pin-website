@@ -1,0 +1,74 @@
+---
+// Agent hero: one line in, five steps run in order, each linking to its feature page.
+import { Check, CornerDownLeft, RotateCcw, ArrowUpRight } from "@lucide/astro";
+import PinAvatar from "../PinAvatar.astro";
+
+const steps = [
+  { name: "Brief", did: "Researched ByteLogic, drafted 8 criteria, asked you 3 questions", href: "/features/ai-sourcing/" },
+  { name: "Match", did: "214 matches found, each explained. You approved 12", href: "/features/ai-sourcing/" },
+  { name: "Outreach", did: "12 personal sequences, sent from alex@yourcompany.com", href: "/features/automated-outreach/" },
+  { name: "Replies", did: "9 replies sorted. 1 question sent to you on Slack", href: "/features/ai-interview-scheduling/" },
+  { name: "Booked", did: "3 interviews on your calendar this week", href: "/features/ai-interview-scheduling/" },
+];
+---
+
+<div id="agent-run" class="tint-green rounded-[28px] px-4 py-8 text-left sm:px-8 md:rounded-[36px] md:px-12 md:py-12">
+  <div class="mx-auto grid max-w-5xl items-start gap-5 text-[14px] md:grid-cols-[0.9fr_1.3fr] md:gap-8">
+    <div class="space-y-4">
+      <div class="panel p-4">
+        <p class="text-[12px] font-medium uppercase tracking-wide text-app-fg3">You type one line</p>
+        <div class="mt-2 flex items-center gap-2.5 rounded-xl border border-app-border bg-app-bg2 px-3 py-3 text-[15px]">
+          <span class="min-w-0 flex-1">Senior Backend Engineer at ByteLogic</span>
+          <kbd class="grid size-6 shrink-0 place-items-center rounded-md bg-app-tint text-white"><CornerDownLeft size={13} /></kbd>
+        </div>
+      </div>
+      <div class="panel space-y-3 p-4">
+        <p class="flex gap-2.5"><PinAvatar size={24} /><span class="pt-0.5 leading-relaxed">Should they be in NYC or remote? Any companies to avoid?</span></p>
+        <p class="ml-auto w-fit max-w-[85%] rounded-lg bg-app-fg/5 px-3 py-2">NYC hybrid. No crypto companies.</p>
+        <p class="flex gap-2.5"><PinAvatar size={24} /><span class="pt-0.5 leading-relaxed">Got it. I'll take it from here.</span></p>
+      </div>
+    </div>
+
+    <div class="relative">
+      <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Pin does everything in between</span>
+      <ol class="panel p-3 pt-6">
+        {steps.map((s, i) => (
+          <li class="step" style={`--i:${i}`}>
+            <a href={s.href} class="group flex items-start gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-app-fg/[0.03] focus-visible:outline-2 focus-visible:outline-app-tint">
+              <span class="dot mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border border-app-border text-white"><Check size={12} stroke-width={3} /></span>
+              <span class="min-w-0 flex-1">
+                <span class="block font-semibold">{i + 1}. {s.name}</span>
+                <span class="did block text-app-fg2">{s.did}</span>
+              </span>
+              <ArrowUpRight size={15} class="mt-0.5 shrink-0 text-app-fg3 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+  <div class="mt-6 flex items-center justify-center gap-4 text-sm text-ink-3">
+    <span>Illustrative example</span>
+    <button type="button" class="replay inline-flex items-center gap-1.5 font-medium text-ink-2 hover:text-ink"><RotateCcw size={13} /> Replay</button>
+  </div>
+</div>
+
+<style>
+  .step .dot { background: white; transition: background-color 300ms, border-color 300ms; }
+  .step .did { opacity: 0.35; transition: opacity 300ms; }
+  .ran .step .dot { background: var(--color-app-pos); border-color: var(--color-app-pos); transition-delay: calc(var(--i) * 600ms + 300ms); }
+  .ran .step .did { opacity: 1; transition-delay: calc(var(--i) * 600ms + 300ms); }
+</style>
+
+<script>
+  import { onEnter, reducedMotion } from "../../scripts/motion";
+
+  const root = document.getElementById("agent-run")!;
+  if (reducedMotion) root.classList.add("ran");
+  else onEnter(root, () => root.classList.add("ran"), 0.4);
+  root.querySelector(".replay")!.addEventListener("click", () => {
+    root.classList.remove("ran");
+    void root.offsetWidth;
+    requestAnimationFrame(() => root.classList.add("ran"));
+  });
+</script>

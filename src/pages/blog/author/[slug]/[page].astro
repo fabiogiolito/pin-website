@@ -1,0 +1,80 @@
+---
+import Layout from '../../../../layouts/Layout.astro'
+import BlogListing from '../../../../components/blog/BlogListing.astro'
+import { breadcrumbJsonLd, authorSameAs } from '../../../../components/blog/utils'
+import { getAllAuthors, getAuthorBySlug } from '../../../../lib/ghost'
+import {
+  getUnifiedPostsByAuthor,
+  getAllUnifiedTags,
+  getTagCounts,
+  getAuthorsWithCounts,
+  POSTS_PER_PAGE,
+} from '../../../../lib/posts'
+import { getAuthorOverride } from '../../../../data/authors'
+
+export async function getStaticPaths() {
+  const authors = await getAllAuthors()
+  const paths: { params: { slug: string; page: string } }[] = []
+  for (const author of authors) {
+    if (!author.slug) continue
+    const posts = await getUnifiedPostsByAuthor(author.slug)
+    const totalPages = Math.max(1, Math.ceil(posts.length / POSTS_PER_PAGE))
+    for (let page = 2; page <= totalPages; page++) {
+      paths.push({ params: { slug: author.slug, page: String(page) } })
+    }
+  }
+  return paths
+}
+
+const { slug, page: pageParam } = Astro.params
+const currentPage = parseInt(pageParam ?? '2', 10)
+
+const [author, allPosts, allTags, tagCounts, authorsWithCounts] = await Promise.all([
+  slug ? getAuthorBySlug(slug) : Promise.resolve(null),
+  slug ? getUnifiedPostsByAuthor(slug) : Promise.resolve([]),
+  getAllUnifiedTags(),
+  getTagCounts(),
+  getAuthorsWithCounts(),
+])
+const override = getAuthorOverride(slug)
+
+if (!author) {
+  return new Response('Author not found', { status: 404 })
+}
+
+const totalPosts = allPosts.length
+const totalPages = Math.max(1, Math.ceil(totalPosts / POSTS_PER_PAGE))
+const startIdx = (currentPage - 1) * POSTS_PER_PAGE
+const sameAs = authorSameAs(author, override)
+
+const breadcrumb = breadcrumbJsonLd([
+  { name: 'Home', url: 'https://www.pin.com/' },
+  { name: 'Blog', url: 'https://www.pin.com/blog/' },
+  { name: author.name!, url: `https://www.pin.com/blog/author/${slug}/` },
+])
+---
+
+<Layout
+  title={`${author.name} - Page ${currentPage} - Pin Blog`}
+  description={`More articles by ${author.name} on the Pin blog.`}
+  ogImage={author.profile_image || undefined}
+  authorName={author.name}
+  jsonLd={breadcrumb}
+>
+  <BlogListing
+    mode="author"
+    posts={allPosts.slice(startIdx, startIdx + POSTS_PER_PAGE)}
+    allTags={allTags}
+    tagCounts={tagCounts}
+    activeTag=""
+    currentPage={currentPage}
+    totalPages={totalPages}
+    paginationBase={`/blog/author/${slug}`}
+    paginationIndexUrl={`/blog/author/${slug}/`}
+    totalArticleCount={totalPosts}
+    lastPublishedAt={allPosts[0]?.published_at}
+    featuredPosts={[]}
+    author={{ name: author.name!, slug: slug!, profile_image: author.profile_image, bio: author.bio, credentials: override?.credentials, sameAs }}
+    authors={authorsWithCounts}
+  />
+</Layout>

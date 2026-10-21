@@ -1,0 +1,57 @@
+---
+import { ShieldCheck } from "@lucide/astro";
+import { siCaldotcom, siCalendly, siGmail, siGooglecalendar, siGooglemeet, siGreenhouse, siZoom } from "simple-icons";
+
+// Brand marks from simple-icons where available. Lever, Ashby, Bullhorn, iCIMS, Jobvite, Outlook and Slack
+// aren't in simple-icons (removed at the brands' request or never added), so they get a brand-colored initial.
+// ponytail: swap the initial tiles for official logo files from each brand's press kit
+type Tool = { name: string; icon?: { path: string; hex: string }; initial?: string; color?: string };
+const tools: Tool[] = [
+  { name: "Greenhouse", icon: siGreenhouse },
+  { name: "Lever", initial: "L", color: "#1f1f1f" },
+  { name: "Ashby", initial: "A", color: "#5b4ae0" },
+  { name: "Bullhorn", initial: "B", color: "#f26b21" },
+  { name: "iCIMS", initial: "i", color: "#00a3e0" },
+  { name: "Jobvite", initial: "J", color: "#00a88f" },
+  { name: "Gmail", icon: siGmail },
+  { name: "Outlook", initial: "O", color: "#0a64c9" },
+  { name: "Slack", initial: "#", color: "#4a154b" },
+  { name: "Google Calendar", icon: siGooglecalendar },
+  { name: "Calendly", icon: siCalendly },
+  { name: "Cal.com", icon: siCaldotcom },
+  { name: "Google Meet", icon: siGooglemeet },
+  { name: "Zoom", icon: siZoom },
+];
+---
+
+<!-- Integrations + security -->
+<section class="border-y border-ink/5">
+  <div class="mx-auto max-w-7xl px-4 py-16 md:px-8 md:py-20">
+    <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+      <div data-reveal>
+        <h2 class="text-[28px] font-medium leading-tight tracking-[-0.02em] md:text-[36px]">Works with the tools you already use</h2>
+        <p class="mt-2 text-lg text-ink-2">120+ ATS integrations, your inbox, your calendar, and Slack.</p>
+      </div>
+      <div data-reveal style="--i:1" class="flex items-center gap-3 rounded-2xl bg-white px-5 py-4 shadow-[0_0_0_1px_rgb(0_0_0/0.05)]">
+        <ShieldCheck size={26} class="text-green" />
+        <div>
+          <p class="font-medium">SOC 2 Type 2</p>
+          <p class="text-sm text-ink-2">Your data and your candidates' data, protected.</p>
+        </div>
+      </div>
+    </div>
+
+    <ul data-reveal style="--i:2" class="mt-10 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-7">
+      {tools.map((t) => (
+        <li class="flex flex-col items-center gap-3 rounded-2xl bg-white px-3 py-5 text-center shadow-[0_0_0_1px_rgb(0_0_0/0.05)] transition-transform duration-200 hover:-translate-y-0.5">
+          {t.icon ? (
+            <svg viewBox="0 0 24 24" class="size-8" fill={`#${t.icon.hex}`} aria-hidden="true"><path d={t.icon.path} /></svg>
+          ) : (
+            <span class="grid size-8 place-items-center rounded-lg text-[17px] font-semibold text-white" style={`background:${t.color}`} aria-hidden="true">{t.initial}</span>
+          )}
+          <span class="text-sm text-ink-2">{t.name}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>

@@ -1,0 +1,50 @@
+<!--
+  Pin.com blog hero. No-mark variant.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1725 912" width="1725" height="912" role="img" aria-label="Pin.com blog hero">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EFE8DE"/>
+      <stop offset="100%" stop-color="#E2D8CA"/>
+    </linearGradient>
+    <pattern id="dots" x="0" y="0" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#6B8F71" opacity="0.35"/>
+    </pattern>
+  </defs>
+
+  <rect width="1725" height="912" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1725" height="120" fill="url(#dots)" opacity="0.45"/>
+  <rect x="0" y="792" width="1725" height="120" fill="url(#dots)" opacity="0.45"/>
+
+  <g transform="translate(862,385)" opacity="0.9">
+    <line x1="-260" y1="0" x2="-80" y2="0" stroke="#6B8F71" stroke-width="1.5" opacity="0.5"/>
+    <line x1="80" y1="0" x2="260" y2="0" stroke="#6B8F71" stroke-width="1.5" opacity="0.5"/>
+    <g>
+      <circle r="22" fill="#EFE8DE" stroke="#6B8F71" stroke-width="2"/>
+      <path d="M -8 -1 L -2 5 L 9 -6" stroke="#4CAF50" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g transform="translate(-60,0)" opacity="0.7"><circle r="14" fill="none" stroke="#6B8F71" stroke-width="1.5"/></g>
+    <g transform="translate(60,0)" opacity="0.7"><circle r="14" fill="none" stroke="#6B8F71" stroke-width="1.5"/></g>
+    <g transform="translate(-120,0)" opacity="0.5"><circle r="8" fill="none" stroke="#6B8F71" stroke-width="1"/></g>
+    <g transform="translate(120,0)" opacity="0.5"><circle r="8" fill="none" stroke="#6B8F71" stroke-width="1"/></g>
+  </g>
+
+  <text x="862" y="180" text-anchor="middle" font-family="Georgia, serif" font-size="20" fill="#6B8F71" letter-spacing="8" font-weight="700">
+    PIN.COM  &#8226;  OUTREACH PLAYBOOK
+  </text>
+  <line x1="782" y1="205" x2="942" y2="205" stroke="#6B8F71" stroke-width="3"/>
+
+  <g>
+    <rect x="195" y="480" width="1335" height="270" rx="20" fill="#E8E0D8" fill-opacity="0.85" stroke="#6B8F71" stroke-width="2" stroke-opacity="0.4"/>
+    <text x="862" y="570" text-anchor="middle" font-family="Georgia, serif" font-size="78" fill="#3B3B3B" font-weight="700">LinkedIn InMail</text>
+    <text x="862" y="660" text-anchor="middle" font-family="Georgia, serif" font-size="44" fill="#6B8F71" font-weight="700" font-style="italic">A Practical Guide.</text>
+    <line x1="812" y1="685" x2="912" y2="685" stroke="#6B8F71" stroke-width="3"/>
+    <text x="862" y="725" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#5C5C5C">
+      AI-Assisted Messages, 150 credits/mo, 18-25% response rates. What works.
+    </text>
+  </g>
+
+  <text x="862" y="860" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#8B8178" letter-spacing="6">
+    CREDITS  &#8226;  TEMPLATES  &#8226;  AI  &#8226;  TIMING  &#8226;  METRICS
+  </text>
+</svg>

@@ -1,0 +1,192 @@
+---
+import { Check, XCircle, CheckCircle2, MessageSquare, Eye, Globe, Link2 } from "@lucide/astro";
+import Chapter from "../Chapter.astro";
+import Avatar from "../Avatar.astro";
+
+type Verdict = "Yes" | "Maybe";
+const candidates: {
+  name: string; hue: number; location: string; current: string; past: string; edu: string;
+  evals: [string, Verdict, string][]; criteria: [string, string][];
+}[] = [
+  {
+    name: "Maya Chen", hue: 340, location: "Brooklyn, NY",
+    current: "Senior Software Engineer at Stripe", past: "Software Engineer at Square", edu: "B.S. Computer Science at Cornell",
+    evals: [["Payments depth?", "Yes", "six years on Stripe's ledger and money-movement services."], ["Leadership?", "Yes", "tech lead for 4 engineers, ready for a staff-track role."]],
+    criteria: [["Go & Kotlin", "Go daily; led the Kotlin migration of the payouts API."], ["Distributed systems", "Owns a service handling 40k req/s."], ["5–8 years", "7 years of backend experience."]],
+  },
+  {
+    name: "Daniel Okafor", hue: 200, location: "New York, NY",
+    current: "Backend Lead at Plaid", past: "Senior Engineer at Capital One", edu: "M.S. Computer Science at NYU",
+    evals: [["Payments depth?", "Yes", "eight years across banking APIs and card issuing."], ["Startup pace?", "Maybe", "mostly large-company experience, one early-stage stint."]],
+    criteria: [["Go & Kotlin", "Go in production at Plaid."], ["Distributed systems", "Built an event pipeline for 2B+ events a day."], ["5–8 years", "8 years of backend experience."]],
+  },
+  {
+    name: "Priya Raman", hue: 25, location: "Jersey City, NJ",
+    current: "Software Engineer II at Brex", past: "Engineer at Goldman Sachs", edu: "B.S. Computer Science at Georgia Tech",
+    evals: [["Payments depth?", "Yes", "owned card authorization latency at Brex."], ["Leadership?", "Maybe", "mentors two engineers, no formal lead role yet."]],
+    criteria: [["Go & Kotlin", "Kotlin services for spend management."], ["Distributed systems", "Cut authorization p99 by 40%."], ["5–8 years", "5 years of backend experience."]],
+  },
+];
+const tone = { Yes: "text-app-pos", Maybe: "text-app-warn" };
+---
+
+<Chapter n={2} stage="Match" title="850M+ profiles. Only the ones that fit." tint="sand">
+  <p slot="copy">
+    Pin reads every profile the way you would: trajectory, skills, the companies they've built at. Then it tells you <em class="not-italic text-ink">why</em> each person matches.
+  </p>
+  <p slot="copy">Approve the ones you like, pass on the rest. Need the hiring manager's eyes? Send them a review link.</p>
+
+  <div id="deck" class="relative grid items-start gap-5 text-[14px] lg:grid-cols-[1.6fr_1fr] lg:gap-8">
+    <!-- Card deck -->
+    <div>
+      <div class="mb-3 flex items-center justify-between gap-3"><p class="text-sm text-ink-2">Try it: approve or decline<span class="hidden md:inline"> (← / →)</span></p><span class="callout hidden md:inline-flex">Explains why they match</span></div>
+      <div class="relative h-[640px] sm:h-[440px]">
+        {candidates.map((c, i) => (
+          <article class="card panel absolute inset-x-0 top-0 p-5 md:p-6" style={`z-index:${candidates.length - i}`} aria-label={c.name}>
+            <header class="flex flex-wrap items-start gap-4">
+              <span class="avatar"><Avatar name={c.name} hue={c.hue} size={56} /></span>
+              <div class="min-w-0 flex-1">
+                <p class="text-[17px] font-semibold">{c.name}</p>
+                <p class="text-app-fg2">{c.location}</p>
+                <p class="mt-1.5 flex gap-2.5 text-app-fg3"><Link2 size={14} /><Globe size={14} /></p>
+              </div>
+              <div class="flex w-full gap-1.5 text-[12px] font-medium sm:w-auto">
+                <span class="hidden w-[68px] flex-col items-center gap-1 rounded-lg px-2 py-2 text-app-fg2 shadow-app sm:flex"><MessageSquare size={16} /> Comment</span>
+                <button type="button" data-act="reject" class="flex flex-1 flex-col items-center sm:w-[68px] sm:flex-none gap-1 rounded-lg px-2 py-2 text-app-neg shadow-app transition-[scale,background-color] hover:bg-app-neg/5 active:scale-95"><XCircle size={16} /> Decline</button>
+                <button type="button" data-act="approve" class="flex flex-1 flex-col items-center sm:w-[68px] sm:flex-none gap-1 rounded-lg px-2 py-2 text-app-pos shadow-app transition-[scale,background-color] hover:bg-app-pos/5 active:scale-95"><CheckCircle2 size={16} /> Approve</button>
+              </div>
+            </header>
+
+            <dl class="mt-5 grid gap-x-4 gap-y-1 sm:grid-cols-[90px_1fr] sm:gap-y-4">
+              <dt class="text-app-fg2">Evaluation</dt>
+              <dd class="mb-3 space-y-1.5 sm:mb-0">
+                {c.evals.map(([q, v, t]) => (
+                  <p class="flex gap-2 leading-snug"><span class:list={["mt-[7px] size-1.5 shrink-0 rounded-full bg-current", tone[v]]}></span><span><b class="font-semibold">{q}</b> <span class:list={["font-semibold", tone[v]]}>{v}</span><span class="text-app-fg2">, {t}</span></span></p>
+                ))}
+              </dd>
+              <dt class="text-app-fg2">Criteria</dt>
+              <dd class="mb-3 space-y-1.5 sm:mb-0">
+                {c.criteria.map(([k, t]) => (
+                  <p class="flex gap-2 leading-snug"><Check size={13} class="mt-0.5 shrink-0 text-app-pos" /><span><b class="font-semibold">{k}</b> <span class="text-app-fg2">– {t}</span></span></p>
+                ))}
+              </dd>
+              <dt class="text-app-fg2">Current</dt>
+              <dd class="mb-3 font-medium sm:mb-0">{c.current}</dd>
+              <dt class="text-app-fg2">Past</dt>
+              <dd class="mb-3 sm:mb-0">{c.past}</dd>
+              <dt class="hidden text-app-fg2 sm:block">Education</dt>
+              <dd class="hidden sm:block">{c.edu}</dd>
+            </dl>
+          </article>
+        ))}
+      </div>
+    </div>
+
+    <!-- Approved list + review request -->
+    <div class="space-y-6 lg:pt-12">
+      <div class="panel p-4">
+        <p class="flex items-center justify-between font-semibold">Approved <span id="approved-count" class="rounded bg-app-pos/10 px-1.5 text-[12px] tabular-nums text-app-pos">11</span></p>
+        <ul id="approved-list" class="mt-3 space-y-2 text-[13px]">
+          {["Sofia Alvarez", "Tom Becker"].map((n, i) => (
+            <li class="flex items-center gap-2.5"><span class="avatar"><Avatar name={n} hue={60 + i * 140} size={24} /></span><span class="flex-1">{n}</span><Check size={13} class="text-app-pos" /></li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="relative">
+      <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Share with your team</span>
+      <div class="panel p-4 pt-7">
+        <div class="flex items-center justify-between">
+          <p class="font-semibold">Request review</p>
+          <span class="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-app-tint-fg shadow-app"><Eye size={13} /> Send</span>
+        </div>
+        <p class="mt-2 rounded-md border border-app-border px-3 py-2 text-app-fg2">jordan@bytelogic.com</p>
+        <p class="mt-2 text-[13px] leading-snug text-app-fg3">Reviewer can approve or decline shortlisted candidates for 48 hours.</p>
+        <div class="mt-3 flex items-center gap-2 border-t border-app-border pt-3 text-[13px] text-app-fg2">
+          <Avatar name="Jordan Lee" hue={260} size={22} /> Jordan approved 3 of 4
+        </div>
+      </div>
+      </div>
+    </div>
+
+  </div>
+</Chapter>
+
+<style>
+  .card {
+    transition: translate 450ms var(--ease-out-soft), rotate 450ms var(--ease-out-soft), opacity 300ms, scale 400ms var(--ease-out-soft);
+    transform-origin: 50% 100%;
+  }
+  .card[data-pos="1"] { scale: 0.96; translate: 0 14px; }
+  .card[data-pos="2"] { scale: 0.92; translate: 0 28px; }
+  .card[data-pos="1"], .card[data-pos="2"] { pointer-events: none; }
+  .card[data-out="approve"] { translate: 60% -20px; rotate: 6deg; opacity: 0; }
+  .card[data-out="reject"] { translate: -60% -20px; rotate: -6deg; opacity: 0; }
+  .card [data-act]:focus-visible { outline: 2px solid var(--color-app-tint); outline-offset: 2px; }
+  .avatar > :global(span) { border-radius: 12px; }
+  #approved-list .avatar > :global(span) { border-radius: 9999px; }
+  .bump { animation: bump 300ms var(--ease-out-soft); }
+  @keyframes bump { 50% { scale: 1.25; } }
+  :global(.row-in) { animation: row-in 300ms var(--ease-out-soft) both; }
+  @keyframes row-in { from { opacity: 0; translate: 0 -6px; } }
+</style>
+
+<script>
+  import { onVisibility } from "../../scripts/motion";
+
+  const deck = document.getElementById("deck")!;
+  const cards = [...deck.querySelectorAll<HTMLElement>(".card")];
+  const count = document.getElementById("approved-count")!;
+  const list = document.getElementById("approved-list")!;
+  let top = 0;
+  let inView = false;
+
+  // Stack positions relative to the top card; cards cycle so the demo never runs dry.
+  function layout() {
+    cards.forEach((c, i) => {
+      const pos = (i - top + cards.length) % cards.length;
+      c.style.zIndex = String(cards.length - pos);
+      c.dataset.pos = String(pos);
+      c.toggleAttribute("inert", pos !== 0);
+    });
+  }
+
+  function addApproved(card: HTMLElement) {
+    // Reuse the first row as a template: swap in this candidate's avatar and name, newest first, max 4 rows.
+    const row = list.firstElementChild!.cloneNode(true) as HTMLElement;
+    const avatar = card.querySelector<HTMLElement>(".avatar > span")!.cloneNode(true) as HTMLElement;
+    Object.assign(avatar.style, { width: "24px", height: "24px", fontSize: "9px" });
+    row.querySelector(".avatar")!.replaceChildren(avatar);
+    row.children[1].textContent = card.getAttribute("aria-label");
+    row.classList.add("row-in");
+    list.prepend(row);
+    while (list.children.length > 4) list.lastElementChild!.remove();
+  }
+
+  function decide(act: "approve" | "reject") {
+    const card = cards[top];
+    card.dataset.out = act;
+    if (act === "approve") {
+      count.textContent = String(Number(count.textContent) + 1);
+      count.classList.remove("bump");
+      void count.offsetWidth;
+      count.classList.add("bump");
+      addApproved(card);
+    }
+    top = (top + 1) % cards.length;
+    layout();
+    setTimeout(() => delete card.dataset.out, 450);
+  }
+
+  deck.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-act]");
+    if (btn) decide(btn.dataset.act as "approve" | "reject");
+  });
+  onVisibility(deck, (v) => (inView = v));
+  window.addEventListener("keydown", (e) => {
+    if (!inView || e.target instanceof HTMLInputElement) return;
+    if (e.key === "ArrowRight") decide("approve");
+    if (e.key === "ArrowLeft") decide("reject");
+  });
+  layout();
+</script>

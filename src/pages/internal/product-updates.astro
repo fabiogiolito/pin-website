@@ -1,0 +1,268 @@
+---
+// Internal tool: product update announcement images. Base branded background
+// (2000×1047) + label/title on the left + a screenshot on the right with
+// rounded corners and a drop shadow. Everything renders on <canvas>.
+const title = "Product Updates Generator | Pin Tools";
+import "../../styles/global.css";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+    <link rel="icon" href="/images/favicon-light-mode-32x32.webp" type="image/webp" sizes="32x32" />
+    <link rel="preload" href="/font-files/RethinkSans-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <header class="sidebar-header">
+          <a href="/internal/" class="back-link">← Internal tools</a>
+          <h1>Product Updates Generator</h1>
+          <p>Label + title on the left, screenshot on the right.</p>
+        </header>
+
+        <div class="field">
+          <label for="input-label">Label</label>
+          <input type="text" id="input-label" placeholder="Product updates" />
+        </div>
+
+        <div class="field">
+          <label for="input-title">Title</label>
+          <textarea id="input-title" rows="2" placeholder="Talent Preview"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Screenshot</label>
+          <div id="shot-preview" class="shot-preview" hidden>
+            <img id="shot-thumb" alt="Screenshot" />
+            <button id="btn-remove" type="button" class="btn-small">Remove</button>
+          </div>
+          <label class="btn-small" for="input-shot">Choose image</label>
+          <input type="file" id="input-shot" accept="image/*" hidden />
+        </div>
+
+        <div class="actions">
+          <p id="status" class="status" hidden></p>
+          <button id="btn-export" class="btn btn-primary" type="button">Export PNG</button>
+        </div>
+      </aside>
+
+      <main class="preview">
+        <div class="preview-inner">
+          <div class="preview-block">
+            <p class="preview-label">2000×1047</p>
+            <canvas id="canvas"></canvas>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <style is:global>
+      @font-face {
+        font-family: "Rethink Sans";
+        src: url("/font-files/RethinkSans-VariableFont_wght.ttf") format("truetype");
+        font-weight: 300 800;
+        font-display: swap;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body { font-family: var(--font-sans); color: var(--color-ink); background: var(--color-bg-tertiary); }
+      .app { display: flex; height: 100vh; }
+      .sidebar {
+        width: 340px; flex-shrink: 0; background: var(--color-bg);
+        border-right: 1px solid rgb(39 39 42 / 0.1); padding: 24px; overflow-y: auto;
+        display: flex; flex-direction: column; gap: 18px;
+      }
+      .sidebar-header h1 { font-size: 22px; font-weight: 500; margin: 6px 0 4px; }
+      .sidebar-header p { font-size: 13px; color: var(--color-ink-2); margin: 0; }
+      .back-link { font-size: 13px; color: var(--color-green); text-decoration: none; }
+      .back-link:hover { text-decoration: underline; }
+      .field { display: flex; flex-direction: column; gap: 6px; }
+      .field label { font-size: 13px; font-weight: 500; }
+      .field input, .field textarea {
+        font: inherit; font-size: 14px; padding: 9px 11px;
+        border: 1px solid rgb(39 39 42 / 0.18); border-radius: 8px; background: #fff;
+        color: inherit; outline: none; resize: vertical;
+      }
+      .field input:focus, .field textarea:focus { border-color: var(--color-green); }
+      .shot-preview { display: flex; flex-direction: column; gap: 8px; }
+      .shot-preview img { width: 100%; border-radius: 8px; border: 1px solid rgb(39 39 42 / 0.15); display: block; }
+      .btn-small {
+        font: inherit; font-size: 13px; font-weight: 500; padding: 8px 12px; border-radius: 8px;
+        border: 1px solid rgb(39 39 42 / 0.18); background: #fff; color: var(--color-ink); cursor: pointer; text-align: center;
+      }
+      .btn-small:hover { border-color: var(--color-green); color: var(--color-green-accessible); }
+      .actions { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 10px; }
+      .btn {
+        display: block; width: 100%; text-align: center; font: inherit; font-size: 14px; font-weight: 500;
+        padding: 11px 14px; border-radius: 12px; border: none; cursor: pointer; user-select: none;
+      }
+      .btn-primary { background: var(--color-green); color: #fff; }
+      .btn-primary:hover { background: var(--color-green-accessible); }
+      .btn:disabled { opacity: 0.5; pointer-events: none; }
+      .status { font-size: 13px; color: var(--color-ink-2); margin: 0; text-align: center; }
+      .preview { flex: 1; min-width: 0; padding: 32px; overflow: auto; }
+      .preview-inner { min-height: 100%; display: flex; align-items: center; justify-content: center; }
+      .preview-block { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 1000px; }
+      .preview-label { font-size: 12px; color: var(--color-ink-2); margin: 0; }
+      canvas { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12); }
+      @media (max-width: 860px) {
+        .app { flex-direction: column; height: auto; }
+        .sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgb(39 39 42 / 0.1); }
+        .preview { padding: 20px; }
+      }
+          :focus-visible { outline: 2px solid var(--color-green); outline-offset: 2px; }
+    </style>
+
+    <script>
+      const STORAGE_KEY = "pin-tools-product-updates-v1";
+      const W = 2000, H = 1047;
+      const BG_SRC = "/images/internal/product-updates-bg.png";
+
+      const LABEL_COLOR = "#2E7A47";
+      const TITLE_COLOR = "#5C8F6D";
+      const LEFT = 76;
+
+      // Screenshot slot: right side of the base image, keeps its aspect ratio.
+      const SLOT = { x: 620, y: 105, w: 1350, h: 850 };
+      const RADIUS = 16;
+
+      type State = { label: string; title: string; shot: string | null };
+      const DEFAULTS: State = { label: "Product updates", title: "Talent Preview", shot: null };
+
+      function loadState(): State {
+        try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") }; }
+        catch { return { ...DEFAULTS }; }
+      }
+      const state = loadState();
+      function saveState() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* quota — non-fatal */ }
+      }
+
+      const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+      const inputLabel = document.getElementById("input-label") as HTMLInputElement;
+      const inputTitle = document.getElementById("input-title") as HTMLTextAreaElement;
+      const inputShot = document.getElementById("input-shot") as HTMLInputElement;
+      const shotPreview = document.getElementById("shot-preview")!;
+      const shotThumb = document.getElementById("shot-thumb") as HTMLImageElement;
+      const btnRemove = document.getElementById("btn-remove")!;
+      const btnExport = document.getElementById("btn-export") as HTMLButtonElement;
+      const statusEl = document.getElementById("status")!;
+
+      inputLabel.value = state.label;
+      inputTitle.value = state.title;
+      canvas.width = W;
+      canvas.height = H;
+
+      const bg = new Image();
+      bg.src = BG_SRC;
+      let shotImg: HTMLImageElement | null = null;
+
+      async function loadShot() {
+        shotImg = null;
+        shotPreview.hidden = !state.shot;
+        if (!state.shot) return;
+        const img = new Image();
+        img.src = state.shot;
+        try { await img.decode(); shotImg = img; shotThumb.src = state.shot; } catch { state.shot = null; shotPreview.hidden = true; }
+      }
+
+      function roundRect(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+        c.beginPath();
+        c.moveTo(x + r, y);
+        c.arcTo(x + w, y, x + w, y + h, r);
+        c.arcTo(x + w, y + h, x, y + h, r);
+        c.arcTo(x, y + h, x, y, r);
+        c.arcTo(x, y, x + w, y, r);
+        c.closePath();
+      }
+
+      function draw() {
+        const c = canvas.getContext("2d")!;
+        c.imageSmoothingQuality = "high";
+        c.clearRect(0, 0, W, H);
+        if (bg.complete && bg.naturalWidth) c.drawImage(bg, 0, 0, W, H);
+
+        // Text
+        let y = 155;
+        if (state.label.trim()) {
+          c.fillStyle = LABEL_COLOR;
+          c.font = `700 56px "Rethink Sans", sans-serif`;
+          c.fillText(state.label.trim(), LEFT, y);
+          y += 92;
+        }
+        c.fillStyle = TITLE_COLOR;
+        c.font = `400 64px "Rethink Sans", sans-serif`;
+        for (const line of state.title.split("\n")) {
+          if (line.trim()) { c.fillText(line.trim(), LEFT, y); y += 78; }
+        }
+
+        // Screenshot: fit inside SLOT, anchored right, vertically centered.
+        if (shotImg) {
+          const s = Math.min(SLOT.w / shotImg.naturalWidth, SLOT.h / shotImg.naturalHeight);
+          const w = shotImg.naturalWidth * s, h = shotImg.naturalHeight * s;
+          const x = SLOT.x + SLOT.w - w, yy = SLOT.y + (SLOT.h - h) / 2;
+          c.save();
+          c.shadowColor = "rgba(0,0,0,0.12)";
+          c.shadowBlur = 40;
+          c.shadowOffsetY = 12;
+          c.fillStyle = "#fff";
+          roundRect(c, x, yy, w, h, RADIUS);
+          c.fill();
+          c.restore();
+          c.save();
+          roundRect(c, x, yy, w, h, RADIUS);
+          c.clip();
+          c.drawImage(shotImg, x, yy, w, h);
+          c.restore();
+        }
+      }
+
+      function onChange() { saveState(); draw(); }
+
+      inputLabel.addEventListener("input", () => { state.label = inputLabel.value; onChange(); });
+      inputTitle.addEventListener("input", () => { state.title = inputTitle.value; onChange(); });
+      inputShot.addEventListener("change", () => {
+        const file = inputShot.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async () => { state.shot = reader.result as string; await loadShot(); onChange(); };
+        reader.readAsDataURL(file);
+        inputShot.value = "";
+      });
+      btnRemove.addEventListener("click", async () => { state.shot = null; await loadShot(); onChange(); });
+
+      btnExport.addEventListener("click", () => {
+        btnExport.disabled = true;
+        statusEl.hidden = false;
+        statusEl.textContent = "Exporting…";
+        draw();
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            const slug = (state.title || "update").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+            a.download = `pin-product-update-${slug}.png`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+          }
+          btnExport.disabled = false;
+          statusEl.hidden = true;
+        }, "image/png");
+      });
+
+      Promise.all([
+        document.fonts.load('700 100px "Rethink Sans"'),
+        document.fonts.load('400 100px "Rethink Sans"'),
+        bg.decode().catch(() => {}),
+        loadShot(),
+      ]).finally(draw);
+    </script>
+  </body>
+</html>

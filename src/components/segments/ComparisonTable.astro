@@ -1,0 +1,61 @@
+---
+// Pin vs. an alternative. Cells: text, a boolean, "yes" | "no" | "partial", or { text, positive }.
+import { Check, X, Minus } from "@lucide/astro";
+import PinAvatar from "../PinAvatar.astro";
+
+type Cell = string | boolean | { text: string; positive: boolean };
+interface Props {
+  other: string;
+  rows: { label: string; pin: Cell; other: Cell; note?: string }[];
+}
+const { other, rows } = Astro.props;
+
+function parse(c: Cell): { mark?: "yes" | "no" | "partial"; text?: string } {
+  if (c === true || c === "yes") return { mark: "yes" };
+  if (c === false || c === "no") return { mark: "no" };
+  if (c === "partial") return { mark: "partial", text: "Partial" };
+  if (typeof c === "object") return { mark: c.positive ? "yes" : "no", text: c.text };
+  return { text: c };
+}
+const markCls = { yes: "bg-green-lighter text-green-accessible", no: "bg-clay-light text-clay", partial: "bg-bg-tertiary text-ink-3" };
+const markLabel = { yes: "Yes", no: "No", partial: "Partial" };
+---
+
+<div class="overflow-hidden rounded-3xl bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.05),0_10px_30px_-14px_rgb(115_70_38/0.18)]">
+  <table class="w-full table-fixed border-collapse text-left text-[15px] md:text-base">
+    <colgroup><col class="w-[34%]" /><col class="w-[33%]" /><col class="w-[33%]" /></colgroup>
+    <thead>
+      <tr class="border-b border-ink/8">
+        <th scope="col" class="px-3 py-4 text-sm font-medium text-ink-3 md:px-6"><span class="sr-only">Feature</span></th>
+        <th scope="col" class="bg-green-lighter/50 px-3 py-4 md:px-6"><span class="flex items-center gap-2 font-medium"><PinAvatar size={24} class="hidden sm:inline-grid" /> Pin</span></th>
+        <th scope="col" class="px-3 py-4 font-medium text-ink-2 md:px-6">{other}</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-ink/6">
+      {rows.map((r) => (
+        <tr>
+          <th scope="row" class="px-3 py-4 align-top font-medium md:px-6">{r.label}</th>
+          {[r.pin, r.other].map((c, i) => {
+            const { mark, text } = parse(c);
+            return (
+              <td class:list={["px-3 py-4 align-top text-ink-2 md:px-6", i === 0 && "bg-green-lighter/50 text-ink"]}>
+                <span class="flex items-start gap-2">
+                  {mark && (
+                    <span class:list={["mt-0.5 grid size-5 shrink-0 place-items-center rounded-full", markCls[mark]]}>
+                      {mark === "yes" && <Check size={12} stroke-width={3} />}
+                      {mark === "no" && <X size={12} stroke-width={3} />}
+                      {mark === "partial" && <Minus size={12} stroke-width={3} />}
+                      {!text && <span class="sr-only">{markLabel[mark]}</span>}
+                    </span>
+                  )}
+                  {text && <span class="min-w-0 break-words">{text}</span>}
+                </span>
+                {i === 1 && r.note && <span class="mt-1 block text-sm text-ink-3">{r.note}</span>}
+              </td>
+            );
+          })}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

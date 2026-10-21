@@ -1,0 +1,164 @@
+---
+import { Archive, BookOpen, Hash, CalendarClock } from "@lucide/astro";
+import Chapter from "../Chapter.astro";
+import Avatar from "../Avatar.astro";
+import PinAvatar from "../PinAvatar.astro";
+
+// Each email links to one or more of Pin's actions; lines are drawn between them at lg+.
+const emails = [
+  { id: "daniel", name: "Daniel Okafor", hue: 200, time: "9:12 AM", msg: "Is there stock on top of the base salary?", to: ["slack"] },
+  { id: "ana", name: "Ana Souza", hue: 50, time: "9:40 AM", msg: "Before I reply, do you offer options?", to: ["slack"] },
+  { id: "maya", name: "Maya Chen", hue: 340, time: "10:05 AM", msg: "I'm interested! What does equity look like for this role?", to: ["slack", "schedule"], interested: true },
+  { id: "priya", name: "Priya Raman", hue: 25, time: "10:31 AM", msg: "Yes! Would love to chat this week.", to: ["schedule"], interested: true },
+  { id: "sara", name: "Sara Kim", hue: 280, time: "11:02 AM", msg: "Is this role remote or in the office?", to: ["kb"] },
+  { id: "kevin", name: "Kevin Liu", hue: 120, time: "11:20 AM", msg: "Not looking right now, thanks.", to: ["archive"] },
+];
+const colors: Record<string, string> = {
+  slack: "hsl(256 60% 58%)",
+  schedule: "hsl(142 60% 34%)",
+  kb: "hsl(221 70% 52%)",
+  archive: "hsl(240 4% 62%)",
+};
+---
+
+<Chapter n={4} stage="Replies" title="Your inbox, pre-sorted. Most of it, already answered." tint="clay">
+  <p slot="copy">
+    Pin reads every reply. It archives the no's, answers what it already knows, asks you once on Slack for what it doesn't, and books time with everyone who said yes.
+  </p>
+
+  <div id="replies-map" class="relative grid items-center gap-5 text-[14px] lg:grid-cols-[1fr_96px_1fr] lg:gap-0">
+    <svg class="lines pointer-events-none absolute inset-0 hidden size-full overflow-visible lg:block" aria-hidden="true"></svg>
+
+    <!-- Inbox -->
+    <div class="panel overflow-hidden">
+      <p class="flex items-center justify-between border-b border-app-border px-4 py-3">
+        <span class="font-semibold">Inbox</span><span class="text-[13px] text-app-fg2">6 new replies</span>
+      </p>
+      <ul>
+        {emails.map((e) => (
+          <li class="email relative flex items-start gap-3 border-b border-app-border px-4 py-3 transition-opacity duration-300 last:border-b-0" data-id={e.id} data-to={e.to.join(" ")}>
+            <Avatar name={e.name} hue={e.hue} size={30} />
+            <div class="min-w-0 flex-1">
+              <p class="flex items-center gap-2">
+                <span class="font-semibold">{e.name}</span>
+                {e.interested && <span class="rounded bg-app-pos/10 px-1.5 text-[11px] font-medium text-app-pos">Interested</span>}
+                <span class="ml-auto text-[12px] text-app-fg3">{e.time}</span>
+              </p>
+              <p class="mt-0.5 leading-snug text-app-fg2">{e.msg}</p>
+            </div>
+            <span class="flex shrink-0 flex-col gap-1 self-center">
+              {e.to.map((t) => <span class="size-2 rounded-full" style={`background:${colors[t]}`}></span>)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <span class="hidden lg:block"></span>
+
+    <!-- What Pin did -->
+    <div class="space-y-3">
+      <div class="action panel overflow-hidden transition-opacity duration-300" data-action="slack">
+        <p class="flex items-center gap-1.5 bg-[#4A154B] px-4 py-2 text-[12px] font-medium text-white"><Hash size={12} /> Slack · Direct message</p>
+        <div class="space-y-3 p-4">
+          <div class="flex gap-2.5">
+            <PinAvatar size={28} />
+            <p><b class="font-semibold">Pin</b><br /><b class="font-semibold">3 people asked about equity</b>, each in their own words. How should I answer?</p>
+          </div>
+          <div class="flex gap-2.5">
+            <Avatar name="Alex Rivera" hue={30} size={28} />
+            <p><b class="font-semibold">Alex</b><br />0.05–0.1%, 4-year vest with a 1-year cliff.</p>
+          </div>
+          <p class="flex items-center gap-1.5 border-t border-app-border pt-3 text-[13px] text-app-fg2"><BookOpen size={13} /> Saved to knowledge base · replied to all 3</p>
+        </div>
+      </div>
+
+      <div class="action panel p-4 transition-opacity duration-300" data-action="schedule">
+        <p class="flex items-center gap-2 font-semibold"><CalendarClock size={15} class="text-app-pos" /> Offered times to Maya and Priya</p>
+        <div class="mt-2.5 flex flex-wrap gap-1.5 text-[13px]">
+          {["Tue 3:00 PM", "Thu 2:00 PM", "Fri 11:00 AM"].map((t) => <span class="rounded-md bg-app-pos/10 px-2 py-1 text-app-pos">{t}</span>)}
+        </div>
+      </div>
+
+      <div class="action panel p-4 transition-opacity duration-300" data-action="kb">
+        <p class="flex items-center gap-2 font-semibold"><BookOpen size={15} class="text-app-tint" /> Answered from your knowledge base</p>
+        <p class="mt-1.5 text-app-fg2">"Hybrid: three days a week in the NYC office."</p>
+      </div>
+
+      <div class="action panel p-4 transition-opacity duration-300" data-action="archive">
+        <p class="flex items-center gap-2 font-semibold"><Archive size={15} class="text-app-fg3" /> Archived with a polite thank-you</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="mt-8 text-center text-ink-2"><b class="font-medium text-ink">6 replies.</b> You answered one Slack message.</p>
+</Chapter>
+
+<style>
+  .lines :global(path) {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-dasharray: var(--len);
+    stroke-dashoffset: var(--len);
+    transition: stroke-dashoffset 900ms var(--ease-out-soft), opacity 300ms;
+  }
+  #replies-map.drawn .lines :global(path) { stroke-dashoffset: 0; }
+  /* Hovering an action (or an email) spotlights its connections */
+  #replies-map.focus .email:not(.lit),
+  #replies-map.focus .action:not(.lit),
+  #replies-map.focus .lines :global(path:not(.lit)) { opacity: 0.3; }
+</style>
+
+<script>
+  import { onEnter, reducedMotion } from "../../scripts/motion";
+
+  const root = document.getElementById("replies-map")!;
+  const svg = root.querySelector<SVGSVGElement>(".lines")!;
+  const emails = [...root.querySelectorAll<HTMLElement>(".email")];
+  const actions = Object.fromEntries([...root.querySelectorAll<HTMLElement>(".action")].map((a) => [a.dataset.action!, a]));
+  const COLORS: Record<string, string> = { slack: "hsl(256 60% 58%)", schedule: "hsl(142 60% 34%)", kb: "hsl(221 70% 52%)", archive: "hsl(240 4% 62%)" };
+
+  function draw() {
+    const box = root.getBoundingClientRect();
+    const paths: string[] = [];
+    emails.forEach((e, i) => {
+      const a = e.getBoundingClientRect();
+      e.dataset.to!.split(" ").forEach((to, k) => {
+        const b = actions[to].getBoundingClientRect();
+        const x1 = a.right - box.left, y1 = a.top + a.height / 2 - box.top + (k - (e.dataset.to!.split(" ").length - 1) / 2) * 10;
+        const x2 = b.left - box.left, y2 = b.top + Math.min(b.height / 2, 40) - box.top;
+        const dx = (x2 - x1) * 0.55;
+        const d = `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
+        paths.push(`<path d="${d}" stroke="${COLORS[to]}" data-from="${e.dataset.id}" data-to="${to}" style="--len:400;transition-delay:${i * 90}ms"></path>`);
+      });
+    });
+    svg.innerHTML = paths.join("");
+    svg.querySelectorAll("path").forEach((p) => p.style.setProperty("--len", String(Math.ceil(p.getTotalLength()))));
+  }
+
+  function focus(from?: string, to?: string) {
+    root.classList.toggle("focus", Boolean(from || to));
+    const lit = new Set<string>();
+    svg.querySelectorAll<SVGPathElement>("path").forEach((p) => {
+      const on = p.dataset.from === from || p.dataset.to === to;
+      p.classList.toggle("lit", on);
+      if (on) lit.add(p.dataset.from!), lit.add(p.dataset.to!);
+    });
+    emails.forEach((e) => e.classList.toggle("lit", lit.has(e.dataset.id!)));
+    Object.entries(actions).forEach(([k, a]) => a.classList.toggle("lit", lit.has(k)));
+  }
+
+  emails.forEach((e) => {
+    e.addEventListener("mouseenter", () => focus(e.dataset.id));
+    e.addEventListener("mouseleave", () => focus());
+  });
+  Object.entries(actions).forEach(([k, a]) => {
+    a.addEventListener("mouseenter", () => focus(undefined, k));
+    a.addEventListener("mouseleave", () => focus());
+  });
+
+  draw();
+  new ResizeObserver(draw).observe(root);
+  if (reducedMotion) root.classList.add("drawn");
+  else onEnter(root, () => root.classList.add("drawn"), 0.35);
+</script>

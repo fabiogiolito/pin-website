@@ -1,0 +1,109 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import FAQ from "../../components/ui/FAQ.astro";
+import CTABand from "../../components/ui/CTABand.astro";
+import Tools from "../../components/ui/Tools.astro";
+import Pipeline from "../../components/features/Pipeline.astro";
+import JourneyStrip from "../../components/features/JourneyStrip.astro";
+import Section from "../../components/features/Section.astro";
+import Compare from "../../components/features/Compare.astro";
+import Grid from "../../components/features/Grid.astro";
+import Quotes from "../../components/features/Quotes.astro";
+import Reading from "../../components/features/Reading.astro";
+import { faqJsonLd } from "../../components/ui/faq";
+import { featurePageSchema, softwareAppSchema } from "../../components/features/schema";
+
+const faq = [
+  {
+    question: "How is Pin's CRM different from a traditional ATS?",
+    answer: "Traditional applicant tracking systems are built around compliance and job postings. Pin's recruiting CRM is built around relationships. It tracks every candidate from the moment Pin finds them, through outreach and replies, to the booked interview, and it moves them along on its own as things happen.",
+  },
+  {
+    question: "Can I customize my pipeline stages?",
+    answer: "Yes. Add, rename, reorder or remove stages to match how you hire. Run separate pipelines for different roles or teams, each with its own stages and automation settings.",
+  },
+  {
+    question: "Does Pin integrate with my existing ATS?",
+    answer: "Yes. Pin integrates with 120+ applicant tracking systems, including Greenhouse, Lever, Ashby, Bullhorn, iCIMS and Jobvite. Candidate data syncs between Pin and your ATS so your records stay consistent without manual entry.",
+  },
+  {
+    question: "How does AI help manage my pipeline?",
+    answer: "Pin keeps the pipeline current for you. It advances candidates when they reply, logs every email, task and answer to the candidate's history, shows the next step for each person, and books interviews for the ones who say yes. You decide how much runs automatically.",
+  },
+  {
+    question: "Can recruiting agencies use Pin's CRM?",
+    answer: "Yes. Agencies run separate pipelines per client, each with its own stages and outreach sequences. Team members see the pipelines they're assigned to, and hiring managers can review candidates through a link, without an account.",
+  },
+];
+
+const jsonLd = [
+  ...featurePageSchema({
+    name: "Recruiting CRM: AI-Powered Hiring Pipeline",
+    path: "/features/crm/",
+    description: "Pin's recruiting CRM tracks every candidate from first match to booked interview, advances them automatically as they reply, and keeps the whole team in sync. From $99/mo.",
+    crumb: "CRM",
+    dateModified: "2026-10-21",
+  }),
+  softwareAppSchema("Pin Recruiting CRM"),
+  faqJsonLd(faq),
+];
+
+const points = [
+  { title: "One pipeline per role", desc: "Every role gets its own board, from approved to interview. Agencies run one per client." },
+  { title: "Moves on its own", desc: "Replies advance candidates automatically. Booked calls land in Interview. No dragging cards around." },
+  { title: "The whole story", desc: "Every email, LinkedIn task, reply and answer is logged to the candidate, whether you did it or Pin did." },
+  { title: "Always a next step", desc: "Each candidate shows what happens next and when, so nobody sits forgotten in a column." },
+  { title: "Built for teams", desc: "Share pipelines with your team. Hiring managers review candidates through a link, no account needed." },
+  { title: "Syncs with your ATS", desc: "120+ ATS integrations keep records consistent both ways, without manual entry." },
+];
+
+const rows = [
+  ["Pipeline view", "Visual board per role", "Manual columns", "List-based"],
+  ["Follow-ups", "Automated, personal sequences", "Manual reminders", "Basic email templates"],
+  ["Stage changes", "Advance on reply", "Manual update", "Manual update"],
+  ["Team collaboration", "Shared pipelines and review links", "Version conflicts", "Per-seat access"],
+  ["Candidate history", "Every touch, logged automatically", "None", "Basic activity log"],
+  ["ATS integrations", "120+", "None", "Limited"],
+];
+---
+
+<Layout
+  title="Recruiting CRM: AI-Powered Hiring Pipeline | Pin"
+  description="A recruiting CRM that keeps itself up to date. Track every candidate from first match to booked interview, with AI moving them forward as they reply. From $99/mo."
+  jsonLd={jsonLd}
+>
+  <PageHero
+    eyebrow="Recruiting CRM"
+    title="The pipeline that keeps itself up to date."
+    sub="A recruiting CRM built around the work Pin already does. Every candidate, every message and every reply in one place, with candidates moving forward on their own."
+  >
+    <Pipeline />
+  </PageHero>
+
+  <JourneyStrip current={[0, 1, 2, 3, 4]} title="Every step of the journey, tracked in one place" />
+
+  <Section eyebrow="How it works" title="From first match to booked interview, without the busywork." class="mt-8">
+    <p slot="copy">Most CRMs are only as current as the last time someone updated them. Pin's is updated by the work itself.</p>
+    <Grid items={points} />
+  </Section>
+
+  <Section eyebrow="Compared" title="Pin vs. spreadsheets and a traditional ATS.">
+    <p slot="copy">Spreadsheets and applicant tracking systems record what happened. Pin's recruiting CRM makes it happen.</p>
+    <Compare head={["", "Pin", "Spreadsheets", "Traditional ATS"]} rows={rows} />
+  </Section>
+
+  <Quotes names={["Ben Caggia", "Ryan Levy", "Miles Randle"]} title="Recruiters who run their pipeline in Pin" />
+
+  <Tools />
+
+  <FAQ items={faq} title="Recruiting CRM questions" />
+
+  <Reading items={[
+    { label: "ATS vs CRM: which one do recruiters actually need?", href: "/blog/ats-vs-crm-recruiters/", description: "How the two systems differ, and where Pin sits in the middle." },
+    { label: "Best recruitment CRMs for staffing agencies", href: "/blog/best-recruitment-crm-agencies/", description: "A ranked comparison of CRMs built for agencies running parallel client pipelines." },
+    { label: "ATS + CRM combined: the case for one tool", href: "/blog/ats-crm-combined/", description: "Why teams are consolidating tracking and relationship management into one workspace." },
+  ]} />
+
+  <CTABand title="Stop updating your pipeline. Start filling it." body="Bring an open role to a 20-minute walkthrough and see your pipeline fill and move on its own." track="crm_cta" />
+</Layout>

@@ -1,0 +1,60 @@
+---
+// "Try Pin free" modal. Auth URLs, analytics events and the pendingJobDescription
+// hand-off are unchanged from new-www's LoginOptions.astro.
+interface Props {
+  /** Optional Alpine expression to prefill the email input */
+  emailValue?: string;
+}
+const { emailValue } = Astro.props;
+const redirect = "'https://app.pin.com/login/redirect' + (($data.pendingJobDescription ?? '') ? '?jobDescription=' + encodeURIComponent($data.pendingJobDescription ?? '') + '&jobDescriptionSource=' + encodeURIComponent($data.pendingJobDescriptionSource ?? '') : '')";
+const track = (provider: string) =>
+  `window.posthog?.capture('login_modal_auth_clicked', { provider: '${provider}', job_description: $data.pendingJobDescription ?? '', job_description_source: $data.pendingJobDescriptionSource ?? '', page: window.location.pathname }); window.dataLayer?.push({ event: 'login_modal_auth_clicked', provider: '${provider}', page: window.location.pathname })`;
+const option = "flex w-full items-center gap-3 rounded-xl border border-ink/10 bg-white px-4 py-3.5 font-medium text-ink transition-colors hover:border-ink/25";
+---
+
+<div
+  x-show="isLoginModalOpen"
+  x-init="$watch('isLoginModalOpen', (open) => { if (open) { window.dataLayer?.push({ event: 'modal_opened', modal_type: 'login', page: window.location.pathname }); window.posthog?.capture('login_modal_opened', { job_description: pendingJobDescription, job_description_source: pendingJobDescriptionSource, page: window.location.pathname }) } else { setTimeout(() => { pendingJobDescription = ''; pendingJobDescriptionSource = '' }, 500) } })"
+  x-transition.opacity
+  @keydown.escape.window="isLoginModalOpen = false"
+  class="fixed inset-0 z-[60] flex items-end justify-center md:items-center"
+  style="display: none;"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="login-title"
+>
+  <div class="absolute inset-0 bg-ink/40" @click="isLoginModalOpen = false"></div>
+  <div class="relative w-full max-w-md rounded-t-3xl bg-bg p-6 shadow-window md:rounded-3xl md:p-8">
+    <div class="mb-6 flex items-start justify-between gap-4">
+      <div>
+        <p id="login-title" class="text-xl font-medium">Try Pin for free or <a href="/book-a-demo/" class="underline decoration-ink/30 underline-offset-2 hover:decoration-ink">book a demo</a></p>
+        <p class="mt-1 text-sm text-ink-2">No credit card required</p>
+      </div>
+      <button type="button" @click="isLoginModalOpen = false" class="text-ink-2" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+      </button>
+    </div>
+
+    <div class="space-y-3">
+      <a x-bind:href={`'https://api.pin.com/auth/workos?provider=GoogleOAuth&redirect=' + encodeURIComponent(${redirect}) + '&error_redirect=https://app.pin.com/login'`} @click={track("google")} class={option}>
+        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continue with Google
+      </a>
+      <a x-bind:href={`'https://api.pin.com/auth/workos?provider=MicrosoftOAuth&redirect=' + encodeURIComponent(${redirect}) + '&error_redirect=https://app.pin.com/login'`} @click={track("microsoft")} class={option}>
+        <svg width="20" height="20" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#F25022"/><rect x="11" y="1" width="9" height="9" fill="#7FBA00"/><rect x="1" y="11" width="9" height="9" fill="#00A4EF"/><rect x="11" y="11" width="9" height="9" fill="#FFB900"/></svg>
+        Continue with Microsoft
+      </a>
+      <div class="flex items-center gap-3 py-1 text-sm text-ink-3"><span class="h-px flex-1 bg-ink/10"></span>or<span class="h-px flex-1 bg-ink/10"></span></div>
+      <form action="https://api.pin.com/auth/workos" method="get" @submit={track("email")} class="flex gap-2">
+        <input type="hidden" name="provider" value="authkit" />
+        <input type="hidden" name="redirect" x-bind:value={redirect} />
+        <input type="hidden" name="error_redirect" value="https://app.pin.com/login" />
+        <label class="sr-only" for="login-email">Email</label>
+        <input id="login-email" type="email" name="loginHint" x-bind:value={emailValue ?? undefined} autocomplete="email" placeholder="you@company.com" required
+          class="min-w-0 flex-1 rounded-xl border border-ink/10 bg-white px-4 py-3.5 outline-none transition-colors placeholder:text-ink-3 focus:border-green" />
+        <button type="submit" class="rounded-xl bg-green px-5 py-3.5 font-medium text-white transition-colors hover:bg-green-accessible">Continue</button>
+      </form>
+    </div>
+    <p class="mt-5 text-center text-xs text-ink-3">By continuing you accept Pin's <a href="/terms/" class="underline">Terms</a> and <a href="/privacy/" class="underline">Privacy Policy</a>.</p>
+  </div>
+</div>

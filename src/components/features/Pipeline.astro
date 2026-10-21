@@ -1,0 +1,155 @@
+---
+// CRM demo: a pipeline board. Click any candidate to see their full history; Maya auto-advances when she replies.
+import { Mail, CircleUser, Reply, CalendarCheck, CheckCircle2, UserPlus, Users, BookOpen } from "@lucide/astro";
+import Avatar from "../Avatar.astro";
+import PinAvatar from "../PinAvatar.astro";
+
+type Event = { icon: "add" | "approve" | "mail" | "task" | "reply" | "kb" | "booked"; text: string; when: string; pin?: boolean };
+const people: { id: string; name: string; hue: number; role: string; stage: number; next: string; events: Event[] }[] = [
+  { id: "tom", name: "Tom Becker", hue: 60, role: "Data Engineer · Ramp", stage: 0, next: "Sequence starts tomorrow, 9:00 AM", events: [
+    { icon: "add", text: "Matched by Pin: Spark and payments data", when: "Mon", pin: true },
+    { icon: "approve", text: "Approved by Jordan (hiring manager)", when: "Mon" },
+  ] },
+  { id: "sofia", name: "Sofia Alvarez", hue: 200, role: "Staff Engineer · Datadog", stage: 0, next: "Waiting for your approval of step 1", events: [
+    { icon: "add", text: "Matched by Pin: distributed systems, NYC", when: "Tue", pin: true },
+    { icon: "approve", text: "Approved by you", when: "Tue" },
+  ] },
+  { id: "maya", name: "Maya Chen", hue: 340, role: "Senior Engineer · Stripe", stage: 1, next: "Pin is offering interview times", events: [
+    { icon: "reply", text: "Replied: “I'm interested! What does equity look like?”", when: "Just now" },
+    { icon: "mail", text: "Step 3 sent: follow-up email", when: "Thu", pin: true },
+    { icon: "task", text: "Connected on LinkedIn (your task)", when: "Wed" },
+    { icon: "mail", text: "Step 1 sent from alex@yourcompany.com", when: "Mon", pin: true },
+    { icon: "approve", text: "Approved by you", when: "Mon" },
+  ] },
+  { id: "daniel", name: "Daniel Okafor", hue: 160, role: "Backend Lead · Plaid", stage: 1, next: "Step 2 due Thursday: Connect on LinkedIn", events: [
+    { icon: "mail", text: "Step 1 sent from alex@yourcompany.com", when: "Tue", pin: true },
+    { icon: "approve", text: "Approved by you", when: "Tue" },
+  ] },
+  { id: "sara", name: "Sara Kim", hue: 280, role: "Senior Engineer · Shopify", stage: 2, next: "Pin is offering interview times", events: [
+    { icon: "kb", text: "Pin answered “remote or office?” from your knowledge base", when: "Today", pin: true },
+    { icon: "reply", text: "Replied: “Is this role remote or in the office?”", when: "Today" },
+    { icon: "mail", text: "Step 1 sent from alex@yourcompany.com", when: "Mon", pin: true },
+  ] },
+  { id: "priya", name: "Priya Raman", hue: 25, role: "Engineer II · Brex", stage: 3, next: "Intro call Tue 3:00 PM · Google Meet", events: [
+    { icon: "booked", text: "Interview booked: Tue 3:00 PM, invite sent", when: "Yesterday", pin: true },
+    { icon: "reply", text: "Replied: “Yes! Would love to chat this week.”", when: "Yesterday" },
+    { icon: "mail", text: "Step 1 sent from alex@yourcompany.com", when: "Mon", pin: true },
+  ] },
+];
+const stages = ["Approved", "Contacted", "Replied", "Interview"];
+const icons = { add: UserPlus, approve: CheckCircle2, mail: Mail, task: CircleUser, reply: Reply, kb: BookOpen, booked: CalendarCheck };
+---
+
+<div id="pipeline" class="tint-sand rounded-[28px] px-4 py-8 text-left sm:px-8 md:rounded-[36px] md:px-12 md:py-12">
+  <div class="mx-auto grid max-w-6xl items-start gap-5 text-[14px] [&>*]:min-w-0 lg:grid-cols-[1.5fr_1fr] lg:gap-8">
+    <!-- Board -->
+    <div class="relative">
+      <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Moves on its own</span>
+      <div class="panel overflow-hidden">
+        <p class="flex items-center justify-between border-b border-app-border px-4 py-3 pt-5">
+          <span class="font-semibold">Senior Backend Engineer · ByteLogic</span>
+          <span class="hidden items-center gap-1.5 text-[13px] text-app-fg2 sm:flex"><Users size={13} /> Alex, Jordan</span>
+        </p>
+        <div class="overflow-x-auto">
+          <div class="grid min-w-[600px] grid-cols-4 gap-2 p-3">
+            {stages.map((s, i) => (
+              <div class="rounded-lg bg-app-bg3 p-2" data-col={i}>
+                <p class="flex items-center justify-between px-1 pb-2 text-[12px] font-medium text-app-fg2">{s} <span class="count tabular-nums">{people.filter((p) => p.stage === i).length}</span></p>
+                <ul class="space-y-1.5">
+                  {people.map((p) => {
+                    // Maya is rendered in both columns; the script moves her once the board scrolls into view.
+                    const here = p.stage === i || (p.id === "maya" && i === 2);
+                    return here && (
+                      <li class:list={[p.id === "maya" && (i === 1 ? "maya-from" : "maya-to")]} hidden={p.id === "maya" && i === 2}>
+                        <button type="button" data-person={p.id} aria-controls="pipeline-detail" aria-pressed={p.id === "maya" ? "true" : "false"} class="w-full rounded-md bg-white p-2 text-left shadow-app transition-[box-shadow,scale] active:scale-[0.98] aria-pressed:ring-2 aria-pressed:ring-app-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-tint">
+                          <span class="flex items-center gap-2">
+                            <Avatar name={p.name} hue={p.hue} size={22} />
+                            <span class="min-w-0 flex-1 truncate font-medium">{p.name}</span>
+                          </span>
+                          <span class="mt-1 block truncate text-[12px] text-app-fg2">{p.role}</span>
+                          {p.id === "maya" && i === 2 && <span class="mt-1.5 inline-flex rounded bg-app-pos/10 px-1.5 text-[11px] font-medium text-app-pos">Auto-advanced on reply</span>}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Candidate detail -->
+    <div class="relative">
+      <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">The whole story, in one place</span>
+      <div id="pipeline-detail" class="panel p-4 pt-6 md:p-5 md:pt-7" aria-live="polite">
+        {people.map((p) => (
+          <div data-detail={p.id} hidden={p.id !== "maya"}>
+            <div class="flex items-center gap-3">
+              <span class="overflow-hidden rounded-xl"><Avatar name={p.name} hue={p.hue} size={44} /></span>
+              <div class="min-w-0">
+                <p class="text-[15px] font-semibold">{p.name}</p>
+                <p class="truncate text-[13px] text-app-fg2">{p.role}</p>
+              </div>
+            </div>
+            <p class="mt-4 flex items-start gap-2 rounded-lg bg-app-ai/[0.06] px-3 py-2.5"><PinAvatar size={20} /><span><b class="font-medium">Next:</b> <span class="next">{p.next}</span></span></p>
+            <p class="mt-4 text-[10px] font-semibold uppercase tracking-wider text-app-fg3">Activity</p>
+            <ol class="mt-2 space-y-2.5">
+              {p.events.map((e, k) => {
+                const Icon = icons[e.icon];
+                return (
+                  <li class:list={["flex items-start gap-2.5 leading-snug", p.id === "maya" && k === 0 && "maya-reply"]}>
+                    <span class="flex h-[1lh] shrink-0 items-center"><span class:list={["grid size-6 place-items-center rounded-full", e.pin ? "bg-green-lighter text-green-accessible" : "bg-app-fg/5 text-app-fg2"]}><Icon size={13} /></span></span>
+                    <span class="flex-1">{e.text}</span>
+                    <span class="flex h-[1lh] shrink-0 items-center text-[12px] text-app-fg3">{e.when}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+  <p class="mt-6 text-center text-sm text-ink-3">Illustrative example · click any candidate</p>
+</div>
+
+<style>
+  .maya-to:not([hidden]) { animation: drop 450ms var(--ease-out-soft); }
+  @keyframes drop { from { opacity: 0; translate: 0 -10px; } }
+</style>
+
+<script>
+  import { onEnter, reducedMotion } from "../../scripts/motion";
+
+  const root = document.getElementById("pipeline")!;
+  const cards = () => [...root.querySelectorAll<HTMLButtonElement>("[data-person]")];
+  const details = [...root.querySelectorAll<HTMLElement>("[data-detail]")];
+  const reply = root.querySelector<HTMLElement>(".maya-reply")!;
+  const mayaNext = root.querySelector<HTMLElement>('[data-detail="maya"] .next')!;
+
+  function show(id: string) {
+    cards().forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.person === id)));
+    details.forEach((d) => (d.hidden = d.dataset.detail !== id));
+  }
+  root.addEventListener("click", (e) => {
+    const c = (e.target as HTMLElement).closest<HTMLElement>("[data-person]");
+    if (c) show(c.dataset.person!);
+  });
+
+  // Before Maya replies: she sits in Contacted with no reply in her history.
+  reply.hidden = true;
+  mayaNext.textContent = "Step 4 due Monday: Text Message";
+
+  function advance() {
+    root.querySelector<HTMLElement>(".maya-from")!.hidden = true;
+    root.querySelector<HTMLElement>(".maya-to")!.hidden = false;
+    reply.hidden = false;
+    mayaNext.textContent = "Pin is offering interview times";
+    root.querySelectorAll<HTMLElement>("[data-col]").forEach((col) => {
+      col.querySelector(".count")!.textContent = String(col.querySelectorAll("li:not([hidden])").length);
+    });
+  }
+  onEnter(root, () => setTimeout(advance, reducedMotion ? 0 : 1500), 0.4);
+</script>

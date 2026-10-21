@@ -1,0 +1,27 @@
+---
+// Standard page hero: eyebrow, h1, sub, CTAs, then an optional visual (default slot).
+import Button from "./Button.astro";
+import SectionHeader from "./SectionHeader.astro";
+interface Props {
+  eyebrow?: string;
+  title: string;
+  sub?: string;
+  /** Show the default "Try Pin free" + "Book a demo" buttons */
+  ctas?: boolean;
+  track?: string;
+}
+const { eyebrow, title, sub, ctas = true, track = "hero" } = Astro.props;
+---
+
+<section class="mx-auto max-w-7xl px-4 pb-16 pt-12 md:px-8 md:pb-24 md:pt-20">
+  <SectionHeader as="h1" eyebrow={eyebrow} title={title} sub={sub}>
+    {ctas && (
+      <div data-reveal style="--i:3" class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+        <Button signup arrow track={track}>Try Pin free</Button>
+        <Button href="/book-a-demo/" variant="secondary" track={track}>Book a demo</Button>
+      </div>
+    )}
+    <slot name="below-ctas" />
+  </SectionHeader>
+  {Astro.slots.has("default") && <div data-reveal style="--i:4" class="mt-14 md:mt-20"><slot /></div>}
+</section>

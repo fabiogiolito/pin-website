@@ -1,0 +1,64 @@
+---
+import Layout from '../../../../layouts/Layout.astro'
+import BlogListing from '../../../../components/blog/BlogListing.astro'
+import {
+  getUnifiedBlogPosts,
+  getUnifiedFeaturedPostsByTag,
+  getAllUnifiedTags,
+  getTagCounts,
+  getLastPublishedAt,
+  getUnifiedRelatedTags,
+} from '../../../../lib/posts'
+import { getTagMeta } from '../../../../data/tags'
+
+export async function getStaticPaths() {
+  const allTags = await getAllUnifiedTags()
+  const tagResults = await Promise.all(allTags.map((tag) => getUnifiedBlogPosts({ tag: tag.slug, page: 1 })))
+  return allTags.flatMap((tag, index) =>
+    Array.from({ length: tagResults[index].totalPages - 1 }, (_, i) => ({
+      params: { tag: tag.slug, page: String(i + 2) },
+    })),
+  )
+}
+
+const { tag, page: pageParam } = Astro.params
+const currentPage = parseInt(pageParam ?? '2', 10)
+
+const [result, featuredPostsForTag, allTags, tagCounts, lastPublishedAt, relatedTags] = await Promise.all([
+  getUnifiedBlogPosts({ tag, page: currentPage }),
+  getUnifiedFeaturedPostsByTag(tag!),
+  getAllUnifiedTags(),
+  getTagCounts(),
+  getLastPublishedAt(tag),
+  getUnifiedRelatedTags(tag!, 4),
+])
+
+const tagName = allTags.find((t) => t.slug === tag)?.name ?? tag ?? ''
+
+// Page 2+ reuses the tag's custom H1/subtitle but skips the intro (avoids duplicate copy).
+const meta = getTagMeta(tag)
+const h1Name = meta?.h1 ?? tagName
+const pageTitle = `${h1Name} - Page ${currentPage} - Pin Blog`
+const pageDescription = `${meta?.metaDescription ?? `Articles tagged with ${tagName} on the Pin blog`} - page ${currentPage}.`
+---
+
+<Layout title={pageTitle} description={pageDescription}>
+  <BlogListing
+    mode="tag"
+    posts={result.posts}
+    allTags={allTags}
+    tagCounts={tagCounts}
+    activeTag={tag!}
+    activeTagName={tagName}
+    currentPage={currentPage}
+    totalPages={result.totalPages}
+    paginationBase={`/blog/tag/${tag}`}
+    paginationIndexUrl={`/blog/tag/${tag}/`}
+    customH1={meta?.h1}
+    customSubtitle={meta?.description}
+    totalArticleCount={tagCounts.get(tag!) ?? 0}
+    lastPublishedAt={lastPublishedAt}
+    featuredPosts={featuredPostsForTag.slice(0, 6)}
+    relatedTags={relatedTags}
+  />
+</Layout>

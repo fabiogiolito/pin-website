@@ -1,0 +1,94 @@
+---
+import { Mail, CircleUser, Smartphone, ChevronsUpDown, Plus, X, Building2, Pause } from "@lucide/astro";
+import Chapter from "../Chapter.astro";
+import Avatar from "../Avatar.astro";
+import PinAvatar from "../PinAvatar.astro";
+
+// LinkedIn steps are tasks: reminders for the recruiter, not automated sends.
+const steps = [
+  { icon: "mail", name: "Send Email", day: "Day 1" },
+  { icon: "task", name: "Connect on LinkedIn", day: "Day 3", task: true },
+  { icon: "mail", name: "Send Email", day: "Day 5" },
+  { icon: "sms", name: "Text Message", day: "Day 8" },
+  { icon: "task", name: "Message on LinkedIn", day: "Day 10", task: true },
+];
+const field = "flex items-center gap-1.5 rounded-md border border-app-border px-2.5 py-1.5";
+---
+
+<Chapter n={3} stage="Outreach" title="Emails that sound like you, because they're from you." tint="purple">
+  <p slot="copy">
+    Pin writes a personal sequence for every approved candidate and sends it from your own Gmail or Outlook, on schedule, until they reply.
+  </p>
+  <p slot="copy">Edit anything, or don't. Jump in and take over any conversation, any time.</p>
+
+  <div class="relative grid items-start gap-5 text-[14px] md:grid-cols-[0.85fr_1.4fr] md:gap-8">
+    <div class="space-y-5">
+      <!-- Candidate -->
+      <div class="panel p-4">
+        <div class="flex items-center gap-3">
+          <span class="overflow-hidden rounded-xl"><Avatar name="Maya Chen" hue={340} size={48} /></span>
+          <div>
+            <p class="text-[16px] font-semibold">Maya Chen</p>
+            <p class="text-app-fg2">Brooklyn, NY</p>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-3 border-t border-app-border pt-3">
+          <span class="grid size-9 place-items-center rounded-lg border border-app-border text-app-fg2"><Building2 size={16} /></span>
+          <div class="leading-tight"><p class="font-medium">Stripe</p><p class="text-[13px] text-app-fg2">Senior Software Engineer</p></div>
+        </div>
+      </div>
+
+      <!-- Sequence -->
+      <div class="relative">
+      <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Automated sequence</span>
+      <ol class="panel space-y-1 p-3 pt-7">
+        {steps.map((s, i) => (
+          <li data-reveal style={`--i:${i + 2}`} class:list={["flex items-center gap-3 rounded-lg px-3 py-2.5", i === 0 && "bg-app-ai/[0.06]"]}>
+            {s.icon === "mail" && <Mail size={17} class="text-app-pos" />}
+            {s.icon === "task" && <CircleUser size={17} class="text-app-tint" />}
+            {s.icon === "sms" && <Smartphone size={17} class="text-app-warn" />}
+            <span class="flex-1">{s.name}</span>
+            {s.task && <span class="rounded bg-app-fg/5 px-1.5 py-0.5 text-[11px] text-app-fg2">Task</span>}
+            <span class="w-12 text-right text-app-fg3">{s.day}</span>
+          </li>
+        ))}
+      </ol>
+      </div>
+    </div>
+
+    <!-- Step editor -->
+    <div class="relative">
+    <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Sent from your inbox, as you</span>
+    <div class="panel overflow-hidden">
+      <p class="flex items-center gap-2 border-b border-app-border bg-app-ai/[0.04] px-5 py-3 font-medium text-app-ai"><Mail size={15} /> Step 1: Send Email <ChevronsUpDown size={13} /></p>
+      <div class="space-y-3 p-5 pb-7">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="w-14 text-app-fg2">From</span>
+          <span class:list={[field, "ring-2 ring-green/30"]}><Mail size={13} class="text-app-fg3" /> alex@yourcompany.com <ChevronsUpDown size={12} class="text-app-fg3" /></span>
+          <span class={field}>Send Automatically <ChevronsUpDown size={12} class="text-app-fg3" /></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-14 shrink-0 text-app-fg2">Subject</span>
+          <span class:list={[field, "flex-1"]}>Your ledger work at Stripe</span>
+        </div>
+        <div class="relative space-y-3 rounded-lg border border-app-border p-4 leading-relaxed">
+          <span class="callout absolute -bottom-4 right-4 z-10 hidden md:inline-flex">Unique custom emails</span>
+          <p>Hi <span class="merge" style="--i:0">Maya</span>,</p>
+          <p>I came across your work on <span class="merge" style="--i:1">Stripe's double-entry ledger</span> and had to reach out. We're rebuilding <span class="merge" style="--i:2">ByteLogic</span>'s payments core in <span class="merge" style="--i:3">Go and Kotlin</span>, and it's exactly the kind of system you've already scaled.</p>
+          <p>Would you be open to a 20-minute chat next week?</p>
+          <p>Best,<br />Alex</p>
+        </div>
+      </div>
+      <div class="border-t border-app-border px-5 py-4">
+        <p class="flex items-center justify-between text-app-fg2"><span class="flex items-center gap-2"><PinAvatar size={20} /> Pin Suggestions</span><X size={14} class="text-app-fg3" /></p>
+        <p class="mt-2.5 flex gap-2"><Plus size={14} class="mt-0.5 text-app-fg3" /><span><b class="font-medium">Mention the team</b><br /><span class="text-app-fg2">Maya worked with two ByteLogic engineers at Square.</span></span></p>
+      </div>
+      <div class="flex items-center justify-between border-t border-app-border px-5 py-3 text-[13px]">
+        <span class="text-app-fg3">Sends Tue 9:12 AM, her time</span>
+        <span class="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 font-medium text-app-fg2 shadow-app"><Pause size={12} /> Take over</span>
+      </div>
+    </div>
+    </div>
+
+  </div>
+</Chapter>

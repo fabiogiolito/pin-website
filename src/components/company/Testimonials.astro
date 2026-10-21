@@ -1,0 +1,31 @@
+---
+// "Hear it from our customers" grid; quotes verbatim from new-www's SectionTestimonialsGrid.
+import SectionHeader from "../ui/SectionHeader.astro";
+const testimonials = [
+  { quote: "Pin is shockingly good. I've been doing this for 29+ years and I've used every tool out there. Pin is the best I've used for identifying candidates.", name: "Rich Rosen", role: "Founder, Cornerstone Search Associates", photo: "/images/advisors/richrosen.webp" },
+  { quote: "Pin makes sourcing candidates so natural and I love how you can just talk to it like it's a recruiter on your team and it goes hunting. By far our favorite new technology in a long time.", name: "Josh Volinsky", role: "Co-Founder at Synergy Search", photo: "/images/testimonials/joshvolinsky_photo.jpg" },
+  { quote: "Pin has been essential to our success — contributing to over $1M in billings this year alone.", name: "Nick Poloni", role: "Founder, Cascadia Search Group", photo: "/images/testimonials/nickpoloni_photo.jpg" },
+  { quote: "What I love about Pin is that it takes the critical thinking your brain already does and puts it on steroids.", name: "Colleen Riccinto", role: "Founder, Cyber Talent Search", photo: "/images/compare/avatar-colleen.png" },
+  { quote: "Pin delivered exactly what we needed. Within just two weeks of using the product, we hired both a software engineer and a financial planner. The speed and accuracy were unmatched.", name: "Fahad Hassan", role: "CEO & Co-founder, Range", photo: "/images/testimonials/fahadhassan_photo.jpg" },
+  { quote: "Pin has supercharged our sourcing, helping our team build more top of funnel efficiently.", name: "Nick Patrick", role: "CEO & Co-founder, Radar", photo: "/images/testimonials/nickpatrick_photo.jpg" },
+  { quote: "As a small people and talent team, we don't have a ton of time to spend hours sourcing and messaging. Pin has made it possible for us to focus on the people side of things!", name: "Miles Randle", role: "Head of People & Talent, Flip CX", photo: "/images/testimonials/milesrandle_photo.jpg" },
+  { quote: "Pin's intuitive UX made it easy to use right away, simplifying job descriptions and finding spot-on candidates. It's already outperforming other established recruiting products.", name: "Ben Caggia", role: "Advisor, Syelo", photo: "/images/testimonials/bencaggia_photo.jpg" },
+];
+---
+
+<section class="bg-bg-secondary/60 py-24 md:py-32">
+  <div class="mx-auto max-w-7xl px-4 md:px-8">
+    <SectionHeader align="left" eyebrow="In their words" title="Hear it from our customers" />
+    <div class="mt-12 grid gap-4 md:grid-cols-2">
+      {testimonials.map((t, i) => (
+        <figure data-reveal style={`--i:${i % 2}`} class="flex flex-col rounded-3xl bg-white p-7 shadow-[0_0_0_1px_rgb(0_0_0/0.04),0_10px_30px_-14px_rgb(115_70_38/0.18)] md:p-8">
+          <blockquote class="flex-1 text-lg leading-relaxed">“{t.quote}”</blockquote>
+          <figcaption class="mt-6 flex items-center gap-3">
+            <img src={t.photo} alt="" width="40" height="40" loading="lazy" class="size-10 rounded-full object-cover outline outline-1 -outline-offset-1 outline-black/10" />
+            <span><span class="block font-medium">{t.name}</span><span class="block text-sm text-ink-2">{t.role}</span></span>
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  </div>
+</section>

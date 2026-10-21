@@ -1,0 +1,65 @@
+---
+import { stages } from "./stages";
+import Brief from "./chapters/Brief.astro";
+import Match from "./chapters/Match.astro";
+import Outreach from "./chapters/Outreach.astro";
+import Replies from "./chapters/Replies.astro";
+import Booked from "./chapters/Booked.astro";
+---
+
+<div id="journey" class="relative">
+  <div id="how" class="mx-auto max-w-7xl scroll-mt-16 px-4 pt-24 md:px-8 md:pt-32">
+    <div class="mx-auto max-w-3xl text-center">
+      <p data-reveal class="text-sm font-medium tracking-wide text-green">How Pin works</p>
+      <h2 data-reveal style="--i:1" class="mt-3 text-[32px] font-medium leading-[1.1] tracking-[-0.02em] text-balance md:text-[48px]">
+        One sentence in. Interviews out. Here's everything in between.
+      </h2>
+    </div>
+  </div>
+
+  <!-- Stage bar: sticks under the header while the chapters scroll by -->
+  <nav aria-label="Journey stages" class="sticky top-16 z-40 mt-10 flex justify-center border-b border-ink/5 bg-bg/85 px-4 py-2 backdrop-blur-md">
+    <ol class="flex gap-0.5 overflow-x-auto rounded-full bg-white p-1 shadow-[0_0_0_1px_rgb(0_0_0/0.05)]">
+      {stages.map((s, i) => (
+        <li>
+          <a href={`#${s.toLowerCase()}`} class="rail-item flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium text-ink-3 transition-colors duration-300 hover:text-ink md:px-4">
+            <span class="hidden tabular-nums opacity-60 sm:inline">{i + 1}</span>{s}
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+
+  <div class="mx-auto max-w-7xl px-4 md:px-8">
+    <Brief />
+    <Match />
+    <Outreach />
+    <Replies />
+    <Booked />
+  </div>
+</div>
+
+<style>
+  .rail-item.on { background: var(--color-green); color: white; }
+  .rail-item.done { color: var(--color-green-accessible); }
+</style>
+
+<script>
+  const journey = document.getElementById("journey")!;
+  const chapters = [...journey.querySelectorAll<HTMLElement>("[data-chapter]")];
+  const items = [...journey.querySelectorAll<HTMLElement>(".rail-item")];
+
+  function setActive(i: number) {
+    items.forEach((el, j) => {
+      el.classList.toggle("on", j === i);
+      el.classList.toggle("done", j < i);
+    });
+  }
+
+  // Active chapter = the one crossing the middle of the viewport.
+  const io = new IntersectionObserver(
+    (entries) => entries.forEach((e) => e.isIntersecting && setActive(Number((e.target as HTMLElement).dataset.chapter))),
+    { rootMargin: "-50% 0px -50% 0px" }
+  );
+  chapters.forEach((c) => io.observe(c));
+</script>

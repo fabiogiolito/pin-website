@@ -1,0 +1,292 @@
+---
+import "./tools.css";
+// Rejection Email Generator — template-based, stage + reason → polite email.
+// Includes a legally-risky-phrase flag check to nudge recruiters away from
+// discriminatory or litigable language.
+---
+
+<script is:inline>
+  window.rejectionEmailGenerator = function () {
+    // Terms and phrases that commonly get recruiters in trouble when used in
+    // rejections. Flagged as warnings, not blockers — context matters.
+    const RISKY_PATTERNS = [
+      { pattern: /\b(too old|too young|retirement|overqualified)\b/i, note: '"overqualified" / age-coded — age-discrimination risk under ADEA.' },
+      { pattern: /\b(cultur(e|al) fit)\b/i,                          note: '"cultural fit" is legally fraught — prefer "cultural add" or specific missing skills.' },
+      { pattern: /\b(we decided)\b/i,                                note: 'Passive "we decided" reads cold. Consider naming a specific gap.' },
+      { pattern: /\b(pregnan|matern|patern|family|marital|disab)\w*/i, note: 'Protected-class term appears in the draft — remove.' },
+      { pattern: /\b(personality|chemistry)\b/i,                     note: 'Vague subjective terms invite discrimination claims. Ground feedback in observable behavior.' },
+    ];
+
+    return {
+      candidateName: 'Jordan',
+      roleTitle: 'Senior Software Engineer',
+      companyName: 'Acme, Inc.',
+      recruiterName: 'Alex',
+      stage: 'post-interview',
+      reason: 'better-match',
+      inviteToPool: true,
+      extraNote: '',
+      copied: false,
+      linkCopied: false,
+      _trackedFirst: false,
+      _viewTracked: false,
+
+      _track(event, props = {}) {
+        try {
+          const root = this.$root;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event,
+            tool_slug: (root && root.dataset && root.dataset.pinToolSlug) || '',
+            tool_name: (root && root.dataset && root.dataset.pinToolName) || '',
+            post_slug: (location.pathname.split('/').filter(Boolean).pop() || ''),
+            page_path: location.pathname,
+            ...props,
+          });
+        } catch (e) {}
+      },
+      _trackFirstInteraction(type) {
+        if (this._trackedFirst) return;
+        this._trackedFirst = true;
+        this._track('blog_tool_first_interaction', { interaction_type: type });
+      },
+
+      hydrate() {
+        if (!this._viewTracked && typeof IntersectionObserver !== 'undefined') {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._viewTracked = true;
+              this._track('blog_tool_viewed');
+              io.disconnect();
+            }
+          }, { threshold: 0.3 });
+          io.observe(this.$root);
+        }
+      },
+
+      reset() {
+        this.candidateName = 'Jordan'; this.roleTitle = 'Senior Software Engineer';
+        this.companyName = 'Acme, Inc.'; this.recruiterName = 'Alex';
+        this.stage = 'post-interview'; this.reason = 'better-match';
+        this.inviteToPool = true; this.extraNote = '';
+        this._track('blog_tool_reset_clicked');
+      },
+
+      get stageLine() {
+        if (this.stage === 'post-application') return 'Thank you for applying to the ' + this.roleTitle + ' role at ' + this.companyName + '.';
+        if (this.stage === 'post-screen')      return 'Thank you for your time in the initial conversation about the ' + this.roleTitle + ' role at ' + this.companyName + '.';
+        if (this.stage === 'post-interview')   return 'Thank you for the time you invested in our interview process for the ' + this.roleTitle + ' role at ' + this.companyName + '.';
+        if (this.stage === 'post-offer')       return 'Thank you for engaging with us throughout our interview process and for the consideration you gave our offer for the ' + this.roleTitle + ' role at ' + this.companyName + '.';
+        return '';
+      },
+
+      get reasonLine() {
+        if (this.reason === 'skill-gap')    return 'After careful review, we\'ve decided to move forward with candidates whose experience more closely matches the specific technical requirements of this role.';
+        if (this.reason === 'better-match') return 'After reviewing all candidates, we\'ve decided to move forward with someone whose background lines up more directly with the scope of this particular role.';
+        if (this.reason === 'role-on-hold') return 'We\'ve had to place this role on hold while we reassess our near-term priorities. This outcome reflects that reorganization and not any feedback on your candidacy.';
+        if (this.reason === 'cultural-add') return 'After reflecting on the team\'s current shape and goals, we\'ve decided to move forward with a different candidate whose strengths complement the existing team in a specific way we need right now.';
+        return '';
+      },
+
+      get invitationLine() {
+        if (!this.inviteToPool) return '';
+        return 'We\'d genuinely like to stay in touch. If you\'re open to it, we\'ll keep your profile in our talent community so we can reach out when a role surfaces that looks like a stronger fit.';
+      },
+
+      get email() {
+        const parts = [];
+        parts.push('Subject: Update on your ' + this.roleTitle + ' candidacy at ' + this.companyName);
+        parts.push('');
+        parts.push('Hi ' + (this.candidateName || '[CANDIDATE NAME]') + ',');
+        parts.push('');
+        parts.push(this.stageLine);
+        parts.push('');
+        parts.push(this.reasonLine);
+        parts.push('');
+        if (this.extraNote && this.extraNote.trim()) {
+          parts.push(this.extraNote.trim());
+          parts.push('');
+        }
+        if (this.invitationLine) {
+          parts.push(this.invitationLine);
+          parts.push('');
+        }
+        parts.push('I know this isn\'t the outcome you hoped for. Thank you for the time you put in — it was genuinely useful for us, and I hope it was useful for you too.');
+        parts.push('');
+        parts.push('Best,');
+        parts.push(this.recruiterName || '[RECRUITER NAME]');
+        parts.push(this.companyName || '[COMPANY]');
+        return parts.join('\n');
+      },
+
+      get riskyFlags() {
+        const text = this.email;
+        const notes = [];
+        for (const r of RISKY_PATTERNS) {
+          if (r.pattern.test(text)) notes.push(r.note);
+        }
+        if (this.extraNote && this.extraNote.length > 400) {
+          notes.push('Extra note is long — consider shortening. Feedback risk increases with length.');
+        }
+        return notes;
+      },
+
+      shareUrl() {
+        try {
+          const state = {
+            candidateName: this.candidateName, roleTitle: this.roleTitle, companyName: this.companyName,
+            recruiterName: this.recruiterName, stage: this.stage, reason: this.reason,
+            inviteToPool: this.inviteToPool, extraNote: this.extraNote,
+          };
+          const s = btoa(encodeURIComponent(JSON.stringify(state)));
+          const url = new URL(window.location.href);
+          url.searchParams.set('rej', s);
+          return url.toString();
+        } catch (e) { return window.location.href; }
+      },
+
+      _copyText(text, flag) {
+        const ok = () => { this[flag] = true; setTimeout(() => this[flag] = false, 1500); };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(ok).catch(() => {});
+          return;
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      },
+      copy() {
+        this._copyText(this.email, 'copied');
+        this._track('blog_tool_output_copied', { stage: this.stage, reason: this.reason });
+      },
+      copyLink() {
+        const url = this.shareUrl();
+        try { history.replaceState(null, '', url); } catch (e) {}
+        this._copyText(url, 'linkCopied');
+        this._track('blog_tool_share_link_copied');
+      },
+      _onInput() { this._trackFirstInteraction('input'); },
+    };
+  };
+</script>
+
+<section
+  class="pin-tool"
+  data-pin-tool-slug="rejection-email-generator"
+  data-pin-tool-name="Rejection Email Generator"
+  x-data="rejectionEmailGenerator()"
+  x-init="hydrate()"
+>
+  <h2 class="pt-title" id="pin-tool-rejection-email-generator">
+    Rejection Email Generator
+    <span class="pt-tool-badge" aria-hidden="true">Tool</span>
+  </h2>
+  <p class="pt-intro">
+    Write a polite, legally-safe, candidate-experience-positive rejection email in 20 seconds. Pick the stage and reason, optionally invite to the talent community, and get a copy-ready draft — plus a warning flag for risky phrases.
+  </p>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="rej-cand">Candidate name</label>
+      <input id="rej-cand" class="pt-input" type="text" x-model="candidateName" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="rej-role">Role title</label>
+      <input id="rej-role" class="pt-input" type="text" x-model="roleTitle" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="rej-co">Company name</label>
+      <input id="rej-co" class="pt-input" type="text" x-model="companyName" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="rej-name">Your name (signature)</label>
+      <input id="rej-name" class="pt-input" type="text" x-model="recruiterName" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Rejection stage</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" :class="stage === 'post-application' ? 'active' : ''" @click="stage = 'post-application'; _trackFirstInteraction('toggle')">Post-application</button>
+        <button type="button" class="pt-preset-btn" :class="stage === 'post-screen' ? 'active' : ''" @click="stage = 'post-screen'; _trackFirstInteraction('toggle')">Post-screen</button>
+        <button type="button" class="pt-preset-btn" :class="stage === 'post-interview' ? 'active' : ''" @click="stage = 'post-interview'; _trackFirstInteraction('toggle')">Post-interview</button>
+        <button type="button" class="pt-preset-btn" :class="stage === 'post-offer' ? 'active' : ''" @click="stage = 'post-offer'; _trackFirstInteraction('toggle')">Post-offer (declined by us)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Primary reason (softened in the copy)</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" :class="reason === 'better-match' ? 'active' : ''" @click="reason = 'better-match'; _trackFirstInteraction('toggle')">Better-aligned candidate</button>
+        <button type="button" class="pt-preset-btn" :class="reason === 'skill-gap' ? 'active' : ''" @click="reason = 'skill-gap'; _trackFirstInteraction('toggle')">Specific skill gap</button>
+        <button type="button" class="pt-preset-btn" :class="reason === 'cultural-add' ? 'active' : ''" @click="reason = 'cultural-add'; _trackFirstInteraction('toggle')">Team composition / add</button>
+        <button type="button" class="pt-preset-btn" :class="reason === 'role-on-hold' ? 'active' : ''" @click="reason = 'role-on-hold'; _trackFirstInteraction('toggle')">Role on hold</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <label class="pt-toggle">
+        <input type="checkbox" x-model="inviteToPool" @change="_trackFirstInteraction('toggle')" />
+        <span class="pt-toggle-switch" aria-hidden="true"></span>
+        <span class="pt-toggle-text">Invite candidate to the talent community for future roles</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <label class="pt-label" for="rej-note">Extra note — optional, specific feedback (kept short)</label>
+      <input id="rej-note" class="pt-input" type="text" x-model="extraNote" @input.debounce.300ms="_onInput()" placeholder="One sentence of concrete, observable feedback if you want to offer it." />
+    </div>
+  </div>
+
+  <div class="pt-output-wrap">
+    <label class="pt-label" for="rej-out">Rejection email</label>
+    <textarea id="rej-out" class="pt-output pt-output-tall" readonly x-text="email"></textarea>
+    <template x-if="riskyFlags.length">
+      <div class="pt-risky">
+        <strong>⚠ Review before sending:</strong>
+        <ul>
+          <template x-for="(f, i) in riskyFlags" :key="'f-' + i">
+            <li x-text="f"></li>
+          </template>
+        </ul>
+      </div>
+    </template>
+    <div class="pt-actions">
+      <button type="button" class="pt-btn primary" @click="copy()">
+        <span x-show="!copied">Copy email</span>
+        <span x-show="copied" x-cloak>Copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="copyLink()">
+        <span x-show="!linkCopied">Copy share link</span>
+        <span x-show="linkCopied" x-cloak>Link copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="reset()">Reset</button>
+    </div>
+  </div>
+
+  <div class="pt-howto">
+    <strong>How to use:</strong>
+    <ol>
+      <li>Pick the stage — candidates rejected earlier get shorter notes, later stages deserve more context.</li>
+      <li>Pick the primary reason. Every option is phrased carefully to avoid the language that typically triggers EEOC complaints ("overqualified", "cultural fit", etc.).</li>
+      <li>Toggle talent-community invitation only if you'd actually re-engage this candidate for a future role.</li>
+      <li>Add a short specific feedback note only if it's about observable behavior, not personality. Everything else should stay out of writing.</li>
+      <li>Check the warning flags — if one fires, rewrite the specific phrase before sending.</li>
+    </ol>
+  </div>
+
+  <p class="pt-source">
+    Built by Pin. Not legal advice — consult employment counsel for your jurisdiction. <a href="https://www.pin.com/">pin.com</a>.
+  </p>
+</section>

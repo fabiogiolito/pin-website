@@ -1,0 +1,354 @@
+---
+import "./tools.css";
+// Offer Letter Builder — form → plain-text offer letter with per-state at-will
+// language. v1 outputs to a copy-to-clipboard textarea. No PDF/DOCX export
+// (deferred to a later iteration per docs/tool-ideas.md).
+---
+
+<script is:inline>
+  window.offerLetterBuilder = function () {
+    // At-will blurbs vary by jurisdiction. Montana is not at-will by statute;
+    // California, NY, and the "default" language cover the common cases.
+    const AT_WILL = {
+      'CA': 'Your employment with [COMPANY] is at-will. This means that either you or [COMPANY] may terminate the employment relationship at any time, with or without cause or notice, subject to applicable California law. This offer letter is not a contract for any specific period of employment.',
+      'NY': 'Your employment with [COMPANY] is at-will, meaning either you or the Company may terminate the employment relationship at any time, for any lawful reason or no reason, with or without notice.',
+      'MT': 'Following the probationary period, your employment with [COMPANY] is governed by Montana\'s Wrongful Discharge from Employment Act. Please review the separate Employee Handbook for details on termination policy.',
+      'DEFAULT': 'Your employment with [COMPANY] is at-will. Either you or the Company may terminate the employment relationship at any time, with or without cause or notice. Nothing in this letter constitutes a guarantee of continued employment.',
+    };
+
+    const TEMPLATES = [
+      { id: 'startup',    label: 'Startup · warm',      intro: 'We are thrilled to offer you the position of', close: 'We can\'t wait to build with you.' },
+      { id: 'smb',        label: 'SMB · standard',      intro: 'We are pleased to offer you the position of',   close: 'We look forward to welcoming you to the team.' },
+      { id: 'enterprise', label: 'Enterprise · formal', intro: 'On behalf of [COMPANY], we are pleased to extend an offer for the position of', close: 'We look forward to a successful tenure at [COMPANY].' },
+    ];
+
+    return {
+      template: 'smb',
+      templates: TEMPLATES,
+      candidateName: 'Jane Smith',
+      roleTitle: 'Senior Software Engineer',
+      companyName: 'Acme, Inc.',
+      hiringManager: 'Alex Recruiter',
+      reportingTo: 'VP of Engineering',
+      startDate: '',
+      base: 150000,
+      bonusPct: 10,
+      signingBonus: 0,
+      equityShares: 10000,
+      equityVesting: '4-year vest, 1-year cliff',
+      benefitsNote: 'Medical, dental, vision, 401(k) with 4% match, unlimited PTO.',
+      state: 'DEFAULT',
+      expiryDays: 7,
+      copied: false,
+      linkCopied: false,
+      _trackedFirst: false,
+      _viewTracked: false,
+
+      _track(event, props = {}) {
+        try {
+          const root = this.$root;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event,
+            tool_slug: (root && root.dataset && root.dataset.pinToolSlug) || '',
+            tool_name: (root && root.dataset && root.dataset.pinToolName) || '',
+            post_slug: (location.pathname.split('/').filter(Boolean).pop() || ''),
+            page_path: location.pathname,
+            ...props,
+          });
+        } catch (e) {}
+      },
+      _trackFirstInteraction(type) {
+        if (this._trackedFirst) return;
+        this._trackedFirst = true;
+        this._track('blog_tool_first_interaction', { interaction_type: type });
+      },
+
+      hydrate() {
+        // Default start date to two weeks from today if unset, so the preview
+        // isn't blank on first render.
+        if (!this.startDate) {
+          const d = new Date();
+          d.setDate(d.getDate() + 14);
+          this.startDate = d.toISOString().slice(0, 10);
+        }
+        if (!this._viewTracked && typeof IntersectionObserver !== 'undefined') {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._viewTracked = true;
+              this._track('blog_tool_viewed');
+              io.disconnect();
+            }
+          }, { threshold: 0.3 });
+          io.observe(this.$root);
+        }
+      },
+
+      reset() {
+        this.template = 'smb';
+        this.candidateName = 'Jane Smith'; this.roleTitle = 'Senior Software Engineer';
+        this.companyName = 'Acme, Inc.'; this.hiringManager = 'Alex Recruiter';
+        this.reportingTo = 'VP of Engineering'; this.startDate = '';
+        this.base = 150000; this.bonusPct = 10; this.signingBonus = 0;
+        this.equityShares = 10000; this.equityVesting = '4-year vest, 1-year cliff';
+        this.benefitsNote = 'Medical, dental, vision, 401(k) with 4% match, unlimited PTO.';
+        this.state = 'DEFAULT'; this.expiryDays = 7;
+        this.hydrate();
+        this._track('blog_tool_reset_clicked');
+      },
+
+      get selectedTemplate() { return this.templates.find((t) => t.id === this.template) || this.templates[0]; },
+      get atWillBlurb() {
+        const raw = AT_WILL[this.state] || AT_WILL.DEFAULT;
+        return raw.replace(/\[COMPANY\]/g, this.companyName || '[COMPANY]');
+      },
+      get formattedBase() { return '$' + Number(this.base || 0).toLocaleString(); },
+      get formattedSigning() {
+        const n = Number(this.signingBonus || 0);
+        return n > 0 ? '$' + n.toLocaleString() : '';
+      },
+      get formattedStart() {
+        if (!this.startDate) return '[START DATE]';
+        try {
+          const d = new Date(this.startDate + 'T00:00:00');
+          return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        } catch (e) { return this.startDate; }
+      },
+      get today() {
+        return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      },
+      get expiryDate() {
+        const d = new Date();
+        d.setDate(d.getDate() + Number(this.expiryDays || 0));
+        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      },
+
+      get letter() {
+        const t = this.selectedTemplate;
+        const lines = [];
+        lines.push(this.today);
+        lines.push('');
+        lines.push('Dear ' + (this.candidateName || '[CANDIDATE NAME]') + ',');
+        lines.push('');
+        lines.push(t.intro + ' ' + (this.roleTitle || '[ROLE]') + ' at ' + (this.companyName || '[COMPANY]') + '. Your start date would be ' + this.formattedStart + ', reporting to ' + (this.reportingTo || '[HIRING MANAGER TITLE]') + '.');
+        lines.push('');
+        lines.push('COMPENSATION');
+        lines.push('  Base salary:      ' + this.formattedBase + ' per year, paid on the Company\'s standard payroll cycle.');
+        if (this.bonusPct > 0) {
+          lines.push('  Target bonus:     ' + this.bonusPct + '% of base salary, based on individual and company performance.');
+        }
+        if (this.formattedSigning) {
+          lines.push('  Signing bonus:    ' + this.formattedSigning + ', payable within 30 days of your start date.');
+        }
+        if (this.equityShares > 0) {
+          lines.push('  Equity grant:     ' + Number(this.equityShares).toLocaleString() + ' shares, ' + this.equityVesting + '. Subject to Board approval and the Company\'s Equity Incentive Plan.');
+        }
+        lines.push('');
+        lines.push('BENEFITS');
+        lines.push('  ' + (this.benefitsNote || 'See benefits summary attached.'));
+        lines.push('');
+        lines.push('AT-WILL EMPLOYMENT');
+        lines.push('  ' + this.atWillBlurb);
+        lines.push('');
+        lines.push('OFFER EXPIRATION');
+        lines.push('  This offer is open for your acceptance through ' + this.expiryDate + '. To accept, please sign and return this letter by that date.');
+        lines.push('');
+        lines.push(t.close);
+        lines.push('');
+        lines.push('Sincerely,');
+        lines.push('');
+        lines.push(this.hiringManager || '[HIRING MANAGER]');
+        lines.push(this.companyName || '[COMPANY]');
+        lines.push('');
+        lines.push('──────────────────────────────────────────');
+        lines.push('');
+        lines.push('ACCEPTED AND AGREED:');
+        lines.push('');
+        lines.push('_______________________________________   Date: _______________');
+        lines.push((this.candidateName || '[CANDIDATE NAME]'));
+        return lines.join('\n');
+      },
+
+      shareUrl() {
+        try {
+          const state = {
+            template: this.template, candidateName: this.candidateName, roleTitle: this.roleTitle,
+            companyName: this.companyName, hiringManager: this.hiringManager, reportingTo: this.reportingTo,
+            startDate: this.startDate, base: this.base, bonusPct: this.bonusPct, signingBonus: this.signingBonus,
+            equityShares: this.equityShares, equityVesting: this.equityVesting, benefitsNote: this.benefitsNote,
+            state: this.state, expiryDays: this.expiryDays,
+          };
+          const s = btoa(encodeURIComponent(JSON.stringify(state)));
+          const url = new URL(window.location.href);
+          url.searchParams.set('ol', s);
+          return url.toString();
+        } catch (e) { return window.location.href; }
+      },
+
+      _copyText(text, flag) {
+        const ok = () => { this[flag] = true; setTimeout(() => this[flag] = false, 1500); };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(ok).catch(() => {});
+          return;
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      },
+      copy() {
+        this._copyText(this.letter, 'copied');
+        this._track('blog_tool_output_copied', { base: this.base });
+      },
+      copyLink() {
+        const url = this.shareUrl();
+        try { history.replaceState(null, '', url); } catch (e) {}
+        this._copyText(url, 'linkCopied');
+        this._track('blog_tool_share_link_copied');
+      },
+      _onInput() { this._trackFirstInteraction('input'); },
+    };
+  };
+</script>
+
+<section
+  class="pin-tool"
+  data-pin-tool-slug="offer-letter-builder"
+  data-pin-tool-name="Offer Letter Builder"
+  x-data="offerLetterBuilder()"
+  x-init="hydrate()"
+>
+  <h2 class="pt-title" id="pin-tool-offer-letter-builder">
+    Offer Letter Builder
+    <span class="pt-tool-badge" aria-hidden="true">Tool</span>
+  </h2>
+  <p class="pt-intro">
+    Build a ready-to-send offer letter in 90 seconds. Fill in candidate, role, comp package, and state — the letter assembles live with the right at-will language for California, New York, Montana, or generic. Copy the plain text into your ATS, email, or DocuSign template.
+  </p>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Template tone</span>
+      <div class="pt-presets">
+        <template x-for="t in templates" :key="t.id">
+          <button type="button" class="pt-preset-btn" :class="template === t.id ? 'active' : ''" @click="template = t.id; _trackFirstInteraction('toggle')" x-text="t.label"></button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="ol-cand">Candidate name</label>
+      <input id="ol-cand" class="pt-input" type="text" x-model="candidateName" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="ol-role">Role title</label>
+      <input id="ol-role" class="pt-input" type="text" x-model="roleTitle" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="ol-co">Company name</label>
+      <input id="ol-co" class="pt-input" type="text" x-model="companyName" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="ol-mgr">Hiring manager / signer</label>
+      <input id="ol-mgr" class="pt-input" type="text" x-model="hiringManager" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="ol-rt">Reporting to (title)</label>
+      <input id="ol-rt" class="pt-input" type="text" x-model="reportingTo" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="ol-start">Start date</label>
+      <input id="ol-start" class="pt-input" type="date" x-model="startDate" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="ol-base">Base salary ($/yr)</label>
+      <input id="ol-base" class="pt-input" type="number" min="0" step="1000" x-model.number="base" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="ol-bonus">Target bonus (% of base)</label>
+      <input id="ol-bonus" class="pt-input" type="number" min="0" max="100" step="1" x-model.number="bonusPct" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="ol-sign">Signing bonus ($, 0 for none)</label>
+      <input id="ol-sign" class="pt-input" type="number" min="0" step="500" x-model.number="signingBonus" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="ol-exp">Offer expires in (days)</label>
+      <input id="ol-exp" class="pt-input" type="number" min="1" max="30" step="1" x-model.number="expiryDays" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="ol-eq">Equity (shares, 0 for none)</label>
+      <input id="ol-eq" class="pt-input" type="number" min="0" step="1000" x-model.number="equityShares" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="ol-vest">Vesting schedule</label>
+      <input id="ol-vest" class="pt-input" type="text" x-model="equityVesting" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <label class="pt-label" for="ol-ben">Benefits summary (one line)</label>
+      <input id="ol-ben" class="pt-input" type="text" x-model="benefitsNote" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">At-will jurisdiction</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" :class="state === 'DEFAULT' ? 'active' : ''" @click="state = 'DEFAULT'; _trackFirstInteraction('toggle')">Default (most US states)</button>
+        <button type="button" class="pt-preset-btn" :class="state === 'CA' ? 'active' : ''" @click="state = 'CA'; _trackFirstInteraction('toggle')">California</button>
+        <button type="button" class="pt-preset-btn" :class="state === 'NY' ? 'active' : ''" @click="state = 'NY'; _trackFirstInteraction('toggle')">New York</button>
+        <button type="button" class="pt-preset-btn" :class="state === 'MT' ? 'active' : ''" @click="state = 'MT'; _trackFirstInteraction('toggle')">Montana (not at-will)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-output-wrap">
+    <label class="pt-label" for="ol-out">Offer letter</label>
+    <textarea id="ol-out" class="pt-output pt-output-tall" readonly x-text="letter"></textarea>
+    <div class="pt-actions">
+      <button type="button" class="pt-btn primary" @click="copy()">
+        <span x-show="!copied">Copy letter</span>
+        <span x-show="copied" x-cloak>Copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="copyLink()">
+        <span x-show="!linkCopied">Copy share link</span>
+        <span x-show="linkCopied" x-cloak>Link copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="reset()">Reset</button>
+    </div>
+  </div>
+
+  <div class="pt-howto">
+    <strong>How to use:</strong>
+    <ol>
+      <li>Pick a template tone — startup-warm, SMB-standard, or enterprise-formal.</li>
+      <li>Fill in the fields. Every field updates the preview live.</li>
+      <li>Pick the at-will jurisdiction — California and Montana have special language; "Default" covers most other US states. For other countries, edit the generated text before sending.</li>
+      <li>Copy the letter into your ATS offer template, DocuSign, or email. Have it reviewed by employment counsel before first use in each new jurisdiction.</li>
+    </ol>
+  </div>
+
+  <p class="pt-source">
+    Built by Pin. Not legal advice — have an employment attorney review before use. <a href="https://www.pin.com/">pin.com</a>.
+  </p>
+</section>

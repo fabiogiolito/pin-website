@@ -1,0 +1,701 @@
+---
+// Internal tool: generates branded webinar promo images (card + banner).
+// Self-contained app-style page (no site header/footer) — everything renders
+// on <canvas> so exports come from the same pixels as the live preview.
+const title = "Webinar Generator | Pin Tools";
+import "../../styles/global.css";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+    <link rel="icon" href="/images/favicon-light-mode-32x32.webp" type="image/webp" sizes="32x32" />
+    <link rel="preload" href="/font-files/RethinkSans-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/font-files/RethinkSans-Medium.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <header class="sidebar-header">
+          <a href="/internal/" class="back-link">← Internal tools</a>
+          <h1>Webinar Generator</h1>
+          <p>Branded webinar card &amp; banner images.</p>
+        </header>
+
+        <div class="field">
+          <label for="input-tag">Tag</label>
+          <input type="text" id="input-tag" placeholder="Live" />
+        </div>
+
+        <div class="field">
+          <label for="input-title">Title <span class="hint">(**bold** turns green)</span></label>
+          <textarea id="input-title" rows="3" placeholder="Pin Onboarding Webinar"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="input-name">Name</label>
+          <input type="text" id="input-name" placeholder="Jane Doe" />
+        </div>
+
+        <div class="field">
+          <label for="input-role">Role / company</label>
+          <input type="text" id="input-role" placeholder="Customer Success Manager, Pin" />
+        </div>
+
+        <div class="field">
+          <label>Photos</label>
+          <div id="photo-list" class="photo-list"></div>
+          <label class="btn-small" for="input-photo">Add photos</label>
+          <input type="file" id="input-photo" accept="image/*" multiple hidden />
+        </div>
+
+        <div class="actions">
+          <p id="status" class="status" hidden></p>
+          <button id="btn-export" class="btn btn-primary" type="button">Export images (both sizes)</button>
+        </div>
+      </aside>
+
+      <main class="preview">
+        <div class="preview-inner">
+          <div class="preview-block">
+            <p class="preview-label">Card · 640×400</p>
+            <canvas id="canvas-card"></canvas>
+          </div>
+          <div class="preview-block">
+            <p class="preview-label">Banner · 640×200</p>
+            <canvas id="canvas-banner"></canvas>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <style is:global>
+      @font-face {
+        font-family: "Rethink Sans";
+        src: url("/font-files/RethinkSans-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Rethink Sans";
+        src: url("/font-files/RethinkSans-Medium.woff2") format("woff2");
+        font-weight: 500;
+        font-display: swap;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        font-family: var(--font-sans);
+        color: var(--color-ink);
+        background: var(--color-bg-tertiary);
+      }
+
+      .app { display: flex; height: 100vh; }
+
+      .sidebar {
+        width: 340px;
+        flex-shrink: 0;
+        background: var(--color-bg);
+        border-right: 1px solid rgb(39 39 42 / 0.1);
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .sidebar-header h1 { font-size: 22px; font-weight: 500; margin: 6px 0 4px; }
+      .sidebar-header p { font-size: 13px; color: var(--color-ink-2); margin: 0; }
+      .back-link { font-size: 13px; color: var(--color-green); text-decoration: none; }
+      .back-link:hover { text-decoration: underline; }
+
+      .field { display: flex; flex-direction: column; gap: 6px; }
+      .field label { font-size: 13px; font-weight: 500; }
+      .field .hint { font-weight: 400; color: var(--color-ink-2); }
+      .field input,
+      .field textarea {
+        font: inherit;
+        font-size: 14px;
+        padding: 9px 11px;
+        border: 1px solid rgb(39 39 42 / 0.18);
+        border-radius: 8px;
+        background: #fff;
+        color: inherit;
+        outline: none;
+        resize: vertical;
+      }
+      .field input:focus,
+      .field textarea:focus { border-color: var(--color-green); }
+
+      .photo-list { display: flex; flex-wrap: wrap; gap: 8px; }
+      .photo-list:empty { display: none; }
+      .photo-thumb {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        border-radius: 999px;
+        overflow: hidden;
+        padding: 0;
+        border: 1px solid rgb(39 39 42 / 0.15);
+        cursor: pointer;
+        background: none;
+      }
+      .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .photo-thumb::after {
+        content: "✕";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.5);
+        opacity: 0;
+        transition: opacity 0.15s;
+      }
+      .photo-thumb:hover::after { opacity: 1; }
+
+      .btn-small {
+        font: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgb(39 39 42 / 0.18);
+        background: #fff;
+        color: var(--color-ink);
+        cursor: pointer;
+        text-align: center;
+      }
+      .btn-small:hover { border-color: var(--color-green); color: var(--color-green-accessible); }
+
+      .actions { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 10px; }
+      .btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 11px 14px;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        user-select: none;
+      }
+      .btn-primary { background: var(--color-green); color: #fff; }
+      .btn-primary:hover { background: var(--color-green-accessible); }
+      .btn:disabled { opacity: 0.5; pointer-events: none; }
+
+      .status { font-size: 13px; color: var(--color-ink-2); margin: 0; text-align: center; }
+
+      .preview { flex: 1; min-width: 0; padding: 32px; overflow: auto; }
+      .preview-inner {
+        min-width: 100%;
+        min-height: 100%;
+        width: max-content;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+      }
+      .preview-block { display: flex; flex-direction: column; gap: 8px; }
+      .preview-label { font-size: 12px; color: var(--color-ink-2); margin: 0; }
+      /* Backing stores are 2x for sharp previews; exports ship at that 2x. */
+      canvas {
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+      }
+
+      @media (max-width: 860px) {
+        .app { flex-direction: column; height: auto; }
+        .sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgb(39 39 42 / 0.1); }
+        .preview { padding: 20px; }
+      }
+          :focus-visible { outline: 2px solid var(--color-green); outline-offset: 2px; }
+    </style>
+
+    <script>
+      // ---------------------------------------------------------------
+      // Config
+      // ---------------------------------------------------------------
+      const STORAGE_KEY = "pin-tools-webinar-v1";
+      const DPR = 2; // backing-store scale for sharp preview; exports are 2x
+
+      const SIZES = [
+        { key: "card", w: 640, h: 400 },
+        { key: "banner", w: 640, h: 200 },
+      ] as const;
+      type SizeKey = (typeof SIZES)[number]["key"];
+
+      // Brand palette
+      const GREEN_BG = "#588A68";
+      const GREEN_TEXT = "#3E7D57"; // **bold** title segments
+      const CREAM = "#FBFAF8";
+      const DARK = "#27272A";
+      const MUTED = "#6E6E76";
+      const RED = "#D6431C";
+
+      // Pin logo (src/icons/logo.svg), viewBox 0 0 74 32
+      const LOGO_W = 74;
+      const LOGO_H = 32;
+      // Baseline of the "Pin" letters in logo units — the ".com" suffix aligns to it.
+      const LOGO_BASELINE = 27.06;
+      const LOGO_FONT_UNITS = 30;
+      const LOGO_PATHS = [
+        "M28.2565 14.1282C28.2565 21.931 21.9311 28.2564 14.1283 28.2565V31.2724C14.1283 31.7547 13.6746 32.1089 13.2132 31.9684C6.03003 29.7816 0.685254 23.3756 0.0654526 15.6369C0.0619758 15.5935 0.0624762 15.5508 0.0666341 15.5092C0.0225555 15.0548 0 14.5942 0 14.1282C0 6.32542 6.32542 0 14.1282 0C21.931 0 28.2565 6.32542 28.2565 14.1282ZM14.1281 23.788C19.4633 23.788 23.7883 19.463 23.7883 14.1277C23.7883 8.79252 19.4633 4.46747 14.1281 4.46747C8.79284 4.46747 4.46779 8.79252 4.46779 14.1277C4.46779 19.463 8.79284 23.788 14.1281 23.788Z",
+        "M8.0362 15.3983V12.7239C8.0362 11.3958 9.11282 10.3192 10.4409 10.3192C11.7689 10.3192 12.8456 11.3958 12.8456 12.7239V15.3983H8.0362Z",
+        "M15.411 15.3983V12.7239C15.411 11.3958 16.4876 10.3192 17.8156 10.3192C19.1437 10.3192 20.2203 11.3958 20.2203 12.7239V15.3983H15.411Z",
+        "M67.0208 10.8066C70.4901 10.8066 73.4593 12.6507 73.4593 18.1514V27.059H69.0524V18.589C69.0524 15.8699 68.021 14.4322 65.8019 14.4322C63.5203 14.4322 62.2077 16.0574 62.2077 18.839V27.059H57.8008V10.9942H61.6451L62.0514 12.9945C63.0828 11.7443 64.5517 10.8066 67.0208 10.8066Z",
+        "M53.4769 9.27512C52.0392 9.27512 50.9141 8.21247 50.9141 6.80602C50.9141 5.36832 52.0392 4.30566 53.4769 4.30566C54.9146 4.30566 56.0398 5.36832 56.0398 6.80602C56.0398 8.21247 54.9146 9.27512 53.4769 9.27512ZM51.2579 27.0589V10.9941H55.696V27.0589H51.2579Z",
+        "M33.0977 27.0588V5.18066H42.0052C46.7558 5.18066 49.9125 8.02482 49.9125 12.463C49.9125 16.8698 46.7558 19.714 42.0052 19.714H37.7858V27.0588H33.0977ZM41.5676 9.08747H37.7858V15.8072H41.5676C43.7554 15.8072 45.1619 14.5257 45.1619 12.463C45.1619 10.3689 43.7554 9.08747 41.5676 9.08747Z",
+      ].map((d) => new Path2D(d));
+
+      // ---------------------------------------------------------------
+      // State
+      // ---------------------------------------------------------------
+      type State = { tag: string; title: string; name: string; role: string; photos: string[] };
+      const DEFAULTS: State = {
+        tag: "Live",
+        title: "Pin Onboarding\n**Webinar**",
+        name: "Jane Doe",
+        role: "Customer Success Manager, Pin",
+        photos: [],
+      };
+
+      function loadState(): State {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return { ...DEFAULTS };
+          const parsed = { ...DEFAULTS, ...JSON.parse(raw) };
+          if (!Array.isArray(parsed.photos)) parsed.photos = [];
+          return parsed;
+        } catch {
+          return { ...DEFAULTS };
+        }
+      }
+
+      const state = loadState();
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch { /* quota exceeded / private mode — non-fatal */ }
+      }
+
+      // ---------------------------------------------------------------
+      // DOM
+      // ---------------------------------------------------------------
+      const canvases: Record<SizeKey, HTMLCanvasElement> = {
+        card: document.getElementById("canvas-card") as HTMLCanvasElement,
+        banner: document.getElementById("canvas-banner") as HTMLCanvasElement,
+      };
+      const inputTag = document.getElementById("input-tag") as HTMLInputElement;
+      const inputTitle = document.getElementById("input-title") as HTMLTextAreaElement;
+      const inputName = document.getElementById("input-name") as HTMLInputElement;
+      const inputRole = document.getElementById("input-role") as HTMLInputElement;
+      const inputPhoto = document.getElementById("input-photo") as HTMLInputElement;
+      const photoList = document.getElementById("photo-list")!;
+      const btnExport = document.getElementById("btn-export") as HTMLButtonElement;
+      const statusEl = document.getElementById("status") as HTMLParagraphElement;
+
+      inputTag.value = state.tag;
+      inputTitle.value = state.title;
+      inputName.value = state.name;
+      inputRole.value = state.role;
+
+      // ---------------------------------------------------------------
+      // Photos — each center-cropped to a 512px square JPEG data URL so the
+      // set survives in localStorage without blowing quota.
+      // ---------------------------------------------------------------
+      let photoImgs: HTMLImageElement[] = [];
+
+      function loadPhotoImages(): Promise<void> {
+        return Promise.all(
+          state.photos.map((src) => {
+            const img = new Image();
+            img.src = src;
+            return img.decode().then(() => img).catch(() => null);
+          }),
+        ).then((imgs) => {
+          photoImgs = imgs.filter(Boolean) as HTMLImageElement[];
+        });
+      }
+
+      function syncPhotoUi() {
+        photoList.innerHTML = "";
+        state.photos.forEach((src, i) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "photo-thumb";
+          btn.title = "Remove photo";
+          const img = document.createElement("img");
+          img.src = src;
+          img.alt = `Photo ${i + 1}`;
+          btn.appendChild(img);
+          btn.addEventListener("click", async () => {
+            state.photos.splice(i, 1);
+            await loadPhotoImages();
+            syncPhotoUi();
+            onStateChange();
+          });
+          photoList.appendChild(btn);
+        });
+      }
+
+      async function processPhotoFile(file: File): Promise<string> {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.src = url;
+        await img.decode();
+        const side = Math.min(img.naturalWidth, img.naturalHeight);
+        const c = document.createElement("canvas");
+        c.width = c.height = 512;
+        c.getContext("2d")!.drawImage(
+          img,
+          (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side,
+          0, 0, 512, 512,
+        );
+        URL.revokeObjectURL(url);
+        return c.toDataURL("image/jpeg", 0.85);
+      }
+
+      inputPhoto.addEventListener("change", async () => {
+        const files = Array.from(inputPhoto.files ?? []);
+        if (!files.length) return;
+        try {
+          for (const file of files) state.photos.push(await processPhotoFile(file));
+          await loadPhotoImages();
+          syncPhotoUi();
+          onStateChange();
+        } catch {
+          setBusy(false, "Couldn't read one of the image files.");
+        } finally {
+          inputPhoto.value = "";
+        }
+      });
+
+      // ---------------------------------------------------------------
+      // Title parsing — explicit line breaks + **bold** (rendered green,
+      // same font weight).
+      // ---------------------------------------------------------------
+      type Token = { word: string; bold: boolean };
+
+      function parseLineTokens(line: string): Token[] {
+        const tokens: Token[] = [];
+        let bold = false;
+        line.split("**").forEach((chunk, i) => {
+          if (i > 0) bold = !bold;
+          for (const word of chunk.split(/\s+/).filter(Boolean)) tokens.push({ word, bold });
+        });
+        return tokens;
+      }
+
+      function wrapTokens(c: CanvasRenderingContext2D, tokens: Token[], maxW: number): Token[][] {
+        const spaceW = c.measureText(" ").width;
+        const lines: Token[][] = [];
+        let line: Token[] = [];
+        let lineW = 0;
+        for (const tok of tokens) {
+          const w = c.measureText(tok.word).width;
+          const test = line.length ? lineW + spaceW + w : w;
+          if (line.length && test > maxW) {
+            lines.push(line);
+            line = [tok];
+            lineW = w;
+          } else {
+            line.push(tok);
+            lineW = test;
+          }
+        }
+        if (line.length) lines.push(line);
+        return lines;
+      }
+
+      // Shrink the font until the wrapped title fits the given box.
+      function layoutTitle(c: CanvasRenderingContext2D, maxW: number, maxH: number, baseFs: number, minFs: number) {
+        const lineHRatio = 1.25;
+        const paragraphs = state.title.split("\n").map(parseLineTokens).filter((t) => t.length);
+        if (!paragraphs.length) paragraphs.push(parseLineTokens("Webinar title"));
+        let fs = baseFs;
+        let lines: Token[][] = [];
+        while (true) {
+          c.font = `500 ${fs}px "Rethink Sans", sans-serif`;
+          lines = paragraphs.flatMap((para) => wrapTokens(c, para, maxW));
+          if (lines.length * fs * lineHRatio <= maxH || fs <= minFs) break;
+          fs = Math.max(minFs, fs - 1);
+        }
+        return { fs, lines, lineH: fs * lineHRatio };
+      }
+
+      // Draws the title block; returns the bottom y of the last line.
+      function drawTitle(c: CanvasRenderingContext2D, layout: ReturnType<typeof layoutTitle>, x: number, topY: number) {
+        c.font = `500 ${layout.fs}px "Rethink Sans", sans-serif`;
+        const spaceW = c.measureText(" ").width;
+        layout.lines.forEach((tokens, i) => {
+          let tx = x;
+          const y = topY + layout.fs * 0.8 + i * layout.lineH;
+          for (const tok of tokens) {
+            c.fillStyle = tok.bold ? GREEN_TEXT : DARK;
+            c.fillText(tok.word, tx, y);
+            tx += c.measureText(tok.word).width + spaceW;
+          }
+        });
+        return topY + (layout.lines.length - 1) * layout.lineH + layout.fs;
+      }
+
+      // ---------------------------------------------------------------
+      // Photo arrangements
+      // ---------------------------------------------------------------
+      function drawPhotoCircle(c: CanvasRenderingContext2D, img: HTMLImageElement, cx: number, cy: number, r: number) {
+        c.save();
+        c.beginPath();
+        c.arc(cx, cy, r, 0, Math.PI * 2);
+        c.clip();
+        c.drawImage(img, cx - r, cy - r, r * 2, r * 2);
+        c.restore();
+      }
+
+      // One photo: single large circle bleeding off the bottom-right.
+      // Even count: 2-column grid. Odd count (3+): evenly spaced ring.
+      function drawPhotos(c: CanvasRenderingContext2D, cx: number, cy: number, single: { x: number; y: number; r: number }, areaR: number) {
+        const n = photoImgs.length;
+        if (n === 0) return;
+        if (n === 1) {
+          drawPhotoCircle(c, photoImgs[0], single.x, single.y, single.r);
+        } else if (n % 2 === 0) {
+          const rows = n / 2;
+          const d = Math.min(areaR, (areaR * 2) / rows);
+          const r = (d / 2) * 0.82; // smaller circles leave a gap in the grid
+          // Right-align the grid to the area's right edge so shrinking cells
+          // (6+ photos) don't open an extra margin on the right.
+          const x0 = cx + areaR - d * 1.5;
+          const y0 = cy - (rows * d) / 2 + d / 2;
+          photoImgs.forEach((img, i) => {
+            const col = i % 2;
+            const row = Math.floor(i / 2);
+            drawPhotoCircle(c, img, x0 + col * d, y0 + row * d, r);
+          });
+        } else {
+          const s = Math.sin(Math.PI / n);
+          const ringR = areaR / (1 + s);
+          const r = (areaR - ringR) * 0.78; // smaller circles leave a gap between neighbors
+          photoImgs.forEach((img, i) => {
+            const angle = -Math.PI / 2 + (i * Math.PI * 2) / n;
+            drawPhotoCircle(c, img, cx + Math.cos(angle) * ringR, cy + Math.sin(angle) * ringR, r);
+          });
+        }
+      }
+
+      // ---------------------------------------------------------------
+      // Logo lockup: logo paths + ".com" aligned to the wordmark baseline,
+      // drawn in logo units so it scales as one group. y is the group top.
+      // ---------------------------------------------------------------
+      function drawLogoGroup(c: CanvasRenderingContext2D, x: number, y: number, scale: number, color: string, comColor: string) {
+        c.save();
+        c.translate(x, y);
+        c.scale(scale, scale);
+        c.fillStyle = color;
+        for (const path of LOGO_PATHS) c.fill(path);
+        c.font = `500 ${LOGO_FONT_UNITS}px "Rethink Sans", sans-serif`;
+        c.fillStyle = comColor;
+        c.fillText(".com", LOGO_W + 1.5, LOGO_BASELINE);
+        c.restore();
+      }
+
+      function logoGroupWidthUnits(c: CanvasRenderingContext2D): number {
+        c.font = `500 ${LOGO_FONT_UNITS}px "Rethink Sans", sans-serif`;
+        return LOGO_W + 1.5 + c.measureText(".com").width;
+      }
+
+      // ---------------------------------------------------------------
+      // Layouts — drawn in 1x unit space (640x400 / 640x200)
+      // ---------------------------------------------------------------
+      function drawCard(c: CanvasRenderingContext2D) {
+        const W = 640, H = 400;
+        c.clearRect(0, 0, W, H);
+        c.fillStyle = GREEN_BG;
+        c.fillRect(0, 0, W, H);
+
+        // White near-circle hugging the top-left
+        c.fillStyle = CREAM;
+        c.beginPath();
+        c.ellipse(175, 20, 300, 240, 0, 0, Math.PI * 2);
+        c.fill();
+
+        drawPhotos(c, 490, 260, { x: 520, y: 262, r: 180 }, 140);
+
+        // Tag: red dot + red label
+        if (state.tag.trim()) {
+          c.fillStyle = RED;
+          c.beginPath();
+          c.arc(46, 45, 4.5, 0, Math.PI * 2);
+          c.fill();
+          c.font = `500 13px "Rethink Sans", sans-serif`;
+          c.fillText(state.tag.trim(), 58, 49.5);
+        }
+
+        // Title inside the ellipse
+        const titleLayout = layoutTitle(c, 320, 130, 45, 14);
+        drawTitle(c, titleLayout, 40, 72);
+
+        // Name + role on the green
+        if (state.name.trim()) {
+          c.fillStyle = "#FFFFFF";
+          c.font = `500 19px "Rethink Sans", sans-serif`;
+          c.fillText(state.name.trim(), 40, 296);
+        }
+        if (state.role.trim()) {
+          c.fillStyle = "rgba(255,255,255,0.75)";
+          c.font = `400 13.5px "Rethink Sans", sans-serif`;
+          c.fillText(state.role.trim(), 40, 319);
+        }
+
+        drawLogoGroup(c, 40, 344, 24 / LOGO_H, "#FFFFFF", "rgba(255,255,255,0.85)");
+      }
+
+      function drawBanner(c: CanvasRenderingContext2D) {
+        const W = 640, H = 200;
+        c.clearRect(0, 0, W, H);
+        c.fillStyle = GREEN_BG;
+        c.fillRect(0, 0, W, H);
+
+        // White area with a curved right edge
+        c.fillStyle = CREAM;
+        c.beginPath();
+        c.ellipse(175, 100, 290, 215, 0, 0, Math.PI * 2);
+        c.fill();
+
+        drawPhotos(c, 538, 100, { x: 565, y: 112, r: 92 }, 82);
+
+        // Title (up to 3 lines at full size)
+        const titleLayout = layoutTitle(c, 390, 92, 36, 12);
+        const titleBottom = drawTitle(c, titleLayout, 32, 28);
+
+        // Tag: red dot + red label, below the title
+        let tagBottom = titleBottom;
+        if (state.tag.trim()) {
+          const tagY = Math.min(titleBottom + 28, 132);
+          c.fillStyle = RED;
+          c.beginPath();
+          c.arc(37, tagY, 4, 0, Math.PI * 2);
+          c.fill();
+          c.font = `500 12px "Rethink Sans", sans-serif`;
+          c.fillText(state.tag.trim(), 48, tagY + 4);
+          tagBottom = tagY + 4;
+        }
+
+        // Bottom row: logo | divider | name over role
+        const logoScale = 20 / LOGO_H;
+        const logoY = 156;
+        drawLogoGroup(c, 32, logoY, logoScale, DARK, MUTED);
+        const logoW = logoGroupWidthUnits(c) * logoScale;
+        const dividerX = 32 + logoW + 18;
+        const hasPerson = !!(state.name.trim() || state.role.trim());
+        if (hasPerson) {
+          c.strokeStyle = "rgba(63,63,70,0.18)";
+          c.lineWidth = 1;
+          c.beginPath();
+          c.moveTo(dividerX, logoY - 6);
+          c.lineTo(dividerX, logoY + 26);
+          c.stroke();
+          const textX = dividerX + 18;
+          if (state.name.trim()) {
+            c.fillStyle = DARK;
+            c.font = `500 15px "Rethink Sans", sans-serif`;
+            c.fillText(state.name.trim(), textX, logoY + 6);
+          }
+          if (state.role.trim()) {
+            c.fillStyle = MUTED;
+            c.font = `400 12.5px "Rethink Sans", sans-serif`;
+            c.fillText(state.role.trim(), textX, logoY + 24);
+          }
+        }
+      }
+
+      const DRAWERS: Record<SizeKey, (c: CanvasRenderingContext2D) => void> = {
+        card: drawCard,
+        banner: drawBanner,
+      };
+
+      function drawAll() {
+        for (const size of SIZES) {
+          const canvas = canvases[size.key];
+          if (canvas.width !== size.w * DPR) {
+            canvas.width = size.w * DPR;
+            canvas.height = size.h * DPR;
+            canvas.style.width = `${size.w}px`;
+            canvas.style.height = `${size.h}px`;
+          }
+          const c = canvas.getContext("2d")!;
+          c.setTransform(DPR, 0, 0, DPR, 0, 0);
+          c.imageSmoothingEnabled = true;
+          c.imageSmoothingQuality = "high";
+          c.textBaseline = "alphabetic";
+          DRAWERS[size.key](c);
+        }
+      }
+
+      // ---------------------------------------------------------------
+      // Export — always both sizes, at 2x (the backing-store resolution)
+      // ---------------------------------------------------------------
+      function setBusy(busy: boolean, message = "") {
+        btnExport.disabled = busy;
+        statusEl.hidden = !message;
+        statusEl.textContent = message;
+      }
+
+      function download(blob: Blob, filename: string) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+
+      async function exportBoth() {
+        setBusy(true, "Exporting…");
+        drawAll();
+        for (const size of SIZES) {
+          const canvas = canvases[size.key];
+          const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+          if (blob) download(blob, `pin-webinar-${size.key}-${size.w * DPR}x${size.h * DPR}.png`);
+          // Give the browser a beat to register each download before the next.
+          await new Promise((r) => setTimeout(r, 300));
+        }
+        setBusy(false);
+      }
+
+      // ---------------------------------------------------------------
+      // Wiring
+      // ---------------------------------------------------------------
+      function onStateChange() {
+        saveState();
+        drawAll();
+      }
+
+      inputTag.addEventListener("input", () => { state.tag = inputTag.value; onStateChange(); });
+      inputTitle.addEventListener("input", () => { state.title = inputTitle.value; onStateChange(); });
+      inputName.addEventListener("input", () => { state.name = inputName.value; onStateChange(); });
+      inputRole.addEventListener("input", () => { state.role = inputRole.value; onStateChange(); });
+      btnExport.addEventListener("click", exportBoth);
+
+      // First paint: wait for the brand font (canvas text measurement) and
+      // any saved photos before drawing.
+      syncPhotoUi();
+      Promise.all([
+        document.fonts.load('500 100px "Rethink Sans"'),
+        document.fonts.load('400 100px "Rethink Sans"'),
+        loadPhotoImages(),
+      ]).finally(drawAll);
+    </script>
+  </body>
+</html>

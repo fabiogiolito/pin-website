@@ -1,0 +1,263 @@
+---
+import "./tools.css";
+// Time-to-Hire Calculator — standalone /tools entry.
+// Sums days per funnel stage against Pin's 14-day benchmark, flags the slowest
+// stage. Follows the BooleanSearchGenerator pattern; `.pin-tool` styles live in tools.css.
+---
+
+<script is:inline>
+  window.timeToHireCalculator = function () {
+    // Pin customer median time-to-fill in days. Update when we refresh benchmarks.
+    const PIN_BENCHMARK = 14;
+    // SHRM industry median for context in the summary output.
+    const SHRM_BENCHMARK = 42;
+
+    const STAGES = [
+      { key: 'sourcing',  label: 'Sourcing',      pinDays: 3 },
+      { key: 'screen',    label: 'Phone screen',  pinDays: 2 },
+      { key: 'interview', label: 'Interview loop', pinDays: 5 },
+      { key: 'debrief',   label: 'Debrief',       pinDays: 1 },
+      { key: 'offer',     label: 'Offer',         pinDays: 2 },
+      { key: 'accept',    label: 'Accept',        pinDays: 1 },
+    ];
+
+    return {
+      stages: STAGES.map(s => ({ ...s, days: s.pinDays })),
+      copied: false,
+      linkCopied: false,
+      _trackedFirst: false,
+      _viewTracked: false,
+
+      _track(event, props = {}) {
+        try {
+          const root = this.$root;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event,
+            tool_slug: (root && root.dataset && root.dataset.pinToolSlug) || '',
+            tool_name: (root && root.dataset && root.dataset.pinToolName) || '',
+            post_slug: (location.pathname.split('/').filter(Boolean).pop() || ''),
+            page_path: location.pathname,
+            ...props,
+          });
+        } catch (e) {}
+      },
+      _trackFirstInteraction(type) {
+        if (this._trackedFirst) return;
+        this._trackedFirst = true;
+        this._track('blog_tool_first_interaction', { interaction_type: type });
+      },
+
+      hydrate() {
+        try {
+          const s = new URLSearchParams(window.location.search).get('tth');
+          if (s) {
+            const state = JSON.parse(decodeURIComponent(atob(s)));
+            if (Array.isArray(state.stages)) {
+              state.stages.forEach((v, i) => {
+                if (this.stages[i] && typeof v === 'number') this.stages[i].days = v;
+              });
+            }
+            this._track('blog_tool_shared_state_loaded');
+          }
+        } catch (e) {}
+        if (!this._viewTracked && typeof IntersectionObserver !== 'undefined') {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._viewTracked = true;
+              this._track('blog_tool_viewed');
+              io.disconnect();
+            }
+          }, { threshold: 0.3 });
+          io.observe(this.$root);
+        }
+      },
+
+      applyPreset(id) {
+        const presets = {
+          'pin-fast':        [3, 2, 5, 1, 2, 1],
+          'industry-median': [8, 4, 14, 3, 5, 8],
+          'high-volume':     [2, 1, 3, 1, 1, 1],
+          'executive':       [14, 5, 21, 5, 10, 14],
+        };
+        const arr = presets[id];
+        if (!arr) return;
+        this.stages.forEach((s, i) => s.days = arr[i] ?? s.days);
+        this._track('blog_tool_preset_selected', { preset_id: id });
+        this._trackFirstInteraction('preset');
+      },
+
+      reset() {
+        this.stages.forEach((s) => s.days = s.pinDays);
+        this._track('blog_tool_reset_clicked');
+      },
+
+      get total() { return this.stages.reduce((a, s) => a + (s.days || 0), 0); },
+      get vsPin() { return this.total - PIN_BENCHMARK; },
+      get weakestStage() {
+        let worst = null, worstGap = -Infinity;
+        this.stages.forEach((s) => {
+          const gap = (s.days || 0) - s.pinDays;
+          if (gap > worstGap) { worstGap = gap; worst = s; }
+        });
+        return { stage: worst, gap: worstGap };
+      },
+      get benchmarkStatus() {
+        const diff = this.vsPin;
+        if (diff <= 3)  return { level: 'ok',   text: 'Inside Pin benchmark — strong pipeline velocity.' };
+        if (diff <= 14) return { level: 'warn', text: 'Above Pin benchmark — compress your weakest stage first.' };
+        return                  { level: 'over', text: 'Well above benchmark — review the full pipeline.' };
+      },
+
+      get summary() {
+        const ws = this.weakestStage;
+        const lines = [
+          'Time-to-Hire breakdown',
+          '──────────────────────',
+          '',
+          ...this.stages.map((s) => '  ' + s.label.padEnd(16) + (s.days || 0) + 'd  (Pin: ' + s.pinDays + 'd)'),
+          '',
+          'Total:             ' + this.total + ' days',
+          'Pin benchmark:     ' + PIN_BENCHMARK + ' days',
+          'SHRM median:       ' + SHRM_BENCHMARK + ' days',
+          'Your vs Pin:       ' + (this.vsPin >= 0 ? '+' : '') + this.vsPin + ' days',
+        ];
+        if (ws.stage && ws.gap > 0) {
+          lines.push('');
+          lines.push('Weakest stage:     ' + ws.stage.label + '  (+' + ws.gap + ' days over benchmark)');
+        }
+        return lines.join('\n');
+      },
+
+      shareUrl() {
+        try {
+          const state = { stages: this.stages.map(s => s.days) };
+          const s = btoa(encodeURIComponent(JSON.stringify(state)));
+          const url = new URL(window.location.href);
+          url.searchParams.set('tth', s);
+          return url.toString();
+        } catch (e) { return window.location.href; }
+      },
+
+      _copyText(text, flag) {
+        const ok = () => { this[flag] = true; setTimeout(() => this[flag] = false, 1500); };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(ok).catch(() => {});
+          return;
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      },
+      copy() {
+        this._copyText(this.summary, 'copied');
+        this._track('blog_tool_output_copied', { total_days: this.total });
+      },
+      copyLink() {
+        const url = this.shareUrl();
+        try { history.replaceState(null, '', url); } catch (e) {}
+        this._copyText(url, 'linkCopied');
+        this._track('blog_tool_share_link_copied');
+      },
+      _onInput() { this._trackFirstInteraction('input'); },
+    };
+  };
+</script>
+
+<section
+  class="pin-tool"
+  data-pin-tool-slug="time-to-hire-calculator"
+  data-pin-tool-name="Time-to-Hire Calculator"
+  x-data="timeToHireCalculator()"
+  x-init="hydrate()"
+>
+  <h2 class="pt-title" id="pin-tool-time-to-hire-calculator">
+    Time-to-Hire Calculator
+    <span class="pt-tool-badge" aria-hidden="true">Tool</span>
+  </h2>
+  <p class="pt-intro">
+    Enter how many days you spend at each funnel stage, see your total time-to-hire vs. Pin's 14-day benchmark (SHRM's industry median is 42), and get the one stage most worth compressing.
+  </p>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Preset</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" @click="applyPreset('pin-fast')">Pin-fast (14d)</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('industry-median')">Industry median (42d)</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('high-volume')">High-volume ops (9d)</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('executive')">Executive search (69d)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-stages-grid">
+    <template x-for="(s, i) in stages" :key="s.key">
+      <div class="pt-stage-row">
+        <label class="pt-stage-label" :for="'tth-' + s.key" x-text="s.label"></label>
+        <input
+          class="pt-input pt-stage-input"
+          type="number"
+          min="0"
+          step="1"
+          :id="'tth-' + s.key"
+          x-model.number="s.days"
+          @input.debounce.300ms="_onInput()"
+        />
+        <span class="pt-stage-pin" x-text="'Pin: ' + s.pinDays + 'd'"></span>
+      </div>
+    </template>
+  </div>
+
+  <div class="pt-calc-grid">
+    <div class="pt-calc-card pt-calc-total">
+      <span class="pt-calc-label">Your total</span>
+      <span class="pt-calc-value" x-text="total + 'd'"></span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Pin benchmark</span>
+      <span class="pt-calc-value">14d</span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Variance</span>
+      <span class="pt-calc-value" x-text="(vsPin >= 0 ? '+' : '') + vsPin + 'd'"></span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Weakest stage</span>
+      <span class="pt-calc-value pt-calc-small" x-text="weakestStage.stage ? weakestStage.stage.label : '—'"></span>
+    </div>
+  </div>
+
+  <div class="pt-output-wrap">
+    <label class="pt-label" for="tth-out">Summary</label>
+    <textarea id="tth-out" class="pt-output" readonly x-text="summary"></textarea>
+    <div class="pt-charcount" :class="'level-' + benchmarkStatus.level" x-text="benchmarkStatus.text"></div>
+    <div class="pt-actions">
+      <button type="button" class="pt-btn primary" @click="copy()">
+        <span x-show="!copied">Copy summary</span>
+        <span x-show="copied" x-cloak>Copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="copyLink()">
+        <span x-show="!linkCopied">Copy share link</span>
+        <span x-show="linkCopied" x-cloak>Link copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="reset()">Reset</button>
+    </div>
+  </div>
+
+  <div class="pt-howto">
+    <strong>How to use:</strong>
+    <ol>
+      <li>Enter actual days for each funnel stage from your ATS or by counting backward from your last 5 hires.</li>
+      <li>Debrief = time from last interview to hire/no-hire decision.</li>
+      <li>Accept = time from offer extended to signed.</li>
+      <li>The stage with the biggest gap vs. Pin's benchmark is where to focus compression first.</li>
+      <li>Copy the summary into your pipeline review, or share the link with a hiring manager to show where their loop is costing days.</li>
+    </ol>
+  </div>
+
+  <p class="pt-source">
+    Built by Pin. Pin customers fill roles in 14 days on average vs. SHRM's 42-day industry median — see <a href="https://www.pin.com/">pin.com</a>.
+  </p>
+</section>

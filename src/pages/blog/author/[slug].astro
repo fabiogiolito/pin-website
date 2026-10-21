@@ -1,0 +1,89 @@
+---
+import Layout from '../../../layouts/Layout.astro'
+import BlogListing from '../../../components/blog/BlogListing.astro'
+import { breadcrumbJsonLd, authorSameAs } from '../../../components/blog/utils'
+import { getAllAuthors, getAuthorBySlug } from '../../../lib/ghost'
+import {
+  getUnifiedPostsByAuthor,
+  getUnifiedFeaturedPostsByAuthor,
+  getAllUnifiedTags,
+  getTagCounts,
+  getAuthorsWithCounts,
+  POSTS_PER_PAGE,
+} from '../../../lib/posts'
+import { getAuthorOverride } from '../../../data/authors'
+import { organizationSchema, ORGANIZATION_ID } from '../../../lib/schema'
+
+export async function getStaticPaths() {
+  const authors = await getAllAuthors()
+  return authors.filter((a: any) => a.slug).map((a: any) => ({ params: { slug: a.slug } }))
+}
+
+const { slug } = Astro.params
+
+const [author, allPosts, allTags, tagCounts, featuredAuthorPosts, authorsWithCounts] = await Promise.all([
+  slug ? getAuthorBySlug(slug) : Promise.resolve(null),
+  slug ? getUnifiedPostsByAuthor(slug) : Promise.resolve([]),
+  getAllUnifiedTags(),
+  getTagCounts(),
+  slug ? getUnifiedFeaturedPostsByAuthor(slug) : Promise.resolve([]),
+  getAuthorsWithCounts(),
+])
+const override = getAuthorOverride(slug)
+
+if (!author) {
+  return new Response('Author not found', { status: 404 })
+}
+
+const totalPosts = allPosts.length
+const totalPages = Math.max(1, Math.ceil(totalPosts / POSTS_PER_PAGE))
+const sameAs = authorSameAs(author, override)
+
+const authorPageUrl = `https://www.pin.com/blog/author/${slug}/`
+const personJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  '@id': authorPageUrl,
+  name: author.name,
+  ...(author.profile_image && { image: author.profile_image }),
+  ...(author.bio && { description: author.bio }),
+  url: authorPageUrl,
+  ...(sameAs.length && { sameAs }),
+  ...(override?.credentials?.length && {
+    hasCredential: override.credentials.map((c: string) => ({ '@type': 'EducationalOccupationalCredential', name: c })),
+  }),
+  ...(override?.expertise?.length && { knowsAbout: override.expertise }),
+  worksFor: { '@id': ORGANIZATION_ID },
+}
+
+const breadcrumb = breadcrumbJsonLd([
+  { name: 'Home', url: 'https://www.pin.com/' },
+  { name: 'Blog', url: 'https://www.pin.com/blog/' },
+  { name: author.name!, url: authorPageUrl },
+])
+---
+
+<Layout
+  title={`${author.name} - Pin Blog`}
+  description={author.bio || `Articles by ${author.name} on the Pin blog - AI recruiting, sourcing, and hiring best practices.`}
+  ogImage={author.profile_image || undefined}
+  jsonLd={[organizationSchema, personJsonLd, breadcrumb]}
+  authorName={author.name}
+>
+  <BlogListing
+    mode="author"
+    posts={allPosts.slice(0, POSTS_PER_PAGE)}
+    allTags={allTags}
+    tagCounts={tagCounts}
+    activeTag=""
+    currentPage={1}
+    totalPages={totalPages}
+    paginationBase={`/blog/author/${slug}`}
+    paginationIndexUrl={`/blog/author/${slug}/`}
+    totalArticleCount={totalPosts}
+    lastPublishedAt={allPosts[0]?.published_at}
+    featuredPosts={featuredAuthorPosts.slice(0, 2)}
+    author={{ name: author.name!, slug: slug!, profile_image: author.profile_image, bio: author.bio, credentials: override?.credentials, sameAs }}
+    authors={authorsWithCounts}
+  />
+</Layout>

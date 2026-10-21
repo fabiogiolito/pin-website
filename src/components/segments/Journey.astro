@@ -1,0 +1,283 @@
+---
+// Tabbed walk through Pin's five stages, with copy and product UI tailored to one segment.
+import { Check, XCircle, CheckCircle2, MessageSquare, Mail, CircleUser, Smartphone, ChevronsUpDown, Pin, Ban, CornerDownLeft, Archive, BookOpen, Hash, Eye, Video } from "@lucide/astro";
+import SectionHeader from "../ui/SectionHeader.astro";
+import Avatar from "../Avatar.astro";
+import PinAvatar from "../PinAvatar.astro";
+import { stages } from "../stages";
+import type { SegmentVisual } from "../../data/built-for-visuals";
+
+interface Props {
+  title: string;
+  sub: string;
+  steps: { title: string; description: string }[];
+  v: SegmentVisual;
+}
+const { title, sub, steps, v } = Astro.props;
+const tints = ["green", "sand", "purple", "clay", "green"];
+const tone = { Yes: "text-app-pos", Maybe: "text-app-warn" };
+const seq = [
+  { icon: "mail", name: "Send Email", day: "Day 1" },
+  { icon: "task", name: "Connect on LinkedIn", day: "Day 3", task: true },
+  { icon: "mail", name: "Send Email", day: "Day 5" },
+  { icon: "sms", name: "Text Message", day: "Day 8" },
+];
+const field = "flex items-center gap-1.5 rounded-md border border-app-border px-2.5 py-1.5";
+const chip = "inline-flex items-center gap-1.5 rounded-md border border-app-border px-2 py-1";
+---
+
+<section id="how" class="scroll-mt-20 py-24 md:py-32">
+  <div class="mx-auto max-w-7xl px-4 md:px-8">
+    <SectionHeader eyebrow="How Pin works" title={title} sub={sub} />
+
+    <div data-journey class="mt-14 grid gap-6 lg:grid-cols-[0.75fr_1.25fr] lg:gap-10">
+      <div role="tablist" aria-label="Pin's workflow" aria-orientation="vertical" class="flex flex-col gap-1.5" data-reveal>
+        {steps.map((s, i) => (
+          <button type="button" role="tab" id={`jt-${i}`} aria-controls={`jp-${i}`} aria-selected={i === 0 ? "true" : "false"} tabindex={i === 0 ? 0 : -1} class="tab group rounded-2xl px-5 py-4 text-left transition-colors duration-200 hover:bg-bg-secondary/70 aria-selected:bg-white aria-selected:shadow-[0_0_0_1px_rgb(0_0_0/0.05),0_8px_24px_-14px_rgb(115_70_38/0.25)] focus-visible:outline-2 focus-visible:outline-green">
+            <span class="flex items-baseline gap-3">
+              <span class="text-sm font-medium tabular-nums text-ink-3 group-aria-selected:text-green">0{i + 1}</span>
+              <span class="text-lg font-medium leading-snug">
+                <span class="mr-1.5 text-sm font-medium text-ink-3 group-aria-selected:text-green">{stages[i]}</span>
+                <span class="block">{s.title}</span>
+              </span>
+            </span>
+            <span class="desc ml-8 text-ink-2 leading-relaxed"><span class="min-h-0">{s.description}</span></span>
+          </button>
+        ))}
+      </div>
+
+      <div data-reveal style="--i:1" class="canvas relative grid overflow-hidden rounded-[28px] px-4 py-8 text-[14px] transition-colors duration-500 sm:px-8 md:rounded-[36px] md:py-12 tint-green" data-tints={tints.join(",")}>
+        <!-- 1 · Brief -->
+        <div role="tabpanel" id="jp-0" aria-labelledby="jt-0" class="pane on col-start-1 row-start-1 self-center space-y-5">
+          <div class="panel p-4">
+            <div class="flex items-center gap-2.5 rounded-xl border border-app-border bg-app-bg2 px-3 py-3 text-[15px]">
+              <span class="min-w-0 flex-1">{v.brief.input}</span>
+              <kbd class="grid size-6 shrink-0 place-items-center rounded-md bg-app-tint text-white"><CornerDownLeft size={13} /></kbd>
+            </div>
+            <div class="mt-4 flex gap-2.5 px-1">
+              <PinAvatar size={24} />
+              <div>
+                <p>{v.brief.question}</p>
+                <div class="mt-2 flex flex-wrap gap-1.5 text-[13px]">
+                  <span class="rounded-md border border-app-tint-fg bg-app-tint/5 px-2 py-0.5 text-app-tint-fg">{v.brief.options[0]}</span>
+                  <span class="rounded-md border border-app-border px-2 py-0.5 text-app-fg2">{v.brief.options[1]}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="relative">
+            <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Criteria Pin drafted</span>
+            <div class="panel p-4 pt-6">
+              <p class="font-semibold">Criteria</p>
+              <div class="mt-3 flex flex-wrap gap-1.5 text-[13px]">
+                {v.brief.pinned.map((c) => <span class={chip}><Pin size={12} class="text-app-tint" /> {c}</span>)}
+                {v.brief.banned.map((c) => <span class={chip}><Ban size={12} class="text-app-neg" /> {c}</span>)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2 · Match -->
+        <div role="tabpanel" id="jp-1" aria-labelledby="jt-1" class="pane col-start-1 row-start-1 self-center grid gap-5 md:grid-cols-[1.5fr_1fr] md:items-start">
+          <div class="relative">
+            <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Explains why they match</span>
+            <article class="panel p-5">
+              <header class="flex flex-wrap items-start gap-3">
+                <span class="overflow-hidden rounded-xl"><Avatar name={v.match.lead.name} hue={v.match.lead.hue} size={44} /></span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-[16px] font-semibold">{v.match.lead.name}</p>
+                  <p class="text-app-fg2">{v.match.lead.location}</p>
+                </div>
+                <div class="flex w-full gap-1.5 text-[12px] font-medium">
+                  <span class="flex flex-1 flex-col items-center gap-1 rounded-lg px-2 py-2 text-app-fg2 shadow-app"><MessageSquare size={14} /> Comment</span>
+                  <span class="flex flex-1 flex-col items-center gap-1 rounded-lg px-2 py-2 text-app-neg shadow-app"><XCircle size={14} /> Decline</span>
+                  <span class="flex flex-1 flex-col items-center gap-1 rounded-lg px-2 py-2 text-app-pos shadow-app"><CheckCircle2 size={14} /> Approve</span>
+                </div>
+              </header>
+              <dl class="mt-4 grid gap-x-4 gap-y-1 sm:grid-cols-[80px_1fr] sm:gap-y-3">
+                <dt class="text-app-fg2">Evaluation</dt>
+                <dd class="mb-3 space-y-1.5 sm:mb-0">
+                  {v.match.lead.evals.map(([q, verdict, t]) => (
+                    <p class="flex gap-2 leading-snug"><span class:list={["mt-[7px] size-1.5 shrink-0 rounded-full bg-current", tone[verdict]]}></span><span><b class="font-semibold">{q}</b> <span class:list={["font-semibold", tone[verdict]]}>{verdict}</span><span class="text-app-fg2">, {t}</span></span></p>
+                  ))}
+                </dd>
+                <dt class="text-app-fg2">Criteria</dt>
+                <dd class="mb-3 space-y-1.5 sm:mb-0">
+                  {v.match.lead.criteria.map(([k, t]) => (
+                    <p class="flex gap-2 leading-snug"><Check size={13} class="mt-0.5 shrink-0 text-app-pos" /><span><b class="font-semibold">{k}</b> <span class="text-app-fg2">– {t}</span></span></p>
+                  ))}
+                </dd>
+                <dt class="text-app-fg2">Current</dt>
+                <dd class="font-medium">{v.match.lead.current}</dd>
+              </dl>
+            </article>
+          </div>
+          <div class="space-y-4">
+            <div class="panel p-4">
+              <p class="font-semibold">Also matched</p>
+              <ul class="mt-3 space-y-2.5 text-[13px]">
+                {v.match.others.map(([n, r], i) => (
+                  <li class="flex items-center gap-2.5"><Avatar name={n} hue={60 + i * 120} size={26} /><span class="min-w-0"><span class="block font-medium">{n}</span><span class="block truncate text-app-fg2">{r}</span></span></li>
+                ))}
+              </ul>
+            </div>
+            <div class="panel p-4">
+              <p class="flex items-center justify-between font-semibold">Request review <Eye size={14} class="text-app-tint-fg" /></p>
+              <p class="mt-2 truncate rounded-md border border-app-border px-3 py-2 text-app-fg2">{v.match.reviewer}</p>
+              <p class="mt-2 text-[12px] leading-snug text-app-fg3">No account needed to approve or decline.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 · Outreach -->
+        <div role="tabpanel" id="jp-2" aria-labelledby="jt-2" class="pane col-start-1 row-start-1 self-center grid gap-5 md:grid-cols-[0.8fr_1.4fr] md:items-start">
+          <ol class="panel space-y-1 p-3">
+            {seq.map((s, i) => (
+              <li class:list={["flex items-center gap-2.5 rounded-lg px-2.5 py-2", i === 0 && "bg-app-ai/[0.06]"]}>
+                {s.icon === "mail" && <Mail size={16} class="text-app-pos" />}
+                {s.icon === "task" && <CircleUser size={16} class="text-app-tint" />}
+                {s.icon === "sms" && <Smartphone size={16} class="text-app-warn" />}
+                <span class="flex-1">{s.name}</span>
+                {s.task && <span class="rounded bg-app-fg/5 px-1.5 py-0.5 text-[11px] text-app-fg2">Task</span>}
+                <span class="text-right text-[12px] text-app-fg3">{s.day}</span>
+              </li>
+            ))}
+          </ol>
+          <div class="relative">
+            <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Sent from your inbox, as you</span>
+            <div class="panel overflow-hidden">
+              <p class="flex items-center gap-2 border-b border-app-border bg-app-ai/[0.04] px-4 py-3 font-medium text-app-ai"><Mail size={15} /> Step 1: Send Email</p>
+              <div class="space-y-3 p-4">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="w-14 text-app-fg2">From</span>
+                  <span class:list={[field, "min-w-0"]}><span class="truncate">{v.outreach.from}</span> <ChevronsUpDown size={12} class="shrink-0 text-app-fg3" /></span>
+                  <span class={field}>Send Automatically <ChevronsUpDown size={12} class="text-app-fg3" /></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-14 shrink-0 text-app-fg2">Subject</span>
+                  <span class:list={[field, "min-w-0 flex-1"]}>{v.outreach.subject}</span>
+                </div>
+                <div class="space-y-2.5 rounded-lg border border-app-border p-4 leading-relaxed">
+                  {v.outreach.body.map((para) => (
+                    <p>{para.split(/\[\[(.+?)\]\]/).map((part, j) => (j % 2 ? <span class="merge">{part}</span> : part))}</p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 · Replies -->
+        <div role="tabpanel" id="jp-3" aria-labelledby="jt-3" class="pane col-start-1 row-start-1 self-center grid gap-5 md:grid-cols-2 md:items-start">
+          <ul class="panel overflow-hidden">
+            <li class="flex items-start gap-3 border-b border-app-border px-4 py-3">
+              <Avatar name={v.replies.declined[0]} hue={120} size={28} />
+              <div class="min-w-0 flex-1">
+                <p class="font-semibold">{v.replies.declined[0]}</p>
+                <p class="leading-snug text-app-fg2">{v.replies.declined[1]}</p>
+                <p class="mt-1.5 flex items-center gap-1.5 text-[12px] text-app-fg3"><Archive size={12} /> Archived · thank-you sent</p>
+              </div>
+            </li>
+            <li class="flex items-start gap-3 border-b border-app-border px-4 py-3">
+              <Avatar name={v.replies.known.name} hue={220} size={28} />
+              <div class="min-w-0 flex-1">
+                <p class="font-semibold">{v.replies.known.name}</p>
+                <p class="leading-snug text-app-fg2">{v.replies.known.question}</p>
+                <p class="mt-1.5 flex items-center gap-1.5 text-[12px] text-app-tint-fg"><BookOpen size={12} /> Answered from your knowledge base</p>
+              </div>
+            </li>
+            <li class="flex items-start gap-3 px-4 py-3">
+              <Avatar name={v.match.lead.name} hue={v.match.lead.hue} size={28} />
+              <div class="min-w-0 flex-1">
+                <p class="flex items-center gap-2 font-semibold">{v.match.lead.name} <span class="rounded bg-app-pos/10 px-1.5 text-[11px] font-medium text-app-pos">Interested</span></p>
+                <p class="leading-snug text-app-fg2">Sounds great. When works?</p>
+              </div>
+            </li>
+          </ul>
+          <div class="relative">
+            <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Asks you once</span>
+            <div class="panel overflow-hidden">
+              <p class="flex items-center gap-1.5 bg-[#4A154B] px-4 py-2 text-[12px] font-medium text-white"><Hash size={12} /> Slack · Direct message</p>
+              <div class="space-y-3 p-4">
+                <div class="flex gap-2.5">
+                  <PinAvatar size={26} />
+                  <p><b class="font-semibold">{v.replies.slack.count} people asked</b> "{v.replies.slack.question}" How should I answer?</p>
+                </div>
+                <div class="flex gap-2.5">
+                  <Avatar name="You" hue={30} size={26} />
+                  <p class="rounded-md bg-app-bg3 px-2.5 py-1.5 text-app-fg2">Your answer, once.</p>
+                </div>
+                <p class="flex items-center gap-1.5 border-t border-app-border pt-3 text-[12px] text-app-fg2"><BookOpen size={12} /> Saved · replied to all {v.replies.slack.count}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5 · Booked -->
+        <div role="tabpanel" id="jp-4" aria-labelledby="jt-4" class="pane col-start-1 row-start-1 self-center">
+          <div class="relative mx-auto max-w-xl">
+            <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Only times you're free</span>
+            <div class="panel p-4 pt-6 sm:p-5 sm:pt-7">
+              <p class="font-semibold">{v.booked.title}</p>
+              <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[13px]">
+                {v.booked.days.map((d) => (
+                  <div class="space-y-1.5">
+                    <p class="pb-1 text-[12px] font-medium text-app-fg2">{d.day}</p>
+                    {d.times.map((t, j) => (
+                      j === d.selected
+                        ? <p class="rounded-md bg-app-pos/15 px-1 py-2 font-medium text-app-pos">{t}<span class="block text-[11px] font-normal">Booked</span></p>
+                        : <p class="rounded-md border border-app-border px-1 py-2 text-app-fg2">{t}</p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <p class="mt-4 flex items-center gap-2 border-t border-app-border pt-3 text-[13px] text-app-fg2"><Video size={13} class="text-app-pos" /> {v.booked.note}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="mt-4 text-right text-xs text-ink-3">Illustrative example</p>
+  </div>
+</section>
+
+<style>
+  .tab .desc { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 300ms var(--ease-out-soft), opacity 300ms, margin 300ms; margin-top: 0; overflow: hidden; }
+  .tab[aria-selected="true"] .desc { grid-template-rows: 1fr; opacity: 1; margin-top: 8px; }
+  .pane { opacity: 0; translate: 0 8px; visibility: hidden; transition: opacity 300ms var(--ease-out-soft), translate 300ms var(--ease-out-soft), visibility 300ms; }
+  .pane.on { opacity: 1; translate: 0 0; visibility: visible; }
+  /* Stacked layout: only the active pane sets the canvas height, so short panes don't float in empty space. */
+  @media (max-width: 1023px) { .pane:not(.on) { position: absolute; inset: 2rem 1rem auto; } }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-journey]").forEach((root) => {
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>("[role=tab]")];
+    const panes = [...root.querySelectorAll<HTMLElement>("[role=tabpanel]")];
+    const canvas = root.querySelector<HTMLElement>(".canvas")!;
+    const tints = canvas.dataset.tints!.split(",");
+    let cur = 0;
+    function select(i: number, focus = false) {
+      cur = i;
+      tabs.forEach((t, j) => {
+        t.setAttribute("aria-selected", String(j === i));
+        t.tabIndex = j === i ? 0 : -1;
+      });
+      panes.forEach((p, j) => {
+        p.classList.toggle("on", j === i);
+        p.toggleAttribute("inert", j !== i);
+      });
+      canvas.className = canvas.className.replace(/tint-\w+/, `tint-${tints[i]}`);
+      if (focus) tabs[i].focus();
+    }
+    tabs.forEach((t, i) => t.addEventListener("click", () => select(i)));
+    root.querySelector("[role=tablist]")!.addEventListener("keydown", (e) => {
+      const k = (e as KeyboardEvent).key;
+      const d = k === "ArrowDown" || k === "ArrowRight" ? 1 : k === "ArrowUp" || k === "ArrowLeft" ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      select((cur + d + tabs.length) % tabs.length, true);
+    });
+    select(0);
+  });
+</script>

@@ -1,0 +1,198 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Button from "../components/ui/Button.astro";
+import SectionHeader from "../components/ui/SectionHeader.astro";
+import CTABand from "../components/ui/CTABand.astro";
+import { breadcrumb } from "../components/company/breadcrumb";
+import { Trophy, Cpu, HeartPulse, Rocket, ArrowRight, Play } from "@lucide/astro";
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: "Pin Customers — Trusted by 2,000+ Organizations",
+    url: "https://www.pin.com/customers/",
+    description: "See how 2,000+ organizations and 10,000+ recruiters hire with Pin, the AI recruiter that goes from job title to booked interviews. Customer stories from agencies, startups, and enterprise talent teams.",
+    dateModified: "2026-07-21",
+  },
+  breadcrumb("Customers", "https://www.pin.com/customers/"),
+];
+
+// Quotes, names and titles verbatim from new-www's customers.astro.
+const featured = {
+  quote: "Pin is shockingly good. I've been doing this for 29+ years and I've used every tool out there. Pin is the best I've used for identifying candidates.",
+  name: "Rich Rosen",
+  role: "Founder, Cornerstone Search Associates",
+  photo: "/images/advisors/richrosen.webp",
+};
+const testimonials = [
+  { quote: "Pin makes sourcing candidates so natural and I love how you can just talk to it like it's a recruiter on your team and it goes hunting. By far our favorite new technology in a long time.", name: "Josh Volinsky", role: "Co-Founder at Synergy Search", photo: "/images/testimonials/joshvolinsky_photo.jpg", wide: true },
+  { quote: "Pin has been essential to our success — contributing to over $1M in billings this year alone.", name: "Nick Poloni", role: "Founder, Cascadia Search Group", photo: "/images/testimonials/nickpoloni_photo.jpg" },
+  { quote: "What I love about Pin is that it takes the critical thinking your brain already does and puts it on steroids.", name: "Colleen Riccinto", role: "Founder, Cyber Talent Search", photo: "/images/compare/avatar-colleen.png" },
+  { quote: "Pin delivered exactly what we needed. Within just two weeks of using the product, we hired both a software engineer and a financial planner. The speed and accuracy were unmatched.", name: "Fahad Hassan", role: "CEO & Co-founder, Range", photo: "/images/testimonials/fahadhassan_photo.jpg" },
+  { quote: "Pin has supercharged our sourcing, helping our team build more top of funnel efficiently.", name: "Nick Patrick", role: "CEO & Co-founder, Radar", photo: "/images/testimonials/nickpatrick_photo.jpg" },
+  { quote: "As a small people and talent team, we don't have a ton of time to spend hours sourcing and messaging. Pin has made it possible for us to focus on the people side of things!", name: "Miles Randle", role: "Head of People & Talent, Flip CX", photo: "/images/testimonials/milesrandle_photo.jpg" },
+  { quote: "Pin's intuitive UX made it easy to use right away, simplifying job descriptions and finding spot-on candidates. It's already outperforming other established recruiting products.", name: "Ben Caggia", role: "Advisor, Syelo", photo: "/images/testimonials/bencaggia_photo.jpg" },
+];
+
+const videos = [
+  { id: "1211494108", title: "The top 3 Pin features that solve efficiency", person: "Nick Poloni", role: "President, Cascadia Search Group" },
+  { id: "1211498044", title: "“The most ethical way of cheating I've ever seen”", person: "Nick Poloni", role: "President, Cascadia Search Group" },
+  { id: "1211477202", title: "How Pin solved an agency's efficiency problem", person: "Nick Poloni", role: "President, Cascadia Search Group" },
+  { id: "1210893652", title: "The one tool every recruiter needs", person: "Lauren Cassen", role: "Lead Recruiter, Savvy Wealth" },
+  { id: "1210886475", title: "AI recruiting vs. traditional recruiting", person: "Lauren Cassen", role: "Lead Recruiter, Savvy Wealth" },
+  { id: "1210898449", title: "“I made my first hire with Pin within a couple of weeks”", person: "Lauren Cassen", role: "Lead Recruiter, Savvy Wealth" },
+];
+const playerParams = "title=0&byline=0&portrait=0&badge=0&vimeo_logo=0&dnt=1&autoplay=1";
+
+const stats = [
+  { n: 14, s: " days", label: "Average time-to-fill", detail: "The fastest of any AI recruiting platform." },
+  { n: 83, s: "%", label: "Candidate acceptance rate", detail: "Recommended candidates accepted into pipelines." },
+  { n: 5, s: "x", label: "Better response rates", detail: "On automated outreach vs. industry averages." },
+  { n: 12, s: " hrs", label: "Saved per week", detail: "Per recruiter, on sourcing and outreach combined." },
+];
+
+const industries = [
+  { name: "Agencies", icon: Trophy, chip: "bg-green-lighter text-green-accessible", description: "Fill roles faster and drive more billings with AI-powered sourcing.", href: "/built-for/agencies/" },
+  { name: "Tech Companies", icon: Cpu, chip: "bg-app-tint/10 text-app-tint-fg", description: "Find specialized technical talent at scale, beyond a single network.", href: "/built-for/tech-companies/" },
+  { name: "Healthcare", icon: HeartPulse, chip: "bg-clay-light text-clay", description: "Source clinical and administrative professionals with precision matching.", href: "/built-for/healthcare/" },
+  { name: "Startups & Founders", icon: Rocket, chip: "bg-purple-light text-purple", description: "Make critical early hires without a full recruiting team.", href: "/built-for/founders/" },
+];
+const logos = ["expa", "lithic", "paytient", "datapeoplesearch", "pinpointtalent", "gostaff"];
+const tile = "rounded-3xl bg-white p-7 shadow-[0_0_0_1px_rgb(0_0_0/0.04),0_10px_30px_-14px_rgb(115_70_38/0.18)] md:p-8";
+---
+
+<Layout
+  title="Pin Customers — Trusted by 2,000+ Organizations"
+  description="See how 2,000+ organizations and 10,000+ recruiters hire with Pin's AI recruiting platform, from job title to booked interviews. Customer stories from agencies, startups, and enterprise talent teams."
+  jsonLd={jsonLd}
+>
+  <!-- Hero -->
+  <section class="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-16 pt-12 md:px-8 md:pb-24 md:pt-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
+    <div>
+      <p data-reveal class="text-sm font-medium tracking-wide text-green">Customers</p>
+      <h1 data-reveal style="--i:1" class="mt-3 text-[40px] font-medium leading-[1.04] tracking-[-0.02em] text-balance md:text-[60px]">10,000+ recruiters trust Pin for AI recruiting</h1>
+      <p data-reveal style="--i:2" class="mt-5 max-w-xl text-lg leading-relaxed text-ink-2 text-pretty md:text-xl">From boutique agencies to enterprise talent teams, they give Pin a role and spend their time on the conversations that come back: sourcing, outreach, replies and scheduling handled in between.</p>
+      <div data-reveal style="--i:3" class="mt-8 flex flex-col gap-3 sm:flex-row">
+        <Button href="/book-a-demo/" arrow track="customers_hero">Book a demo</Button>
+        <Button signup variant="secondary" track="customers_hero">Try Pin free</Button>
+      </div>
+      <p data-reveal style="--i:4" class="mt-6 flex items-center gap-3 text-sm text-ink-2">
+        <span class="flex gap-0.5" aria-hidden="true">
+          {Array.from({ length: 5 }).map(() => <svg width="16" height="16" viewBox="0 0 24 24" fill="#DB9C50"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>)}
+        </span>
+        <span><span class="font-medium text-ink">4.8/5</span> — highest-rated AI recruiting software on G2</span>
+      </p>
+    </div>
+    <figure data-reveal style="--i:3" class:list={[tile, "flex flex-col"]}>
+      <blockquote class="text-xl font-medium leading-snug tracking-[-0.01em] text-balance md:text-2xl">“{featured.quote}”</blockquote>
+      <figcaption class="mt-8 flex items-center gap-3">
+        <img src={featured.photo} alt="" width="48" height="48" class="size-12 rounded-full object-cover outline outline-1 -outline-offset-1 outline-black/10" />
+        <span><span class="block font-medium">{featured.name}</span><span class="block text-sm text-ink-2">{featured.role}</span></span>
+      </figcaption>
+      <p class="mt-6 flex items-center gap-4 rounded-2xl bg-green-lighter px-5 py-4 text-ink-2"><span class="shrink-0 text-4xl font-medium leading-none tracking-[-0.02em] text-green-accessible">83%</span><span class="leading-snug text-balance">of recommended candidates accepted into pipelines</span></p>
+    </figure>
+  </section>
+
+  <div class="mx-auto max-w-7xl px-4 pb-8 md:px-8">
+    <p data-reveal class="text-center text-sm text-ink-3">Trusted by recruiting teams at</p>
+    <div data-reveal style="--i:1" class="mt-6 flex flex-wrap items-center justify-center gap-x-12 gap-y-6 opacity-60 grayscale">
+      {logos.map((l) => <img src={`/images/companies/logo-${l}.png`} alt={`${l} logo`} class="h-6 w-auto md:h-7" loading="lazy" />)}
+    </div>
+  </div>
+
+  <!-- Videos -->
+  <section class="mx-auto max-w-7xl px-4 py-24 md:px-8 md:py-32" x-data="{ playing: null }">
+    <SectionHeader eyebrow="Customer stories" title="Watch their stories" sub="Agency owners and in-house recruiters on what changed when Pin took over the work in between." />
+    <ul class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {videos.map((v, i) => (
+        <li data-reveal style={`--i:${i % 3}`}>
+          <div class="relative aspect-square overflow-hidden rounded-3xl bg-bg-tertiary">
+            <button
+              type="button"
+              class="group absolute inset-0 size-full"
+              x-show={`playing !== '${v.id}'`}
+              x-on:click={`playing = '${v.id}'; window.dataLayer?.push({ event: 'video_played', video_source: 'customers_${v.id}' })`}
+              aria-label={`Play video: ${v.title.replace(/[“”]/g, "")}`}
+            >
+              <img src={`/images/customers/videos/${v.id}.jpg`} alt="" loading="lazy" decoding="async" class="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+              <span class="absolute inset-0 grid place-items-center">
+                <span class="grid size-14 place-items-center rounded-full bg-white/95 text-ink shadow-app transition-transform group-hover:scale-105"><Play size={20} fill="currentColor" class="ml-0.5" /></span>
+              </span>
+            </button>
+            <template x-if={`playing === '${v.id}'`}>
+              <iframe src={`https://player.vimeo.com/video/${v.id}?${playerParams}`} class="absolute inset-0 size-full" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen title={v.title}></iframe>
+            </template>
+          </div>
+          <p class="mt-4 font-medium text-pretty">{v.title}</p>
+          <p class="text-sm text-ink-2">{v.person} · {v.role}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <!-- Stats -->
+  <section class="bg-bg-secondary/60 py-24 md:py-32">
+    <div class="mx-auto max-w-7xl px-4 md:px-8">
+      <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <SectionHeader align="left" eyebrow="Outcomes" title="Results recruiters can measure" />
+        <p data-reveal class="text-sm text-ink-3">From Pin's 2026 user survey across 2,000+ organizations</p>
+      </div>
+      <div class="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((s, i) => (
+          <div data-reveal style={`--i:${i}`} class:list={[tile, i === 0 && "bg-green-lighter! shadow-none!"]}>
+            <p class="text-[48px] font-medium leading-none tracking-[-0.04em] tabular-nums md:text-[56px]"><span data-count={s.n} data-suffix={s.s}>{s.n}{s.s}</span></p>
+            <p class="mt-4 text-lg font-medium">{s.label}</p>
+            <p class="text-ink-2">{s.detail}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="mx-auto max-w-7xl px-4 py-24 md:px-8 md:py-32">
+    <SectionHeader align="left" eyebrow="In their words" title="Hear it from our customers" />
+    <div class="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {testimonials.map((t, i) => (
+        <figure data-reveal style={`--i:${i % 3}`} class:list={[tile, "flex flex-col", t.wide && "lg:col-span-2"]}>
+          <blockquote class:list={["flex-1 leading-relaxed", t.wide ? "text-xl font-medium tracking-[-0.01em] text-balance md:text-2xl md:leading-snug" : "text-lg"]}>“{t.quote}”</blockquote>
+          <figcaption class="mt-6 flex items-center gap-3">
+            <img src={t.photo} alt="" width="40" height="40" loading="lazy" class="size-10 rounded-full object-cover outline outline-1 -outline-offset-1 outline-black/10" />
+            <span><span class="block font-medium">{t.name}</span><span class="block text-sm text-ink-2">{t.role}</span></span>
+          </figcaption>
+        </figure>
+      ))}
+      <div data-reveal style="--i:1" class="flex flex-col rounded-3xl bg-clay-light p-7 md:p-8">
+        <p class="text-[56px] font-medium leading-none tracking-[-0.04em] tabular-nums"><span data-count="95" data-suffix="%">95%</span></p>
+        <p class="mt-4 text-lg leading-snug">of users report better candidate quality than their previous sourcing methods</p>
+        <p class="mt-auto pt-6 text-sm text-ink-2">Pin 2026 user survey</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Industries -->
+  <section class="mx-auto max-w-7xl px-4 pb-24 md:px-8 md:pb-32">
+    <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <SectionHeader align="left" eyebrow="Built for how you hire" title="No role is too big or too small" />
+      <p data-reveal class="text-sm text-ink-3">See how Pin works for your industry</p>
+    </div>
+    <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {industries.map((ind, i) => {
+        const Icon = ind.icon;
+        return (
+          <a data-reveal style={`--i:${i}`} href={ind.href} class:list={[tile, "group flex flex-col transition-shadow hover:shadow-window"]}>
+            <span class:list={["grid size-12 place-items-center rounded-xl", ind.chip]}><Icon size={22} /></span>
+            <h3 class="mt-10 flex items-center gap-2 text-lg font-medium">
+              {ind.name}
+              <ArrowRight size={16} class="text-ink-3 transition-transform group-hover:translate-x-0.5" />
+            </h3>
+            <p class="mt-1 text-ink-2">{ind.description}</p>
+          </a>
+        );
+      })}
+    </div>
+  </section>
+
+  <CTABand title="Your next hire, from job title to booked interview." track="customers_final_cta" />
+</Layout>

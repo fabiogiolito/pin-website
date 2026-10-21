@@ -1,0 +1,40 @@
+---
+import Logo from "../../icons/logo.svg";
+import { product, builtFor, compare, company, legal } from "./nav";
+
+const columns = [
+  { title: "Product", links: product },
+  { title: "Built for", links: builtFor },
+  { title: "Compare", links: compare },
+  { title: "Company", links: company },
+];
+---
+
+<footer class="border-t border-ink/5">
+  <div class="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
+    <div class="grid gap-10 lg:grid-cols-[1.2fr_repeat(4,1fr)]">
+      <div>
+        <a href="/" aria-label="Pin homepage" class="text-ink"><Logo width={70} height={30} /></a>
+        <p class="mt-4 max-w-xs text-ink-2">The AI recruiter that takes you from a job title to booked interviews.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-8 sm:grid-cols-4 lg:contents">
+        {columns.map((c) => (
+          <div>
+            <p class="text-sm font-medium text-ink">{c.title}</p>
+            <ul class="mt-4 space-y-2.5 text-[15px]">
+              {c.links.map((l) => (
+                <li><a href={l.href} target={l.external ? "_blank" : undefined} class="text-ink-2 transition-colors hover:text-ink">{l.label}</a></li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+    <div class="mt-14 flex flex-col gap-4 border-t border-ink/5 pt-6 text-sm text-ink-3 md:flex-row md:items-center md:justify-between">
+      <p>© {new Date().getFullYear()} Pin. All rights reserved.</p>
+      <ul class="flex flex-wrap gap-x-6 gap-y-2">
+        {legal.map((l) => <li><a href={l.href} class="transition-colors hover:text-ink">{l.label}</a></li>)}
+      </ul>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,33 @@
+---
+// The five-step journey with this page's steps highlighted; each step links to the page that covers it.
+import { Check } from "@lucide/astro";
+interface Props { current: number[]; title?: string }
+const { current, title = "Where this fits in the journey" } = Astro.props;
+const steps = [
+  { name: "Brief", desc: "A title in, criteria out", href: "/features/ai-sourcing/" },
+  { name: "Match", desc: "850M+ profiles, explained", href: "/features/ai-sourcing/" },
+  { name: "Outreach", desc: "Sequences from your inbox", href: "/features/automated-outreach/" },
+  { name: "Replies", desc: "Sorted and answered", href: "/features/ai-interview-scheduling/" },
+  { name: "Booked", desc: "On your calendar", href: "/features/ai-interview-scheduling/" },
+];
+---
+
+<nav aria-label={title} class="mx-auto max-w-7xl px-4 md:px-8">
+  <p data-reveal class="text-center text-sm font-medium text-ink-2">{title}</p>
+  <ol data-reveal style="--i:1" class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+    {steps.map((s, i) => {
+      const on = current.includes(i);
+      return (
+        <li class:list={[i === 4 && "col-span-2 sm:col-span-1"]}>
+          <a href={s.href} aria-current={on ? "page" : undefined} class:list={["flex h-full flex-col gap-1 rounded-2xl px-4 py-3.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green", on ? "bg-green-lighter text-ink" : "bg-white text-ink-2 shadow-[0_0_0_1px_rgb(0_0_0/0.05)] hover:text-ink"]}>
+            <span class="flex items-center gap-2 font-medium">
+              <span class:list={["grid size-5 place-items-center rounded-full text-[11px] tabular-nums", on ? "bg-green text-white" : "bg-bg-tertiary text-ink-3"]}>{on ? <Check size={11} stroke-width={3} /> : i + 1}</span>
+              {s.name}
+            </span>
+            <span class="text-sm text-ink-3">{s.desc}</span>
+          </a>
+        </li>
+      );
+    })}
+  </ol>
+</nav>

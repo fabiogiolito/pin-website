@@ -1,0 +1,109 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import FAQ from "../../components/ui/FAQ.astro";
+import CTABand from "../../components/ui/CTABand.astro";
+import Tools from "../../components/ui/Tools.astro";
+import Autopilot from "../../components/Autopilot.astro";
+import AgentRun from "../../components/features/AgentRun.astro";
+import ActivityDay from "../../components/features/ActivityDay.astro";
+import JourneyStrip from "../../components/features/JourneyStrip.astro";
+import Section from "../../components/features/Section.astro";
+import Grid from "../../components/features/Grid.astro";
+import Quotes from "../../components/features/Quotes.astro";
+import Reading from "../../components/features/Reading.astro";
+import { faqJsonLd } from "../../components/ui/faq";
+import { featurePageSchema, softwareAppSchema } from "../../components/features/schema";
+
+const faq = [
+  {
+    question: "What is an AI recruiting agent?",
+    answer: "An AI recruiting agent handles the recruiting work that traditionally needs a human recruiter: sourcing candidates, evaluating them, sending outreach, handling replies and scheduling interviews. Pin starts from a job title (a JD is optional), asks the clarifying questions a great sourcer would, and reasons about each step rather than following rigid rules.",
+  },
+  {
+    question: "What is agentic AI recruiting?",
+    answer: "Agentic AI recruiting means AI that works through multi-step tasks on its own, instead of simple automation that follows predefined rules. Pin interprets the role, searches 850M+ profiles, explains why each candidate matches, writes personal outreach, sorts replies and books interviews, adapting to your approvals and feedback along the way.",
+  },
+  {
+    question: "How much does Pin do on its own?",
+    answer: "As much as you want. With Hands-On Co-Pilot, Pin drafts and you approve each match and email and book calls yourself. With Balanced Hybrid, you approve matches and Pin automates outreach and FAQ replies and suggests times. With Full Autopilot, Pin goes from job description to your calendar. Every step has its own switch.",
+  },
+  {
+    question: "How is an AI recruiting agent different from an ATS?",
+    answer: "An ATS stores and organizes candidates who have already applied. An AI recruiting agent finds candidates who haven't applied, evaluates their fit, reaches out, and schedules interviews. Pin integrates with 120+ ATS platforms, so it works alongside your ATS, not as a replacement.",
+  },
+  {
+    question: "How does an AI recruiting agent compare to AI recruiting software?",
+    answer: "Most AI recruiting software automates one task: a sourcing tool here, a scheduling tool there. Pin connects the whole workflow, from job title to booked interview: it sources, explains matches, sends personalized outreach from your inbox, handles replies and books interviews. One agent replaces several disconnected tools.",
+  },
+  {
+    question: "Can an AI recruiting agent handle high-volume hiring?",
+    answer: "Yes. Pin runs unlimited roles at once. Whether you're filling 5 roles or 500, it sources, reaches out and schedules for every position in parallel, without adding recruiter headcount. Teams using Pin for high-volume hiring report filling roles 3x faster than manual methods.",
+  },
+];
+
+const jsonLd = [
+  ...featurePageSchema({
+    name: "AI Recruiting Agent: From Job Title to Booked Interviews",
+    path: "/features/ai-recruiting-agent/",
+    description: "Pin's AI recruiting agent runs the whole workflow, from job title to booked interview: sourcing, outreach from your inbox, replies and scheduling, with as much automation as you want. From $99/mo.",
+    crumb: "AI Recruiting Agent",
+    dateModified: "2026-10-21",
+  }),
+  softwareAppSchema("Pin AI Recruiting Agent"),
+  faqJsonLd(faq),
+];
+
+const guardrails = [
+  { title: "You set the level", desc: "Co-Pilot, Hybrid or Autopilot, or mix and match per step. Change it any time." },
+  { title: "Approve what matters", desc: "Keep match approvals and email reviews in your hands for as long as you like." },
+  { title: "Take over any time", desc: "Jump into any conversation. Pin steps back the moment you do." },
+  { title: "Pause anytime", desc: "One click stops outreach, sourcing or scheduling. Resume where it left off." },
+  { title: "Nothing off the books", desc: "Every action Pin takes is logged to the candidate's history, where your team can see it." },
+  { title: "Sounds like you", desc: "Emails go from your Gmail or Outlook, in your voice, and you can edit any of them." },
+];
+---
+
+<Layout
+  title="AI Recruiting Agent: From Job Title to Booked Interviews | Pin"
+  description="An AI recruiting agent that runs sourcing, outreach, replies and scheduling end to end. From job title to booked interviews, with as much automation as you want. From $99/mo."
+  jsonLd={jsonLd}
+>
+  <PageHero
+    eyebrow="AI recruiting agent"
+    title="From job title to booked interviews. Pin does everything in between."
+    sub="An AI recruiting agent that runs the whole desk: it researches the role, finds the right people in 850M+ profiles, reaches out from your inbox, handles the replies and books the calls."
+  >
+    <AgentRun />
+  </PageHero>
+
+  <JourneyStrip current={[0, 1, 2, 3, 4]} title="One agent, five steps. Dive into any of them." />
+
+  <div class="mt-24 md:mt-32">
+    <Autopilot />
+  </div>
+
+  <Section eyebrow="A day on the desk" title="Pin works all day. You check in." tint="sand">
+    <p slot="copy">While you're in interviews, Pin is searching, sending, sorting and booking. Every action is visible; nothing happens off the books.</p>
+    <ActivityDay />
+  </Section>
+
+  <Section eyebrow="Guardrails" title="Autonomy, with you in charge.">
+    <p slot="copy">An agent that acts on your candidates needs controls. Every automation in Pin is optional, visible and reversible.</p>
+    <Grid items={guardrails} />
+  </Section>
+
+  <Quotes names={["Miles Randle", "Nick Patrick", "Fahad Hassan"]} title="Recruiters who let the agent run the desk" />
+
+  <Tools />
+
+  <FAQ items={faq} title="AI recruiting agent questions" />
+
+  <Reading items={[
+    { label: "AI recruiting: the complete 2026 guide", href: "/blog/ai-recruiting-guide-2026/", description: "How modern teams automate sourcing, screening and outreach end to end." },
+    { label: "Agentic AI recruiting: what it is, and what it isn't", href: "/blog/agentic-ai-recruiting/", description: "The difference between rule-based automation and an agent that reasons about each step." },
+    { label: "Best AI recruiting tools for 2026", href: "/blog/best-ai-recruiting-tools-2026/", description: "A ranked comparison of agents, sourcing tools and screening platforms." },
+  ]} />
+
+  <CTABand track="ai_recruiting_agent_cta" />
+</Layout>

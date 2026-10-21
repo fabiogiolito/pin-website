@@ -1,0 +1,148 @@
+---
+// Hero demo for AI sourcing: pick a plain-English search, watch Pin turn it into criteria and a ranked, explained shortlist.
+import { Search, Pin, Ban, ChevronDown, Check, ArrowUp } from "@lucide/astro";
+import Avatar from "../Avatar.astro";
+
+type Verdict = "Yes" | "Maybe";
+const searches: {
+  label: string; query: string; total: string;
+  chips: [string, "pin" | "ban" | "plain"][];
+  people: { name: string; hue: number; role: string; verdict: Verdict; why: string }[];
+}[] = [
+  {
+    label: "Backend engineer",
+    query: "Senior backend engineer in NYC who has built payments systems in Go. No crypto.",
+    total: "214",
+    chips: [["Backend Engineer", "pin"], ["New York or Remote", "pin"], ["5–8 years", "pin"], ["Go", "plain"], ["Payments", "plain"], ["Crypto", "ban"]],
+    people: [
+      { name: "Maya Chen", hue: 340, role: "Senior Software Engineer · Stripe", verdict: "Yes", why: "Six years on ledger and money-movement services, Go daily." },
+      { name: "Daniel Okafor", hue: 200, role: "Backend Lead · Plaid", verdict: "Yes", why: "Banking APIs and card issuing; Go in production." },
+      { name: "Priya Raman", hue: 25, role: "Software Engineer II · Brex", verdict: "Maybe", why: "Strong payments depth, one year short on seniority." },
+    ],
+  },
+  {
+    label: "ICU nurse",
+    query: "ICU nurse in Columbus with 3+ years of critical care. Night shifts are fine.",
+    total: "96",
+    chips: [["Registered Nurse, ICU", "pin"], ["Columbus, OH", "pin"], ["3+ years critical care", "pin"], ["CCRN", "plain"], ["Night shift", "plain"], ["Travel contracts", "ban"]],
+    people: [
+      { name: "Jessica Moore", hue: 160, role: "ICU RN · OhioHealth", verdict: "Yes", why: "Five years in a 32-bed ICU, CCRN certified." },
+      { name: "Andre Wallace", hue: 270, role: "Critical Care RN · Mount Carmel", verdict: "Yes", why: "Charge nurse on nights for two years." },
+      { name: "Lena Fischer", hue: 50, role: "Step-down RN · OSU Wexner", verdict: "Maybe", why: "Step-down unit, floated to ICU weekly." },
+    ],
+  },
+  {
+    label: "VP of Sales",
+    query: "VP of Sales in Austin who has scaled a B2B SaaS team from $10M to $50M ARR.",
+    total: "41",
+    chips: [["VP of Sales", "pin"], ["Austin, TX", "pin"], ["B2B SaaS", "pin"], ["Scaled $10M → $50M ARR", "plain"], ["Team of 20+", "plain"], ["Agencies", "ban"]],
+    people: [
+      { name: "Rachel Diaz", hue: 10, role: "VP Sales · Workrise", verdict: "Yes", why: "Grew the team from 8 to 40 reps through Series C." },
+      { name: "Marcus Hill", hue: 220, role: "Head of Sales · Bazaarvoice", verdict: "Yes", why: "Owned a $45M enterprise book across 3 regions." },
+      { name: "Hannah Park", hue: 300, role: "Director of Sales · Kasisto", verdict: "Maybe", why: "Right stage, but the team topped out at 12 reps." },
+    ],
+  },
+];
+const tone = { Yes: "text-app-pos", Maybe: "text-app-warn" };
+const chip = "inline-flex items-center gap-1.5 rounded-md border border-app-border bg-white px-2 py-1";
+---
+
+<div id="sourcing-search" data-queries={JSON.stringify(searches.map((s) => s.query))} class="tint-sand rounded-[28px] px-4 py-8 text-left sm:px-8 md:rounded-[36px] md:px-12 md:py-12">
+  <div class="mx-auto mb-10 flex max-w-5xl flex-wrap items-center justify-center gap-2" role="group" aria-label="Try a search">
+    <span class="mr-1 text-sm text-ink-2">Try a search:</span>
+    {searches.map((s, i) => (
+      <button type="button" data-q={i} aria-pressed={i === 0 ? "true" : "false"} class="rounded-full border border-ink/10 bg-white px-3.5 py-1.5 text-sm font-medium text-ink-2 transition-[background-color,color,border-color,scale] hover:text-ink active:scale-[0.97] aria-pressed:border-green aria-pressed:bg-green aria-pressed:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green">{s.label}</button>
+    ))}
+  </div>
+
+  <div class="mx-auto grid max-w-5xl items-start gap-5 text-[14px] md:grid-cols-[1fr_1.15fr] md:gap-6">
+    <!-- Query + criteria -->
+    <div class="relative">
+      <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Plain English, no Boolean</span>
+      <div class="panel p-4 pt-6 md:p-5 md:pt-7">
+        <div class="flex items-start gap-2.5 rounded-xl border border-app-border bg-app-bg2 px-3 py-3">
+          <Search size={15} class="mt-0.5 shrink-0 text-app-fg3" />
+          <p class="min-h-[42px] flex-1 leading-relaxed"><span class="query">{searches[0].query}</span><span class="caret ml-0.5 inline-block h-4 w-px translate-y-0.5 bg-app-fg"></span></p>
+          <span class="grid size-6 shrink-0 place-items-center rounded-md bg-app-tint text-white"><ArrowUp size={13} /></span>
+        </div>
+        <p class="mt-4 text-[12px] font-medium uppercase tracking-wide text-app-fg3">Criteria Pin built</p>
+        {searches.map((s, i) => (
+          <div class="set mt-2 flex flex-wrap gap-1.5 text-[13px]" data-set={i} hidden={i !== 0}>
+            {s.chips.map(([t, k], j) => (
+              <span class:list={[chip, "chip"]} style={`--j:${j}`}>
+                {k === "pin" && <Pin size={12} class="text-app-tint" />}
+                {k === "ban" && <Ban size={12} class="text-app-neg" />}
+                {t} <ChevronDown size={12} class="text-app-fg3" />
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Ranked shortlist -->
+    <div class="relative">
+      <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Explains every match</span>
+      <div class="panel overflow-hidden">
+        {searches.map((s, i) => (
+          <div class="set" data-set={i} hidden={i !== 0}>
+            <p class="flex items-center justify-between border-b border-app-border px-4 py-3 pt-5">
+              <span class="font-semibold">Matches</span>
+              <span class="text-[13px] text-app-fg2"><span class="tabular-nums">{s.total}</span> found · ranked by fit</span>
+            </p>
+            <ul>
+              {s.people.map((p, j) => (
+                <li class="row flex items-start gap-3 border-b border-app-border px-4 py-3.5 last:border-b-0" style={`--j:${j}`}>
+                  <Avatar name={p.name} hue={p.hue} size={34} />
+                  <div class="min-w-0 flex-1">
+                    <p class="flex flex-wrap items-baseline gap-x-2"><span class="font-semibold">{p.name}</span><span class="text-[13px] text-app-fg2">{p.role}</span></p>
+                    <p class="mt-1 flex gap-2 leading-snug"><span class:list={["mt-[7px] size-1.5 shrink-0 rounded-full bg-current", tone[p.verdict]]}></span><span><b class:list={["font-semibold", tone[p.verdict]]}>{p.verdict}</b><span class="text-app-fg2">, {p.why}</span></span></p>
+                  </div>
+                  <Check size={15} class="mt-1 shrink-0 text-app-fg3" />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+  <p class="mt-6 text-center text-sm text-ink-3">Illustrative example</p>
+</div>
+
+<style>
+  .caret { animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .set:not([hidden]) .chip, .set:not([hidden]) .row { animation: pop 300ms var(--ease-out-soft) both; animation-delay: calc(var(--j) * 70ms); }
+  @keyframes pop { from { opacity: 0; translate: 0 4px; } }
+  @media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
+</style>
+
+<script>
+  import { reducedMotion } from "../../scripts/motion";
+
+  const root = document.getElementById("sourcing-search")!;
+  const buttons = [...root.querySelectorAll<HTMLButtonElement>("[data-q]")];
+  const sets = [...root.querySelectorAll<HTMLElement>(".set")];
+  const query = root.querySelector<HTMLElement>(".query")!;
+  const queries = JSON.parse(root.dataset.queries!) as string[];
+  let timer = 0;
+
+  // Type the query out, then reveal its criteria and shortlist.
+  function pick(i: number) {
+    buttons.forEach((b, j) => b.setAttribute("aria-pressed", String(i === j)));
+    sets.forEach((s) => (s.hidden = true));
+    clearInterval(timer);
+    const text = queries[i];
+    const show = () => sets.forEach((s) => (s.hidden = s.dataset.set !== String(i)));
+    if (reducedMotion) { query.textContent = text; show(); return; }
+    let n = 0;
+    query.textContent = "";
+    timer = window.setInterval(() => {
+      n += 2;
+      query.textContent = text.slice(0, n);
+      if (n >= text.length) { clearInterval(timer); show(); }
+    }, 18);
+  }
+  buttons.forEach((b, i) => b.addEventListener("click", () => pick(i)));
+</script>

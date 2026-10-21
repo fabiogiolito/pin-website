@@ -1,0 +1,298 @@
+---
+import Layout from "../layouts/Layout.astro";
+import SectionHeader from "../components/ui/SectionHeader.astro";
+import Tools from "../components/ui/Tools.astro";
+import FAQ from "../components/ui/FAQ.astro";
+import CTABand from "../components/ui/CTABand.astro";
+import { homeFaq } from "../components/homeFaq";
+import { breadcrumb } from "../components/company/breadcrumb";
+import { Check } from "@lucide/astro";
+import { organizationSchema, pinSoftwareSchema } from "../lib/schema";
+
+const jsonLd = [organizationSchema, pinSoftwareSchema, breadcrumb("Pricing", "https://www.pin.com/pricing/")];
+
+// Plan names, prices, limits and features are unchanged from new-www's SectionPricing.astro.
+type Plan = {
+  id: string;
+  name: string;
+  desc: string;
+  features: string[];
+  featured?: boolean;
+  contact?: boolean;
+};
+const plans: Plan[] = [
+  {
+    id: "free",
+    name: "Free",
+    desc: "For anyone looking to see what Pin is all about.",
+    features: ["5 contact lookup credits per week", "1 Job position", "1 AI Agent", "Email-only sequences"],
+  },
+  {
+    id: "solo",
+    name: "Solo",
+    desc: "For individual recruiters getting started.",
+    features: ["Single seat · solo recruiters", "Unlimited job positions", "500 contact lookup credits", "2 AI Agents", "Multi-channel sequences"],
+  },
+  {
+    id: "professional",
+    name: "Professional",
+    desc: "For agencies and hiring teams running multiple roles.",
+    features: ["2 AI Agents per user", "1,000 credits per seat / month", "Team collaboration & shared inbox", "Multi-channel sequences", "Advanced agent sourcing"],
+    featured: true,
+  },
+  {
+    id: "business",
+    name: "Business",
+    desc: "For growing recruiting orgs with custom workflows.",
+    features: ["Everything in Professional", "Unlimited seats", "Unlimited contact lookup credits", "Unlimited AI Agents", "Premium ATS integrations", "Dedicated account manager"],
+    contact: true,
+  },
+];
+
+type Cell = string | boolean | { text: string; annualSub: string; monthlySub: string };
+type Feature = { name: string; sub?: string; values: [Cell, Cell, Cell, Cell] };
+const comparison: { category: string; features: Feature[] }[] = [
+  {
+    category: "Workplace",
+    features: [
+      { name: "Included seats", values: ["1 seat", "1 seat", { text: "Unlimited", annualSub: "$135/user", monthlySub: "$179/user" }, "Unlimited"] },
+      { name: "Active positions", values: ["1", "Unlimited", "Unlimited", "Unlimited"] },
+      { name: "Collaboration", values: [false, false, true, true] },
+      { name: "Admin seats", values: [false, false, true, true] },
+    ],
+  },
+  {
+    category: "Sourcing",
+    features: [
+      { name: "Candidate Searches", values: ["3/day", "Unlimited", "Unlimited", "Unlimited"] },
+      { name: "AI Agents", values: ["1", "2", "2 per user", "Unlimited"] },
+      { name: "AI Questions", values: [true, true, true, true] },
+      { name: "AI Filters", values: [true, true, true, true] },
+      { name: "AI Evaluation", values: [true, true, true, true] },
+      { name: "Talent Insights", values: [false, false, true, true] },
+    ],
+  },
+  {
+    category: "Candidate Intelligence",
+    features: [{ name: "Search Criteria Match", values: [true, true, true, true] }],
+  },
+  {
+    category: "Contact Data",
+    features: [
+      { name: "Contact Credits", values: ["5/week", "500/month", "1,000/user/month", "Unlimited"] },
+      { name: "Personal Email", sub: "1 credit", values: [true, true, true, true] },
+      { name: "Work Email", sub: "1 credit", values: [true, true, true, true] },
+      { name: "Phone Number", sub: "1 credit", values: [true, true, true, true] },
+    ],
+  },
+  {
+    category: "Outreach",
+    features: [
+      { name: "Email Sequences", values: [true, true, true, true] },
+      { name: "Multi-channel sequences", values: [false, true, true, true] },
+    ],
+  },
+  {
+    category: "Email Integrations",
+    features: [
+      { name: "Gmail Integration", values: [true, true, true, true] },
+      { name: "Outlook Integration", values: [true, true, true, true] },
+      { name: "Mailboxes", values: [false, "1", "5 per user", "Unlimited"] },
+    ],
+  },
+  {
+    category: "Exports & ATS",
+    features: [
+      { name: "Export Limit", values: ["None", "Unlimited", "Unlimited", "Unlimited"] },
+      { name: "CSV Export", values: [false, true, true, true] },
+      { name: "PDF Export", values: [false, true, true, true] },
+      { name: "ATS Integration", values: [false, "Add-on", "Add-on", true] },
+    ],
+  },
+  {
+    category: "Sourcing & Outreach Analytics",
+    features: [
+      { name: "Communication Insights", values: [true, true, true, true] },
+      { name: "Pipeline Insights", values: [true, true, true, true] },
+      { name: "Team Activity", values: [false, false, true, true] },
+    ],
+  },
+  {
+    category: "Support",
+    features: [
+      { name: "Knowledge Base", values: [true, true, true, true] },
+      { name: "Email Support", values: [true, true, true, true] },
+      { name: "Onboarding and Training", values: [false, true, true, true] },
+      { name: "Dedicated Account Manager", values: [false, false, false, true] },
+    ],
+  },
+  {
+    category: "Add-ons",
+    features: [
+      { name: "SSO/SAML", values: [false, false, false, true] },
+      { name: "SCIM", values: [false, false, false, true] },
+    ],
+  },
+];
+
+// Same dataLayer events as new-www: plan click + start_free / book_demo.
+const ctaClick = (plan: Plan, location: string) =>
+  plan.contact
+    ? `window.dataLayer?.push({ event: 'pricing_plan_cta_clicked', plan: '${plan.id}'${location === "compare_table" ? ", location: 'compare_table'" : ""} }); window.dataLayer?.push({ event: 'book_demo_clicked', location: 'pricing_${location}', page: window.location.pathname })`
+    : `isLoginModalOpen = true; window.dataLayer?.push({ event: 'pricing_plan_cta_clicked', plan: '${plan.id}'${location === "compare_table" ? ", location: 'compare_table'" : ""} }); window.dataLayer?.push({ event: 'start_free_clicked', location: 'pricing_${location}', page: window.location.pathname })`;
+
+const btn = "inline-flex items-center justify-center rounded-xl px-5 py-3 font-medium transition-[background-color,border-color,scale] active:scale-[0.98]";
+const primary = "bg-green text-white hover:bg-green-accessible";
+const secondary = "border border-ink/12 bg-white text-ink hover:border-green hover:text-green-accessible";
+---
+
+<Layout
+  title="Pin Pricing — AI Recruiting & Sourcing Tools, Free Plan + Paid from $99/mo"
+  description="Pin pricing: Free plan, Solo ($99/mo), Professional ($135/mo per user, billed annually), Business (custom). From job title to booked interviews: AI sourcing, outreach from your inbox, and interview scheduling included."
+  jsonLd={jsonLd}
+>
+  <div x-data="{ isAnnual: true }">
+    <section class="mx-auto max-w-7xl px-4 pb-20 pt-12 md:px-8 md:pb-28 md:pt-20">
+      <SectionHeader
+        as="h1"
+        eyebrow="Pricing"
+        title="Pricing for an AI recruiter that does everything in between."
+        sub="Start free, no credit card. Every plan takes you from job title to booked interviews; pick one by seats, contact credits, and how many AI agents you want working."
+      >
+        <div data-reveal style="--i:3" class="mt-8 inline-grid grid-cols-2 rounded-full bg-bg-secondary p-1 text-sm font-medium" role="group" aria-label="Billing period">
+          <button
+            type="button"
+            class="rounded-full px-5 py-2 transition-colors"
+            x-bind:class="!isAnnual ? 'bg-white text-ink shadow-app' : 'text-ink-2 hover:text-ink'"
+            x-bind:aria-pressed="(!isAnnual).toString()"
+            x-on:click="isAnnual = false; window.dataLayer?.push({ event: 'billing_period_toggled', billing_period: 'monthly' })"
+          >Monthly</button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-full px-5 py-2 transition-colors"
+            x-bind:class="isAnnual ? 'bg-white text-ink shadow-app' : 'text-ink-2 hover:text-ink'"
+            x-bind:aria-pressed="isAnnual.toString()"
+            x-on:click="isAnnual = true; window.dataLayer?.push({ event: 'billing_period_toggled', billing_period: 'annual' })"
+          >Annual <span class="rounded-full bg-green-lighter px-2 py-0.5 text-xs text-green-accessible">25% off</span></button>
+        </div>
+      </SectionHeader>
+
+      <div class="mx-auto mt-12 grid max-w-md gap-4 md:max-w-none md:grid-cols-2 xl:grid-cols-4">
+        {plans.map((plan, i) => (
+          <div
+            data-reveal
+            style={`--i:${i}`}
+            class:list={[
+              "relative flex flex-col rounded-3xl p-7",
+              plan.featured ? "bg-white shadow-[0_0_0_2px_var(--color-green),0_16px_40px_-16px_rgb(74_122_90/0.35)]" : "bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.05),0_10px_30px_-14px_rgb(115_70_38/0.18)]",
+            ]}
+          >
+            {plan.featured && <span class="absolute -top-3 left-7 rounded-full bg-green px-3 py-1 text-xs font-medium text-white">Most popular</span>}
+            <h2 class="text-lg font-medium">{plan.name}</h2>
+            <div class="mt-4 min-h-[76px]">
+              {plan.id === "free" && <><p class="text-5xl font-medium tracking-[-0.03em] tabular-nums">$0</p><p class="mt-2 text-sm text-ink-2">free forever</p></>}
+              {plan.id === "solo" && (
+                <>
+                  <p class="text-5xl font-medium tracking-[-0.03em] tabular-nums">$99</p>
+                  <p class="mt-2 text-sm text-ink-2"><span x-show="isAnnual">per month, per user, billed annually</span><span x-show="!isAnnual" x-cloak>only on annual billing</span></p>
+                </>
+              )}
+              {plan.id === "professional" && (
+                <>
+                  <p class="text-5xl font-medium tracking-[-0.03em] tabular-nums"><span x-show="isAnnual">$135</span><span x-show="!isAnnual" x-cloak>$179</span></p>
+                  <p class="mt-2 text-sm text-ink-2">per month, per user<span x-show="isAnnual">, billed annually</span></p>
+                </>
+              )}
+              {plan.id === "business" && <><p class="text-5xl font-medium tracking-[-0.03em]">Custom</p><p class="mt-2 text-sm text-ink-2">pricing for your team</p></>}
+            </div>
+            <p class="mt-4 min-h-[48px] text-ink-2">{plan.desc}</p>
+            {plan.contact ? (
+              <a href="/book-a-demo/" data-plan={plan.id} class:list={[btn, "mt-6", secondary]} x-on:click={ctaClick(plan, "card")}>Contact us</a>
+            ) : (
+              <button type="button" data-plan={plan.id} class:list={[btn, "mt-6", plan.featured ? primary : secondary]} x-on:click={ctaClick(plan, "card")}>Try for free</button>
+            )}
+            <ul class="mt-6 space-y-3 border-t border-ink/8 pt-6 text-[15px]">
+              {plan.features.map((f) => (
+                <li class="flex gap-3">
+                  <span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-green-lighter text-green-accessible"><Check size={12} stroke-width={3} /></span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <p data-reveal class="mt-8 text-center text-sm text-ink-3">Every automation is optional on every plan. Approve each match and email yourself, or let Pin run from job title to calendar.</p>
+    </section>
+
+    <!-- Compare plans -->
+    <section class="mx-auto max-w-7xl px-4 pb-24 md:px-8 md:pb-32" aria-labelledby="compare-title">
+      <h2 id="compare-title" data-reveal class="text-[32px] font-medium leading-[1.1] tracking-[-0.02em] md:text-[40px]">Compare plans</h2>
+      <div class="relative -mx-4 mt-8 overflow-x-auto px-4 lg:mx-0 lg:overflow-visible lg:px-0">
+        <table class="w-full min-w-[640px] border-collapse text-left">
+          <thead>
+            <tr>
+              <th scope="col" class="sticky left-0 z-20 w-[28%] bg-bg py-4 pr-4 text-sm font-normal text-ink-3 lg:top-16 lg:z-30">
+                <span class="sr-only">Feature</span>
+              </th>
+              {plans.map((plan) => (
+                <th scope="col" class="w-[18%] bg-bg px-3 py-4 text-center align-bottom lg:sticky lg:top-16 lg:z-20">
+                  <span class="block text-lg font-medium">{plan.name}</span>
+                  <span class="mt-3 hidden lg:block">
+                    {plan.contact ? (
+                      <a href="/book-a-demo/" data-plan={plan.id} class:list={[btn, "py-2 text-sm", secondary]} x-on:click={ctaClick(plan, "compare_table")}>Contact us</a>
+                    ) : (
+                      <button type="button" data-plan={plan.id} class:list={[btn, "py-2 text-sm", plan.featured ? primary : secondary]} x-on:click={ctaClick(plan, "compare_table")}>Try for free</button>
+                    )}
+                  </span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          {comparison.map((cat) => (
+            <tbody>
+              <tr>
+                <th scope="colgroup" colspan="5" class="sticky left-0 bg-bg pb-3 pt-10 text-sm font-medium tracking-wide text-green">{cat.category}</th>
+              </tr>
+              {cat.features.map((feature) => (
+                <tr class="border-t border-ink/8">
+                  <th scope="row" class="sticky left-0 z-10 bg-bg py-4 pr-4 font-normal">
+                    {feature.name}
+                    {feature.sub && <span class="block text-sm text-ink-3">{feature.sub}</span>}
+                  </th>
+                  {feature.values.map((value) => (
+                    <td class="px-3 py-4 text-center">
+                      {value === true ? (
+                        <span class="inline-grid size-6 place-items-center rounded-full bg-green-lighter text-green-accessible"><Check size={14} stroke-width={3} /><span class="sr-only">Included</span></span>
+                      ) : value === false ? (
+                        <span class="text-ink-3"><span aria-hidden="true">—</span><span class="sr-only">Not included</span></span>
+                      ) : typeof value === "object" ? (
+                        <span>
+                          {value.text}
+                          <span x-show="isAnnual" class="block text-sm text-ink-3">{value.annualSub}</span>
+                          <span x-show="!isAnnual" x-cloak class="block text-sm text-ink-3">{value.monthlySub}</span>
+                        </span>
+                      ) : (
+                        <span>{value}</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <Tools />
+  <FAQ items={homeFaq}>
+    <p class="mt-4 text-lg leading-relaxed text-ink-2">Free trial, no credit card. Questions about a plan? <a href="/book-a-demo/" class="whitespace-nowrap font-medium text-green-accessible underline decoration-green/30 underline-offset-4 hover:decoration-green">Talk to our team</a></p>
+  </FAQ>
+  <CTABand />
+</Layout>
+
+<style>
+  [x-cloak] { display: none !important; }
+</style>

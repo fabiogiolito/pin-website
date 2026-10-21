@@ -1,0 +1,67 @@
+<!--
+  Hero: big-numeral for linkedin-recruiter-new-features.
+  Glyph "12" (the 12 confirmed AI features LinkedIn shipped 2025-2026).
+  Canvas 1725 x 912.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1725 912" width="1725" height="912" role="img" aria-label="Pin.com blog hero: LinkedIn Recruiter AI Features: What's New in 2026">
+  <defs>
+    <linearGradient id="tpl3-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EFE8DE"/>
+      <stop offset="100%" stop-color="#E2D8CA"/>
+    </linearGradient>
+    <pattern id="tpl3-dots" x="0" y="0" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#6B8F71" opacity="0.35"/>
+    </pattern>
+  </defs>
+
+  <rect width="1725" height="912" fill="url(#tpl3-bg)"/>
+  <rect x="0" y="762" width="1725" height="150" fill="url(#tpl3-dots)" opacity="0.55"/>
+
+  <text x="862" y="760"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="880"
+        font-weight="700"
+        letter-spacing="-24"
+        fill="#6B8F71"
+        fill-opacity="0.14"
+        stroke="#6B8F71"
+        stroke-width="4"
+        stroke-opacity="0.9">
+    12
+  </text>
+
+  <text x="862" y="140" text-anchor="middle" font-family="Georgia, serif" font-size="20" fill="#6B8F71" letter-spacing="8" font-weight="700">
+    PIN.COM  &#8226;  AI RECRUITING UPDATES
+  </text>
+  <line x1="782" y1="165" x2="942" y2="165" stroke="#6B8F71" stroke-width="3"/>
+
+  <g>
+    <rect x="195" y="560" width="1335" height="250" rx="20" fill="#E8E0D8" fill-opacity="0.72" stroke="#6B8F71" stroke-width="2" stroke-opacity="0.4"/>
+
+    <text x="862" y="645" text-anchor="middle" font-family="Georgia, serif" font-size="74" fill="#3B3B3B" font-weight="700">
+      LinkedIn Recruiter's
+    </text>
+    <text x="862" y="725" text-anchor="middle" font-family="Georgia, serif" font-size="74" fill="#6B8F71" font-weight="700" font-style="italic">
+      New AI Features.
+    </text>
+    <text x="862" y="780" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#5C5C5C">
+      12 new AI features shipped on LinkedIn Recruiter in 2025-2026.
+    </text>
+  </g>
+
+  <g transform="translate(120,470)" opacity="0.9">
+    <circle r="18" fill="none" stroke="#6B8F71" stroke-width="2"/>
+    <circle r="8" fill="#4CAF50"/>
+  </g>
+  <g transform="translate(1605,470)" opacity="0.9">
+    <circle r="18" fill="none" stroke="#6B8F71" stroke-width="2"/>
+    <circle r="8" fill="#4CAF50"/>
+  </g>
+  <line x1="145" y1="470" x2="380" y2="470" stroke="#6B8F71" stroke-width="1.5" opacity="0.5"/>
+  <line x1="1345" y1="470" x2="1580" y2="470" stroke="#6B8F71" stroke-width="1.5" opacity="0.5"/>
+
+  <text x="862" y="875" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#8B8178" letter-spacing="6">
+    HIRING ASSISTANT  &#8226;  AI SEARCH  &#8226;  INMAIL  &#8226;  TEAMS  &#8226;  PRICING
+  </text>
+</svg>

@@ -1,0 +1,309 @@
+---
+import "./tools.css";
+// Cost-per-Hire Calculator — standalone /tools entry.
+// Follows the BooleanSearchGenerator pattern: server-rendered Astro, Alpine
+// reactivity via a window.<factory>() function, `.pin-tool` CSS namespace.
+---
+
+<script is:inline>
+  window.costPerHireCalculator = function () {
+    // Pin customer median cost per hire, used as the benchmark comparison.
+    // Rounded to a defensible even number — revise when we publish newer data.
+    const PIN_BENCHMARK = 2800;
+
+    return {
+      recruiterAnnualCost: 95000,
+      hoursPerHire: 40,
+      jobBoardSpend: 200,
+      agencyFees: 0,
+      linkedinSeatCost: 0,
+      atsCost: 150,
+      assessmentCost: 75,
+      referralBonus: 0,
+      copied: false,
+      linkCopied: false,
+      _trackedFirst: false,
+      _viewTracked: false,
+
+      _track(event, props = {}) {
+        try {
+          const root = this.$root;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event,
+            tool_slug: (root && root.dataset && root.dataset.pinToolSlug) || '',
+            tool_name: (root && root.dataset && root.dataset.pinToolName) || '',
+            post_slug: (location.pathname.split('/').filter(Boolean).pop() || ''),
+            page_path: location.pathname,
+            ...props,
+          });
+        } catch (e) { /* never break the tool on tracking */ }
+      },
+      _trackFirstInteraction(type) {
+        if (this._trackedFirst) return;
+        this._trackedFirst = true;
+        this._track('blog_tool_first_interaction', { interaction_type: type });
+      },
+
+      hydrate() {
+        try {
+          const s = new URLSearchParams(window.location.search).get('cph');
+          if (s) {
+            const state = JSON.parse(decodeURIComponent(atob(s)));
+            for (const k of Object.keys(state)) {
+              if (k in this && typeof state[k] === 'number') this[k] = state[k];
+            }
+            this._track('blog_tool_shared_state_loaded');
+          }
+        } catch (e) { /* silent */ }
+        if (!this._viewTracked && typeof IntersectionObserver !== 'undefined') {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._viewTracked = true;
+              this._track('blog_tool_viewed');
+              io.disconnect();
+            }
+          }, { threshold: 0.3 });
+          io.observe(this.$root);
+        }
+      },
+
+      applyPreset(id) {
+        if (id === 'in-house') {
+          this.recruiterAnnualCost = 95000; this.hoursPerHire = 40;
+          this.jobBoardSpend = 200; this.agencyFees = 0;
+          this.linkedinSeatCost = 0; this.atsCost = 150;
+          this.assessmentCost = 75; this.referralBonus = 0;
+        } else if (id === 'agency-heavy') {
+          this.recruiterAnnualCost = 95000; this.hoursPerHire = 20;
+          this.jobBoardSpend = 0; this.agencyFees = 18000;
+          this.linkedinSeatCost = 0; this.atsCost = 100;
+          this.assessmentCost = 0; this.referralBonus = 0;
+        } else if (id === 'linkedin-dependent') {
+          this.recruiterAnnualCost = 95000; this.hoursPerHire = 35;
+          this.jobBoardSpend = 100; this.agencyFees = 0;
+          this.linkedinSeatCost = 1250; this.atsCost = 150;
+          this.assessmentCost = 75; this.referralBonus = 1000;
+        }
+        this._track('blog_tool_preset_selected', { preset_id: id });
+        this._trackFirstInteraction('preset');
+      },
+
+      reset() {
+        this.recruiterAnnualCost = 95000; this.hoursPerHire = 40;
+        this.jobBoardSpend = 200; this.agencyFees = 0;
+        this.linkedinSeatCost = 0; this.atsCost = 150;
+        this.assessmentCost = 75; this.referralBonus = 0;
+        this._track('blog_tool_reset_clicked');
+      },
+
+      get recruiterCost() {
+        // ~2080 work hours/year. Loaded cost per hire = (annual / 2080) * hours/hire.
+        const hourly = this.recruiterAnnualCost / 2080;
+        return Math.round(hourly * this.hoursPerHire);
+      },
+
+      get internalCost() { return this.recruiterCost; },
+      get externalCost() {
+        return this.jobBoardSpend + this.agencyFees + this.linkedinSeatCost + this.atsCost + this.assessmentCost + this.referralBonus;
+      },
+      get totalCost() { return this.internalCost + this.externalCost; },
+      get vsBenchmark() { return this.totalCost - PIN_BENCHMARK; },
+      get benchmarkPct() {
+        if (this.totalCost <= 0) return 0;
+        return Math.round(((this.totalCost - PIN_BENCHMARK) / PIN_BENCHMARK) * 100);
+      },
+      get benchmarkStatus() {
+        const diff = this.vsBenchmark;
+        if (diff <= -500)  return { level: 'ok',   text: 'Below Pin customer median — strong.' };
+        if (diff <= 500)   return { level: 'ok',   text: 'On par with Pin customer median.' };
+        if (diff <= 2000)  return { level: 'warn', text: 'Above benchmark — review your biggest line item.' };
+        return                     { level: 'over', text: 'Well above benchmark — large savings opportunity.' };
+      },
+
+      get summary() {
+        const f = (n) => '$' + Math.round(n).toLocaleString();
+        const lines = [
+          'Cost-per-Hire breakdown',
+          '──────────────────────',
+          '',
+          'Internal',
+          '  Recruiter time: ' + f(this.recruiterCost) + '  (' + this.hoursPerHire + ' hrs × $' + Math.round(this.recruiterAnnualCost / 2080) + '/hr loaded)',
+          '',
+          'External',
+          '  Job board spend:  ' + f(this.jobBoardSpend),
+          '  Agency fees:      ' + f(this.agencyFees),
+          '  LinkedIn seats:   ' + f(this.linkedinSeatCost),
+          '  ATS license:      ' + f(this.atsCost),
+          '  Assessment tools: ' + f(this.assessmentCost),
+          '  Referral bonus:   ' + f(this.referralBonus),
+          '',
+          'Total cost per hire: ' + f(this.totalCost),
+          'Pin customer median: ' + f(PIN_BENCHMARK),
+          'Variance: ' + (this.vsBenchmark >= 0 ? '+' : '') + f(this.vsBenchmark) + '  (' + (this.benchmarkPct >= 0 ? '+' : '') + this.benchmarkPct + '%)',
+        ];
+        return lines.join('\n');
+      },
+
+      shareUrl() {
+        try {
+          const state = {
+            recruiterAnnualCost: this.recruiterAnnualCost, hoursPerHire: this.hoursPerHire,
+            jobBoardSpend: this.jobBoardSpend, agencyFees: this.agencyFees,
+            linkedinSeatCost: this.linkedinSeatCost, atsCost: this.atsCost,
+            assessmentCost: this.assessmentCost, referralBonus: this.referralBonus,
+          };
+          const s = btoa(encodeURIComponent(JSON.stringify(state)));
+          const url = new URL(window.location.href);
+          url.searchParams.set('cph', s);
+          return url.toString();
+        } catch (e) { return window.location.href; }
+      },
+
+      _copyText(text, flag) {
+        const ok = () => { this[flag] = true; setTimeout(() => this[flag] = false, 1500); };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(ok).catch(() => {});
+          return;
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      },
+      copy() {
+        this._copyText(this.summary, 'copied');
+        this._track('blog_tool_output_copied', { total: this.totalCost });
+      },
+      copyLink() {
+        const url = this.shareUrl();
+        try { history.replaceState(null, '', url); } catch (e) {}
+        this._copyText(url, 'linkCopied');
+        this._track('blog_tool_share_link_copied');
+      },
+      _onInput() { this._trackFirstInteraction('input'); },
+    };
+  };
+</script>
+
+<section
+  class="pin-tool"
+  data-pin-tool-slug="cost-per-hire-calculator"
+  data-pin-tool-name="Cost-per-Hire Calculator"
+  x-data="costPerHireCalculator()"
+  x-init="hydrate()"
+>
+  <h2 class="pt-title" id="pin-tool-cost-per-hire-calculator">
+    Cost-per-Hire Calculator
+    <span class="pt-tool-badge" aria-hidden="true">Tool</span>
+  </h2>
+  <p class="pt-intro">
+    Add up every line item that goes into one hire — recruiter time, job boards, agency fees, LinkedIn, ATS, assessments, referral bonuses — and see how your $/hire compares to the Pin customer median of $2,800.
+  </p>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Preset</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" @click="applyPreset('in-house')">In-house TA team</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('agency-heavy')">Agency-heavy</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('linkedin-dependent')">LinkedIn-dependent</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="cph-rac">Recruiter annual loaded cost ($)</label>
+      <input id="cph-rac" class="pt-input" type="number" min="0" step="1000" x-model.number="recruiterAnnualCost" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="cph-hrs">Recruiter hours per hire</label>
+      <input id="cph-hrs" class="pt-input" type="number" min="0" step="1" x-model.number="hoursPerHire" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="cph-jb">Job board spend per hire ($)</label>
+      <input id="cph-jb" class="pt-input" type="number" min="0" step="10" x-model.number="jobBoardSpend" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="cph-ag">Agency fees per hire ($)</label>
+      <input id="cph-ag" class="pt-input" type="number" min="0" step="500" x-model.number="agencyFees" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="cph-li">LinkedIn seat cost per hire ($)</label>
+      <input id="cph-li" class="pt-input" type="number" min="0" step="50" x-model.number="linkedinSeatCost" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="cph-ats">ATS license per hire ($)</label>
+      <input id="cph-ats" class="pt-input" type="number" min="0" step="10" x-model.number="atsCost" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="cph-as">Assessment tools per hire ($)</label>
+      <input id="cph-as" class="pt-input" type="number" min="0" step="10" x-model.number="assessmentCost" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="cph-ref">Referral bonus paid per hire ($)</label>
+      <input id="cph-ref" class="pt-input" type="number" min="0" step="100" x-model.number="referralBonus" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-calc-grid">
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Internal</span>
+      <span class="pt-calc-value" x-text="'$' + Math.round(internalCost).toLocaleString()"></span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">External</span>
+      <span class="pt-calc-value" x-text="'$' + Math.round(externalCost).toLocaleString()"></span>
+    </div>
+    <div class="pt-calc-card pt-calc-total">
+      <span class="pt-calc-label">Total $/hire</span>
+      <span class="pt-calc-value" x-text="'$' + Math.round(totalCost).toLocaleString()"></span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Pin benchmark</span>
+      <span class="pt-calc-value">$2,800</span>
+    </div>
+  </div>
+
+  <div class="pt-output-wrap">
+    <label class="pt-label" for="cph-out">Summary</label>
+    <textarea id="cph-out" class="pt-output" readonly x-text="summary"></textarea>
+    <div class="pt-charcount" :class="'level-' + benchmarkStatus.level" x-text="benchmarkStatus.text"></div>
+    <div class="pt-actions">
+      <button type="button" class="pt-btn primary" @click="copy()">
+        <span x-show="!copied">Copy summary</span>
+        <span x-show="copied" x-cloak>Copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="copyLink()">
+        <span x-show="!linkCopied">Copy share link</span>
+        <span x-show="linkCopied" x-cloak>Link copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="reset()">Reset</button>
+    </div>
+  </div>
+
+  <div class="pt-howto">
+    <strong>How to use:</strong>
+    <ol>
+      <li>Pick a preset or enter your own numbers.</li>
+      <li>"Recruiter annual loaded cost" includes salary + benefits + employer taxes.</li>
+      <li>Any line you don't spend on, leave at 0.</li>
+      <li>Compare your total to the $2,800 Pin customer median — if yours is higher, the biggest line item is where to focus.</li>
+      <li>Copy the summary into your ops review, or share the link to hand the math to a hiring manager.</li>
+    </ol>
+  </div>
+
+  <p class="pt-source">
+    Built by Pin. Pin customers average $2,800 cost per hire vs. SHRM's $4,700 industry median — see <a href="https://www.pin.com/">pin.com</a>.
+  </p>
+</section>

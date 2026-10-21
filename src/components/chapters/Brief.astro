@@ -1,0 +1,125 @@
+---
+import { Check, Pin, Ban, Search, ChevronDown, Plus, Building2, ArrowUp } from "@lucide/astro";
+import Chapter from "../Chapter.astro";
+import PinAvatar from "../PinAvatar.astro";
+
+const options = [
+  { label: "Mid-level", hint: "3–5 years", chip: "3–5 years of experience" },
+  { label: "Senior", hint: "5–8 years", chip: "5–8 years of experience" },
+  { label: "Staff", hint: "8+ years", chip: "8+ years of experience" },
+];
+const chip = "inline-flex items-center gap-1.5 rounded-md border border-app-border bg-white px-2 py-1";
+---
+
+<Chapter n={1} stage="Brief" title="Start with a title. Pin fills in the blanks." tint="green">
+  <p slot="copy">
+    No job description? No problem. Give Pin a role and a company. It researches the company, drafts the profile, and asks the questions a great sourcer would ask.
+  </p>
+  <p slot="copy">Have a JD? Paste it, upload it, or import it from your ATS.</p>
+
+  <div id="brief" class="relative grid items-start gap-5 text-[14px] md:grid-cols-[1.05fr_1fr] md:gap-8">
+    <!-- Chat -->
+    <div class="relative">
+    <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Asks what a sourcer would ask</span>
+    <div class="panel p-5 md:p-6">
+      <div class="space-y-4">
+        <div class="flex gap-3">
+          <PinAvatar size={28} />
+          <p class="pt-0.5 leading-relaxed">Hi Alex, I can help you build the search for your <b class="font-semibold">Senior Backend Engineer</b> at <b class="font-semibold">ByteLogic</b>. Do you already have a job description I should work from?</p>
+        </div>
+        <p class="ml-auto w-fit max-w-[80%] rounded-lg bg-app-fg/5 px-3 py-2">Not yet. Just the title for now.</p>
+        <div class="flex gap-3">
+          <PinAvatar size={28} />
+          <p class="pt-0.5 leading-relaxed">No problem. I looked up ByteLogic: Series D fintech, NYC HQ, Go and Kotlin on the backend. A few quick questions to sharpen the search.</p>
+        </div>
+
+        <!-- Question card, mirrors ask-sourcing-questions-tool -->
+        <fieldset class="ml-10 rounded-lg border border-app-ai/25 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <legend class="font-semibold">What seniority are you targeting?</legend>
+              <p class="text-[13px] text-app-fg3">Select all that apply</p>
+            </div>
+            <span class="shrink-0 rounded border border-app-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-app-fg2">2 of 4</span>
+          </div>
+          <div class="mt-3 space-y-1.5">
+            {options.map((o) => (
+              <label class="flex cursor-pointer items-center gap-2.5 rounded-md border border-app-border px-3 py-2 transition-colors hover:bg-app-fg/[0.03] has-[:checked]:border-app-tint-fg has-[:checked]:bg-app-tint/5">
+                <input type="checkbox" class="peer sr-only" />
+                <span class="grid size-4 place-items-center rounded-[4px] border border-app-fg3 text-white transition-colors peer-checked:border-app-tint peer-checked:bg-app-tint peer-focus-visible:ring-2 peer-focus-visible:ring-app-tint/40">
+                  <Check size={11} stroke-width={3} />
+                </span>
+                <span>{o.label}</span>
+                <span class="ml-auto text-[13px] text-app-fg3">{o.hint}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </div>
+      <div class="mt-5 flex items-center gap-2 rounded-xl border border-app-border px-3 py-2.5 text-app-fg3">
+        <span class="flex-1">Tell Pin what you need...</span>
+        <span class="grid size-6 place-items-center rounded-md bg-app-fg/8"><ArrowUp size={13} /></span>
+      </div>
+    </div>
+    </div>
+
+    <!-- Criteria, styled like the Sourcing view -->
+    <div class="space-y-5 md:pt-14">
+      <div class="relative">
+      <span class="callout absolute -top-4 right-4 z-10 hidden md:inline-flex">Builds your search criteria</span>
+      <div class="panel p-4 pt-7 md:p-5 md:pt-7">
+        <div class="flex items-center gap-2 rounded-lg border border-app-border px-3 py-2.5 text-app-fg3">
+          <Search size={14} /> Ask Pin to add or change any criteria
+        </div>
+        <div class="mt-3 flex flex-wrap gap-1.5 text-[13px]">
+          <span class={chip}><Pin size={12} class="text-app-tint" /> Backend Engineer <ChevronDown size={12} class="text-app-fg3" /></span>
+          <span class={chip}><Pin size={12} class="text-app-tint" /> New York or Remote <ChevronDown size={12} class="text-app-fg3" /></span>
+          {options.map((o, i) => (
+            <span class:list={[chip, "seniority chip-in"]} hidden={i !== 1}><Pin size={12} class="text-app-tint" /> {o.chip} <ChevronDown size={12} class="text-app-fg3" /></span>
+          ))}
+          {["Go", "Kotlin", "Payments", "Distributed systems"].map((c) => <span class={chip}>{c} <ChevronDown size={12} class="text-app-fg3" /></span>)}
+          <span class={chip}><Ban size={12} class="text-app-neg" /> Crypto <ChevronDown size={12} class="text-app-fg3" /></span>
+          <span class="inline-flex items-center gap-1 rounded-md border border-app-pos/30 px-2 py-1 text-app-pos"><Plus size={12} /> Criteria</span>
+        </div>
+      </div>
+      </div>
+
+      <div class="panel flex items-center gap-3 p-4">
+        <span class="grid size-10 shrink-0 place-items-center rounded-lg bg-app-tint/8 text-app-tint-fg"><Building2 size={18} /></span>
+        <div class="min-w-0">
+          <p class="font-semibold">ByteLogic</p>
+          <p class="truncate text-[13px] text-app-fg2">Fintech · Series D · 1,000 employees · New York</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</Chapter>
+
+<style>
+  .chip-in:not([hidden]) { animation: chip-in 250ms var(--ease-out-soft) both; }
+  @keyframes chip-in { from { opacity: 0; scale: 0.85; } }
+</style>
+
+<script>
+  import { onEnter, reducedMotion } from "../../scripts/motion";
+
+  const root = document.getElementById("brief")!;
+  const boxes = [...root.querySelectorAll<HTMLInputElement>("input[type=checkbox]")];
+  const chips = [...root.querySelectorAll<HTMLElement>(".seniority")];
+  let touched = false;
+
+  // Seniority chips mirror the checkboxes; with nothing picked, Pin keeps its own guess (Senior).
+  function render() {
+    const any = boxes.some((b) => b.checked);
+    chips.forEach((c, i) => (c.hidden = any ? !boxes[i].checked : i !== 1));
+  }
+  boxes.forEach((b) => b.addEventListener("change", () => { touched = true; render(); }));
+
+  // Self-play once: pick "Senior", unless the visitor already clicked.
+  onEnter(root, () => setTimeout(() => {
+    if (touched) return;
+    boxes[1].checked = true;
+    render();
+  }, reducedMotion ? 0 : 1200), 0.4);
+</script>

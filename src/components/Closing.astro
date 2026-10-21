@@ -1,0 +1,11 @@
+---
+// Homepage closing: integrations, FAQ, final CTA (all shared ui components).
+import Tools from "./ui/Tools.astro";
+import FAQ from "./ui/FAQ.astro";
+import CTABand from "./ui/CTABand.astro";
+import { homeFaq } from "./homeFaq";
+---
+
+<Tools />
+<FAQ items={homeFaq} />
+<CTABand />

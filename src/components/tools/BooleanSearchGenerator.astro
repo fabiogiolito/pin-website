@@ -1,0 +1,487 @@
+---
+import "./tools.css";
+// Boolean Search Generator — mirrored from
+// ~/Code/pin-blog/tools/boolean-search-generator/index.html
+// When editing this component, also edit the standalone HTML in pin-blog so
+// the two stay in sync. Alpine is already bundled globally (see astro.config.mjs).
+---
+
+<!-- Factory runs before Alpine processes x-data. is:inline keeps Astro from bundling. -->
+<script is:inline>
+  window.booleanSearchGenerator = function () {
+    const presets = [
+      { id: 'software-engineer', label: 'Software Engineer',
+        titles: ['software engineer', 'software developer', 'swe'],
+        required: ['Python'], nice: ['AWS', 'Docker', 'Kubernetes'], exclude: ['intern', 'junior'] },
+      { id: 'data-scientist', label: 'Data Scientist',
+        titles: ['data scientist', 'machine learning engineer', 'ML engineer'],
+        required: ['Python'], nice: ['TensorFlow', 'PyTorch', 'scikit-learn'], exclude: ['intern'] },
+      { id: 'devops', label: 'DevOps / SRE',
+        titles: ['devops engineer', 'site reliability engineer', 'SRE', 'platform engineer'],
+        required: ['Kubernetes', 'Terraform'], nice: ['AWS', 'GCP', 'Azure'], exclude: ['junior'] },
+      { id: 'cybersecurity', label: 'Cybersecurity',
+        titles: ['security engineer', 'cybersecurity engineer', 'infosec engineer'],
+        required: ['SIEM'], nice: ['CISSP', 'penetration testing', 'incident response'], exclude: ['intern'] },
+      { id: 'full-stack', label: 'Full-Stack',
+        titles: ['full-stack developer', 'full stack developer', 'fullstack engineer'],
+        required: ['React', 'Node.js'], nice: ['TypeScript', 'GraphQL', 'PostgreSQL'], exclude: ['intern'] },
+      { id: 'custom', label: 'Custom', titles: [], required: [], nice: [], exclude: [] },
+    ];
+
+    const synonymMap = {
+      'aws': ['Amazon Web Services'],
+      'gcp': ['Google Cloud', 'Google Cloud Platform'],
+      'azure': ['Microsoft Azure'],
+      'k8s': ['Kubernetes'],
+      'kubernetes': ['K8s'],
+      'js': ['JavaScript'],
+      'javascript': ['JS'],
+      'ts': ['TypeScript'],
+      'typescript': ['TS'],
+      'ml': ['Machine Learning'],
+      'ai': ['Artificial Intelligence'],
+      'nlp': ['Natural Language Processing'],
+      'sre': ['Site Reliability Engineer', 'Site Reliability Engineering'],
+      'node.js': ['Node', 'NodeJS'],
+      'nodejs': ['Node.js', 'Node'],
+      'react': ['ReactJS', 'React.js'],
+      'vue': ['VueJS', 'Vue.js'],
+      'python': ['Python3'],
+      'postgresql': ['Postgres'],
+      'postgres': ['PostgreSQL'],
+      'mongodb': ['Mongo'],
+      'elasticsearch': ['ElasticSearch', 'ELK'],
+      'ci/cd': ['Continuous Integration', 'Continuous Deployment'],
+      'cissp': ['Certified Information Systems Security Professional'],
+      'siem': ['Security Information and Event Management'],
+    };
+
+    const seniorityTerms = {
+      any:    { label: 'Any',    add: [],                                         autoExclude: [] },
+      junior: { label: 'Junior', add: ['junior', 'associate', 'entry level'],     autoExclude: ['senior', 'principal', 'staff'] },
+      mid:    { label: 'Mid',    add: [],                                         autoExclude: ['intern', 'junior', 'entry level'] },
+      senior: { label: 'Senior', add: ['senior', 'staff', 'principal', 'lead'],   autoExclude: ['intern', 'junior', 'entry level'] },
+      lead:   { label: 'Lead+',  add: ['lead', 'principal', 'staff', 'director'], autoExclude: ['intern', 'junior', 'associate', 'entry level'] },
+    };
+
+    const quoteIfMulti = (t) => /\s/.test(t) ? `"${t}"` : t;
+    const expand = (term, withSyn) => {
+      if (!withSyn) return [term];
+      const key = term.toLowerCase();
+      const syns = synonymMap[key] || [];
+      if (!syns.length) return [term];
+      const seen = new Set([key]);
+      const out = [term];
+      for (const s of syns) {
+        const k = s.toLowerCase();
+        if (!seen.has(k)) { seen.add(k); out.push(s); }
+      }
+      return out;
+    };
+    const orGroup = (arr) => arr.length ? '(' + arr.map(quoteIfMulti).join(' OR ') + ')' : '';
+
+    return {
+      presets,
+      seniorityTerms,
+      seniorityKeys: ['any', 'junior', 'mid', 'senior', 'lead'],
+      preset: 'software-engineer',
+      titles: [],
+      required: [],
+      nice: [],
+      exclude: [],
+      location: '',
+      seniority: 'any',
+      expandSynonyms: false,
+      copied: false,
+      linkCopied: false,
+      _trackedFirst: false,
+      _viewTracked: false,
+
+      _track(event, props = {}) {
+        try {
+          const root = this.$root;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event,
+            tool_slug: (root && root.dataset && root.dataset.pinToolSlug) || '',
+            tool_name: (root && root.dataset && root.dataset.pinToolName) || '',
+            post_slug: (location.pathname.split('/').filter(Boolean).pop() || ''),
+            page_path: location.pathname,
+            ...props,
+          });
+        } catch (e) { /* tracking must never break the tool */ }
+      },
+      _trackFirstInteraction(type) {
+        if (this._trackedFirst) return;
+        this._trackedFirst = true;
+        this._track('blog_tool_first_interaction', { interaction_type: type });
+      },
+
+      hydrate() {
+        let restored = false;
+        try {
+          const s = new URLSearchParams(window.location.search).get('btool');
+          if (s) {
+            const state = JSON.parse(decodeURIComponent(atob(s)));
+            this.preset = state.preset ?? this.preset;
+            this.titles = Array.isArray(state.titles) ? state.titles : [];
+            this.required = Array.isArray(state.required) ? state.required : [];
+            this.nice = Array.isArray(state.nice) ? state.nice : [];
+            this.exclude = Array.isArray(state.exclude) ? state.exclude : [];
+            this.location = state.location ?? '';
+            this.seniority = state.seniority ?? 'any';
+            this.expandSynonyms = !!state.expandSynonyms;
+            restored = true;
+          }
+        } catch (e) { /* fall through */ }
+        if (!restored) this.applyPreset(this.preset, true);
+        if (restored) this._track('blog_tool_shared_state_loaded');
+
+        if (!this._viewTracked && typeof IntersectionObserver !== 'undefined') {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._viewTracked = true;
+              this._track('blog_tool_viewed');
+              io.disconnect();
+            }
+          }, { threshold: 0.3 });
+          io.observe(this.$root);
+        }
+      },
+
+      applyPreset(id, silent) {
+        const p = presets.find(x => x.id === id);
+        if (!p) return;
+        this.titles = [...p.titles];
+        this.required = [...p.required];
+        this.nice = [...p.nice];
+        this.exclude = [...p.exclude];
+        if (!silent) {
+          this._track('blog_tool_preset_selected', { preset_id: id });
+          this._trackFirstInteraction('preset');
+        }
+      },
+
+      addChip(field, evt) {
+        const raw = (evt.target.value || '').trim().replace(/,$/, '').trim();
+        if (!raw) return;
+        if (!this[field].includes(raw)) this[field].push(raw);
+        evt.target.value = '';
+        this._trackFirstInteraction('chip_add');
+      },
+
+      removeChip(field, index) {
+        this[field].splice(index, 1);
+        this._trackFirstInteraction('chip_remove');
+      },
+
+      reset() {
+        this.preset = 'custom';
+        this.titles = []; this.required = []; this.nice = []; this.exclude = [];
+        this.location = '';
+        this.seniority = 'any';
+        this.expandSynonyms = false;
+        this._track('blog_tool_reset_clicked');
+      },
+
+      get effectiveExclude() {
+        const auto = seniorityTerms[this.seniority]?.autoExclude || [];
+        const seen = new Set();
+        const out = [];
+        for (const t of [...this.exclude, ...auto]) {
+          const k = t.toLowerCase();
+          if (!seen.has(k)) { seen.add(k); out.push(t); }
+        }
+        return out;
+      },
+
+      get query() {
+        const withSyn = this.expandSynonyms;
+        const parts = [];
+
+        if (this.titles.length) {
+          parts.push(orGroup(this.titles.flatMap(t => expand(t, withSyn))));
+        }
+
+        if (this.required.length) {
+          parts.push(
+            this.required.map(t => {
+              const variants = expand(t, withSyn);
+              return variants.length > 1 ? orGroup(variants) : quoteIfMulti(variants[0]);
+            }).join(' AND ')
+          );
+        }
+
+        if (this.nice.length) {
+          parts.push(orGroup(this.nice.flatMap(t => expand(t, withSyn))));
+        }
+
+        const senAdd = seniorityTerms[this.seniority]?.add || [];
+        if (senAdd.length) parts.push(orGroup(senAdd));
+
+        let q = parts.filter(Boolean).join(' AND ');
+        const excl = this.effectiveExclude;
+        if (excl.length) q += ' ' + excl.map(e => 'NOT ' + quoteIfMulti(e)).join(' ');
+        if (this.location.trim()) q += ' AND ' + quoteIfMulti(this.location.trim());
+        return q.trim();
+      },
+
+      get charCount() { return this.query.length; },
+
+      get charStatus() {
+        const n = this.charCount;
+        if (n === 0) return { level: 'empty', text: 'Empty - pick a preset or add a title to get started.' };
+        if (n <= 1500) return { level: 'ok',   text: n + ' characters' };
+        if (n <= 2500) return { level: 'warn', text: n + ' characters - close to LinkedIn Recruiter\'s ~2,000 char limit' };
+        return             { level: 'over', text: n + ' characters - likely exceeds platform limits; split into two searches' };
+      },
+
+      get diceUrl()     { return 'https://www.dice.com/jobs?q=' + encodeURIComponent(this.query || ''); },
+      get linkedinUrl() { return 'https://www.linkedin.com/search/results/all/?keywords=' + encodeURIComponent(this.query || ''); },
+
+      shareUrl() {
+        try {
+          const state = {
+            preset: this.preset, titles: this.titles, required: this.required, nice: this.nice,
+            exclude: this.exclude, location: this.location, seniority: this.seniority,
+            expandSynonyms: this.expandSynonyms,
+          };
+          const s = btoa(encodeURIComponent(JSON.stringify(state)));
+          const url = new URL(window.location.href);
+          url.searchParams.set('btool', s);
+          return url.toString();
+        } catch (e) { return window.location.href; }
+      },
+
+      _copyText(text, flag) {
+        const ok = () => { this[flag] = true; setTimeout(() => this[flag] = false, 1500); };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(ok).catch(() => {});
+          return;
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      },
+
+      copy() {
+        if (!this.query) return;
+        this._copyText(this.query, 'copied');
+        this._track('blog_tool_output_copied', { char_count: this.charCount });
+      },
+
+      copyLink() {
+        const url = this.shareUrl();
+        try { history.replaceState(null, '', url); } catch (e) {}
+        this._copyText(url, 'linkCopied');
+        this._track('blog_tool_share_link_copied', { has_state: this.charCount > 0 });
+      },
+    };
+  };
+</script>
+
+<section
+  class="pin-tool"
+  data-pin-tool-slug="boolean-search-generator"
+  data-pin-tool-name="Boolean Search Generator for Dice and LinkedIn"
+  x-data="booleanSearchGenerator()"
+  x-init="hydrate()"
+>
+  <h2 class="pt-title" id="pin-tool-boolean-search-generator">
+    Boolean Search Generator for Dice and LinkedIn
+    <span class="pt-tool-badge" aria-hidden="true">Tool</span>
+  </h2>
+  <p class="pt-intro">
+    Build a recruiter-ready Boolean string in seconds. Pick a role preset, edit the title variants, toggle required skills and exclusions, and the generator writes the search for you. Works with Dice's Boolean search, LinkedIn Recruiter, and any ATS that accepts AND / OR / NOT operators.
+  </p>
+
+  <!-- Role preset -->
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Role preset</span>
+      <div class="pt-presets">
+        <template x-for="p in presets" :key="p.id">
+          <button
+            type="button"
+            class="pt-preset-btn"
+            :class="preset === p.id ? 'active' : ''"
+            @click="preset = p.id; applyPreset(p.id)"
+            x-text="p.label"
+          ></button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seniority + synonyms -->
+  <div class="pt-row two">
+    <div>
+      <span class="pt-label">Seniority</span>
+      <div class="pt-presets">
+        <template x-for="k in seniorityKeys" :key="k">
+          <button
+            type="button"
+            class="pt-preset-btn"
+            :class="seniority === k ? 'active' : ''"
+            @click="seniority = k; _trackFirstInteraction('toggle')"
+            x-text="seniorityTerms[k].label"
+          ></button>
+        </template>
+      </div>
+    </div>
+    <div>
+      <span class="pt-label">Skill synonyms</span>
+      <label class="pt-toggle">
+        <input type="checkbox" x-model="expandSynonyms" @change="_trackFirstInteraction('toggle')" />
+        <span class="pt-toggle-switch" aria-hidden="true"></span>
+        <span class="pt-toggle-text">Expand common synonyms (AWS → Amazon Web Services, K8s → Kubernetes, etc.)</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Title variants -->
+  <div class="pt-row">
+    <div>
+      <label class="pt-label">Title variants (joined with OR)</label>
+      <div class="pt-chips" @click="$refs.titleInput.focus()">
+        <template x-for="(t, i) in titles" :key="'t-' + i + '-' + t">
+          <span class="pt-chip">
+            <span x-text="t"></span>
+            <button type="button" aria-label="Remove" @click="removeChip('titles', i)">×</button>
+          </span>
+        </template>
+        <input
+          x-ref="titleInput"
+          class="pt-chip-input"
+          type="text"
+          placeholder="Add a title and press Enter"
+          @keydown.enter.prevent="addChip('titles', $event)"
+          @keydown.,.prevent="addChip('titles', $event)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Required and nice-to-have -->
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label">Required skills (AND)</label>
+      <div class="pt-chips" @click="$refs.reqInput.focus()">
+        <template x-for="(s, i) in required" :key="'r-' + i + '-' + s">
+          <span class="pt-chip">
+            <span x-text="s"></span>
+            <button type="button" aria-label="Remove" @click="removeChip('required', i)">×</button>
+          </span>
+        </template>
+        <input
+          x-ref="reqInput"
+          class="pt-chip-input"
+          type="text"
+          placeholder="e.g. Python, AWS"
+          @keydown.enter.prevent="addChip('required', $event)"
+          @keydown.,.prevent="addChip('required', $event)"
+        />
+      </div>
+    </div>
+    <div>
+      <label class="pt-label">Nice-to-have (OR)</label>
+      <div class="pt-chips" @click="$refs.niceInput.focus()">
+        <template x-for="(s, i) in nice" :key="'n-' + i + '-' + s">
+          <span class="pt-chip">
+            <span x-text="s"></span>
+            <button type="button" aria-label="Remove" @click="removeChip('nice', i)">×</button>
+          </span>
+        </template>
+        <input
+          x-ref="niceInput"
+          class="pt-chip-input"
+          type="text"
+          placeholder="e.g. Kubernetes, Go"
+          @keydown.enter.prevent="addChip('nice', $event)"
+          @keydown.,.prevent="addChip('nice', $event)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Exclude + location -->
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label">Exclude (NOT)</label>
+      <div class="pt-chips" @click="$refs.excInput.focus()">
+        <template x-for="(s, i) in exclude" :key="'x-' + i + '-' + s">
+          <span class="pt-chip">
+            <span x-text="s"></span>
+            <button type="button" aria-label="Remove" @click="removeChip('exclude', i)">×</button>
+          </span>
+        </template>
+        <input
+          x-ref="excInput"
+          class="pt-chip-input"
+          type="text"
+          placeholder="e.g. intern, junior"
+          @keydown.enter.prevent="addChip('exclude', $event)"
+          @keydown.,.prevent="addChip('exclude', $event)"
+        />
+      </div>
+    </div>
+    <div>
+      <label class="pt-label" for="pt-location">Location (optional)</label>
+      <input id="pt-location" class="pt-input" type="text" x-model="location" placeholder='e.g. "San Francisco" or Remote' @input.debounce.500ms="_trackFirstInteraction('input')" />
+    </div>
+  </div>
+
+  <!-- Output -->
+  <div class="pt-output-wrap">
+    <label class="pt-label" for="pt-output">Your Boolean search string</label>
+    <textarea id="pt-output" class="pt-output" readonly x-text="query"></textarea>
+    <div class="pt-charcount" :class="'level-' + charStatus.level" x-text="charStatus.text"></div>
+    <div class="pt-actions">
+      <button type="button" class="pt-btn primary" @click="copy()">
+        <span x-show="!copied">Copy string</span>
+        <span x-show="copied" x-cloak>Copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="copyLink()">
+        <span x-show="!linkCopied">Copy share link</span>
+        <span x-show="linkCopied" x-cloak>Link copied</span>
+      </button>
+      <a class="pt-btn secondary" :href="diceUrl" target="_blank" rel="noopener noreferrer nofollow" @click="_track('blog_tool_deep_link_clicked', { destination: 'dice' }); _trackFirstInteraction('deep_link')">Open on Dice</a>
+      <a class="pt-btn secondary" :href="linkedinUrl" target="_blank" rel="noopener noreferrer nofollow" @click="_track('blog_tool_deep_link_clicked', { destination: 'linkedin' }); _trackFirstInteraction('deep_link')">Open on LinkedIn</a>
+      <button type="button" class="pt-btn secondary" @click="reset()">Reset</button>
+    </div>
+  </div>
+
+  <!-- SEO-visible examples -->
+  <div class="pt-examples">
+    <h4>What this tool produces</h4>
+    <div class="pt-example">
+      <strong>Senior backend engineer, Python + AWS</strong>
+      ("software engineer" OR "backend engineer" OR "backend developer") AND ("Python") AND ("AWS" OR "Kubernetes" OR "Docker") NOT intern NOT junior
+    </div>
+    <div class="pt-example">
+      <strong>Data scientist, ML focus, New York</strong>
+      ("data scientist" OR "machine learning engineer" OR "ML engineer") AND ("Python") AND ("TensorFlow" OR "PyTorch" OR "scikit-learn") NOT intern AND "New York"
+    </div>
+    <div class="pt-example">
+      <strong>DevOps / SRE</strong>
+      ("devops engineer" OR "site reliability engineer" OR "SRE" OR "platform engineer") AND ("Kubernetes" OR "Terraform") AND ("AWS" OR "GCP" OR "Azure") NOT junior
+    </div>
+  </div>
+
+  <div class="pt-howto">
+    <strong>How to use:</strong>
+    <ol>
+      <li>Pick a role preset, or start with Custom.</li>
+      <li>Edit the title variants - more variants means more candidates surface.</li>
+      <li>Add required skills the role cannot do without. Keep this list short.</li>
+      <li>Add nice-to-haves (they widen the net with OR, not AND).</li>
+      <li>Exclude terms that produce false positives. Use NOT sparingly - it can hide strong candidates whose resumes mention excluded words in other contexts.</li>
+      <li>Copy the string, or open it directly on Dice or LinkedIn.</li>
+    </ol>
+  </div>
+
+  <p class="pt-source">
+    Built by Pin - the highest-rated AI recruiting platform on G2. For 850M+ profiles without writing a single Boolean string, see <a href="https://www.pin.com/">pin.com</a>.
+  </p>
+</section>

@@ -1,0 +1,56 @@
+---
+import AuthorAvatar from './AuthorAvatar.astro'
+import { getBlogImageMobile } from '../../lib/blog-images'
+import { formatDate, displayTitle } from './utils'
+
+interface Props {
+  post: {
+    title?: string
+    slug: string
+    excerpt?: string | null
+    feature_image?: string | null
+    published_at?: string | null
+    featured?: boolean
+    authors?: { name?: string; slug?: string; profile_image?: string | null }[]
+    tags?: { name?: string; slug: string }[]
+  }
+  featured?: boolean
+  showExcerpt?: boolean
+  headingLevel?: 'h2' | 'h3'
+}
+const { post, featured = false, showExcerpt = false, headingLevel = 'h3' } = Astro.props
+const H = headingLevel
+const author = post.authors?.[0]
+const tag = post.tags?.[0]?.name
+const title = displayTitle(post.title)
+---
+
+<a href={`/blog/${post.slug}/`} class:list={['group flex rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-green', featured ? 'flex-col' : 'items-start gap-4 sm:flex-col sm:items-stretch sm:gap-0']}>
+  <div class:list={['relative shrink-0 overflow-hidden rounded-2xl bg-bg-secondary outline outline-1 -outline-offset-1 outline-black/5', featured ? 'aspect-[16/10]' : 'aspect-square w-24 rounded-xl sm:aspect-[16/10] sm:w-auto sm:rounded-2xl']}>
+    {post.feature_image ? (
+      <img
+        src={getBlogImageMobile(post.feature_image) ?? post.feature_image}
+        alt={title}
+        width="900"
+        height="563"
+        loading="lazy"
+        decoding="async"
+        class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-[var(--ease-out-soft)] group-hover:scale-[1.03]"
+      />
+    ) : (
+      <span class:list={['absolute inset-0 place-items-center p-6 text-center text-lg font-medium text-ink-2 text-balance', featured ? 'grid' : 'hidden sm:grid']}>{tag ?? 'Pin Blog'}</span>
+    )}
+    {featured && <span class="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-green-accessible">Editor's pick</span>}
+  </div>
+  <div class:list={['flex min-w-0 flex-1 flex-col', featured ? 'mt-4' : 'sm:mt-4']}>
+    {tag && <p class="text-sm font-medium tracking-wide text-green">{tag}</p>}
+    <H class:list={['mt-1.5 font-medium tracking-[-0.01em] text-balance transition-colors group-hover:text-green-accessible', featured ? 'text-2xl leading-tight md:text-[28px]' : 'leading-snug sm:text-lg']}>{title}</H>
+    {showExcerpt && post.excerpt && <p class="mt-2 line-clamp-3 leading-relaxed text-ink-2 text-pretty">{post.excerpt}</p>}
+    <p class="mt-auto flex items-center gap-2 pt-3 text-sm text-ink-3 sm:pt-4">
+      {author && <AuthorAvatar author={author} size={20} />}
+      {author?.name && <span class="truncate text-ink-2">{author.name}</span>}
+      {author?.name && post.published_at && <span aria-hidden="true">·</span>}
+      {post.published_at && <time datetime={post.published_at} class="shrink-0">{formatDate(post.published_at)}</time>}
+    </p>
+  </div>
+</a>

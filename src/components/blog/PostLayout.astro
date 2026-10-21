@@ -1,0 +1,456 @@
+---
+// Blog post template: header, prose body with inline CTAs / embedded tools, author box,
+// related posts, and a sticky right rail (TOC, summarize-with-AI, Pin CTA).
+import { Clock, Link2, Check, X, ArrowRight } from '@lucide/astro'
+import { Buffer } from 'node:buffer'
+import Button from '../ui/Button.astro'
+import CTABand from '../ui/CTABand.astro'
+import PinAvatar from '../PinAvatar.astro'
+import AuthorAvatar from './AuthorAvatar.astro'
+import PostCard from './PostCard.astro'
+import RoleInlineCTA from './RoleInlineCTA.astro'
+import { getBlogImageMobile } from '../../lib/blog-images'
+import { formatDate, toolRegistry, toolSchemas, toolAnchorId } from './utils'
+import './prose.css'
+
+interface Author {
+  name?: string
+  slug?: string
+  bio?: string
+  profile_image?: string | null
+  website?: string | null
+}
+
+interface Props {
+  title: string
+  excerpt?: string | null
+  publishedAt?: string | null
+  updatedAt?: string | null
+  authors?: Author[]
+  featureImage?: string | null
+  heroAlt?: string | null
+  html: string
+  tags?: { name?: string; slug: string }[]
+  relatedPosts?: any[]
+}
+
+const { title, excerpt, publishedAt, updatedAt, authors = [], featureImage, heroAlt, html, tags = [], relatedPosts = [] } = Astro.props
+
+// Visible "Updated" stamp only when edited at least 24h after publish.
+const showUpdatedStamp = !!updatedAt && !!publishedAt && new Date(updatedAt).getTime() - new Date(publishedAt).getTime() > 86400000
+const formattedUpdatedAt = showUpdatedStamp ? formatDate(updatedAt) : null
+const formattedDate = formatDate(publishedAt)
+
+const wordCount = html.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length
+const readMinutes = Math.max(1, Math.ceil(wordCount / 200))
+
+// Desktop hero is the original; the -900w variant covers mobile @2x.
+const heroSrcMobile = getBlogImageMobile(featureImage)
+
+interface TocItem { id: string; text: string; level: number; isTool?: boolean }
+
+function slugify(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-')
+}
+
+// One pass: inject heading ids and build the TOC in document order, splicing in
+// entries for embedded tools.
+const tocItems: TocItem[] = []
+const headingOrToolRegex = /<(h[12])([^>]*)>([\s\S]*?)<\/h[12]>|<p[^>]*>\s*\[tool\/([a-z0-9-]+)\]\s*<\/p>|\[tool\/([a-z0-9-]+)\]/gi
+
+const processedHtml = html.replace(headingOrToolRegex, (match, tag, attrs, content, inlineTool, bareTool) => {
+  const toolSlug = (inlineTool || bareTool) as string | undefined
+  if (toolSlug && toolSlug in toolSchemas) {
+    tocItems.push({ id: toolAnchorId(toolSlug), text: toolSchemas[toolSlug].tocLabel, level: 2, isTool: true })
+    return match
+  }
+  if (tag) {
+    const textContent = content.replace(/<[^>]+>/g, '').trim()
+    const existingId = attrs.match(/id="([^"]+)"/)
+    const id = existingId ? existingId[1] : slugify(textContent)
+    tocItems.push({ id, text: textContent, level: parseInt(tag[1]) })
+    if (!existingId) return `<${tag}${attrs} id="${id}">${content}</${tag}>`
+  }
+  return match
+})
+
+function appendClass(attrs: string, className: string): string {
+  if (new RegExp(`\\b${className}\\b`).test(attrs)) return attrs
+  if (/\sclass=(["'])/.test(attrs)) {
+    return attrs.replace(/\sclass=(["'])(.*?)\1/, (_m, quote, value) => ` class=${quote}${value} ${className}${quote}`)
+  }
+  return `${attrs} class="${className}"`
+}
+
+// Charts were exported with a baked-in sand background; strip it so the chart sits on a white panel.
+function removeBakedChartBackground(svg: string): string {
+  return svg
+    .replace(/\n?\s*<rect\b(?=[^>]*\bwidth="(?:100%|960|560)")[^>]*\bfill="#E8E0D8"[^>]*\/>\n?/gi, '\n')
+    .replace(/\s*background-color:\s*#E8E0D8;?/gi, '')
+    .replace(/\s*border-radius:\s*12px;?/gi, '')
+}
+
+function cleanSvgDataUris(markup: string): string {
+  return markup.replace(/src=(["'])data:image\/svg\+xml;base64,([^"']+)\1/gi, (match, quote, encoded) => {
+    try {
+      const svg = Buffer.from(encoded, 'base64').toString('utf8')
+      return `src=${quote}data:image/svg+xml;base64,${Buffer.from(removeBakedChartBackground(svg)).toString('base64')}${quote}`
+    } catch {
+      return match
+    }
+  })
+}
+
+function decorateChartFigures(markup: string): string {
+  return markup.replace(/<figure\b([^>]*)>([\s\S]*?)<\/figure>/gi, (match, attrs, body) => {
+    const hasSvgDataImage = /data:image\/svg\+xml/i.test(body)
+    const hasInlineChartSvg = /<svg\b/i.test(body) && /\brole=(["'])img\1/i.test(body)
+    if (!hasSvgDataImage && !hasInlineChartSvg) return match
+    return `<figure${appendClass(attrs, 'blog-chart-paper')}>${cleanSvgDataUris(removeBakedChartBackground(body))}</figure>`
+  })
+}
+
+// Wrap the leading "1." in numbered listicle H3s so the number renders green.
+function decorateNumberedH3s(markup: string): string {
+  return markup.replace(
+    /<h3\b([^>]*)>(\s*)(\d+\.)(\s+)([\s\S]*?)<\/h3>/gi,
+    (_m, attrs, leadWs, num, gap, rest) => `<h3${attrs}>${leadWs}<span class="h3-num">${num}</span>${gap}${rest}</h3>`,
+  )
+}
+
+// Wide comparison tables scroll inside their own wrapper, not the page.
+const wrapTables = (markup: string) => markup.replace(/<table\b/gi, '<div class="table-wrap"><table').replace(/<\/table>/gi, '</table></div>')
+
+const decoratedHtml = wrapTables(decorateNumberedH3s(decorateChartFigures(processedHtml)))
+
+// Split the body on tool placeholders: `<p>[tool/SLUG]</p>` (Ghost-wrapped token),
+// legacy `<div data-pin-tool="SLUG">`, or a bare `[tool/SLUG]`.
+type Segment = { type: 'html'; value: string } | { type: 'tool'; slug: string } | { type: 'sidenote-cta' } | { type: 'role-cta' }
+const toolPlaceholderRegex = /<p[^>]*>\s*\[tool\/([a-z0-9-]+)\]\s*<\/p>|<div\b[^>]*\bdata-pin-tool=(?:"([^"]+)"|'([^']+)')[^>]*>[\s\S]*?<\/div>|\[tool\/([a-z0-9-]+)\]/gi
+const segments: Segment[] = []
+let lastIndex = 0
+let m: RegExpExecArray | null
+while ((m = toolPlaceholderRegex.exec(decoratedHtml)) !== null) {
+  if (m.index > lastIndex) segments.push({ type: 'html', value: decoratedHtml.slice(lastIndex, m.index) })
+  const slug = (m[1] || m[2] || m[3] || m[4]) as string
+  // Unknown tools (or tools not yet ported) are dropped rather than shown as a raw token.
+  if (slug in toolRegistry) segments.push({ type: 'tool', slug })
+  lastIndex = m.index + m[0].length
+}
+if (lastIndex < decoratedHtml.length) segments.push({ type: 'html', value: decoratedHtml.slice(lastIndex) })
+
+// Inline CTA before every 4th H2 (4th, 8th, …), alternating Role CTA / Sidenote CTA.
+// Posts with fewer than 4 H2s get none.
+const finalSegments: Segment[] = []
+let h2SeenSoFar = 0
+let ctaSlotIdx = 0
+for (const seg of segments) {
+  if (seg.type !== 'html') {
+    finalSegments.push(seg)
+    continue
+  }
+  const h2Regex = /<h2\b/gi
+  const splitOffsets: number[] = []
+  let match: RegExpExecArray | null
+  while ((match = h2Regex.exec(seg.value)) !== null) {
+    h2SeenSoFar++
+    if (h2SeenSoFar % 4 === 0) splitOffsets.push(match.index)
+  }
+  let cursor = 0
+  for (const offset of splitOffsets) {
+    if (offset > cursor) finalSegments.push({ type: 'html', value: seg.value.slice(cursor, offset) })
+    finalSegments.push({ type: ctaSlotIdx % 2 === 0 ? 'role-cta' : 'sidenote-cta' })
+    ctaSlotIdx++
+    cursor = offset
+  }
+  if (cursor < seg.value.length) finalSegments.push({ type: 'html', value: seg.value.slice(cursor) })
+}
+
+const shareUrl = encodeURIComponent(Astro.url.toString())
+const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`
+const twitterShareUrl = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${encodeURIComponent(title)}`
+const hasToc = tocItems.length > 0
+const authorWithBio = authors.filter((a) => a.bio)
+
+const shareBtn = 'grid size-9 place-items-center rounded-full bg-white text-ink-2 shadow-[0_0_0_1px_rgb(0_0_0/0.06)] transition-colors hover:text-green-accessible focus-visible:outline-2 focus-visible:outline-green'
+const summarizers = [
+  { key: 'c', label: 'ChatGPT', color: '#10A37F', vb: '0 0 41 41', d: 'M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.078 10.078 0 0 0-10.855-4.835 9.964 9.964 0 0 0-7.505-3.348 10.079 10.079 0 0 0-9.614 6.977 9.967 9.967 0 0 0-6.664 4.834 10.08 10.08 0 0 0 1.24 11.817 9.965 9.965 0 0 0 .856 8.185 10.079 10.079 0 0 0 10.855 4.835 9.965 9.965 0 0 0 7.504 3.347 10.079 10.079 0 0 0 9.617-6.981 9.967 9.967 0 0 0 6.663-4.834 10.079 10.079 0 0 0-1.241-11.813zM22.498 37.886a7.474 7.474 0 0 1-4.799-1.735c.061-.033.168-.091.237-.134l7.964-4.6a1.294 1.294 0 0 0 .655-1.134V19.054l3.366 1.944a.12.12 0 0 1 .066.092v9.299a7.505 7.505 0 0 1-7.49 7.496zM6.392 31.006a7.471 7.471 0 0 1-.894-5.023c.06.036.162.099.237.141l7.964 4.6a1.297 1.297 0 0 0 1.308 0l9.724-5.614v3.888a.12.12 0 0 1-.048.103l-8.051 4.649a7.504 7.504 0 0 1-10.24-2.744zM4.297 13.62A7.469 7.469 0 0 1 8.2 10.333c0 .068-.004.19-.004.274v9.201a1.294 1.294 0 0 0 .654 1.132l9.723 5.614-3.366 1.944a.12.12 0 0 1-.114.012L7.044 23.86a7.504 7.504 0 0 1-2.747-10.24zm27.658 6.437l-9.724-5.615 3.367-1.943a.121.121 0 0 1 .114-.012l8.048 4.648a7.498 7.498 0 0 1-1.158 13.528v-9.476a1.293 1.293 0 0 0-.647-1.13zm3.35-5.043c-.059-.037-.162-.099-.236-.141l-7.965-4.6a1.298 1.298 0 0 0-1.308 0l-9.723 5.614v-3.888a.12.12 0 0 1 .048-.103l8.05-4.645a7.497 7.497 0 0 1 11.135 7.763zm-21.063 6.929l-3.367-1.944a.12.12 0 0 1-.065-.092v-9.299a7.497 7.497 0 0 1 12.293-5.756 6.94 6.94 0 0 0-.236.134l-7.965 4.6a1.294 1.294 0 0 0-.654 1.132l-.006 11.225zm1.829-3.943l4.33-2.501 4.332 2.5v4.999l-4.331 2.5-4.331-2.5V18z' },
+  { key: 'a', label: 'Claude', color: '#D97757', vb: '0 0 16 16', d: 'm3.127 10.604 3.135-1.76.053-.153-.053-.085H6.11l-.525-.032-1.791-.048-1.554-.065-1.505-.08-.38-.081L0 7.832l.036-.234.32-.214.455.04 1.009.069 1.513.105 1.097.064 1.626.17h.259l.036-.105-.089-.065-.068-.064-1.566-1.062-1.695-1.121-.887-.646-.48-.327-.243-.306-.104-.67.435-.48.585.04.15.04.593.456 1.267.981 1.654 1.218.242.202.097-.068.012-.049-.109-.181-.9-1.626-.96-1.655-.428-.686-.113-.411a2 2 0 0 1-.068-.484l.496-.674L4.446 0l.662.089.279.242.411.94.666 1.48 1.033 2.014.302.597.162.553.06.17h.105v-.097l.085-1.134.157-1.392.154-1.792.052-.504.25-.605.497-.327.387.186.319.456-.045.294-.19 1.23-.37 1.93-.243 1.29h.142l.161-.16.654-.868 1.097-1.372.484-.545.565-.601.363-.287h.686l.505.751-.226.775-.707.895-.585.759-.839 1.13-.524.904.048.072.125-.012 1.897-.403 1.024-.186 1.223-.21.553.258.06.263-.218.536-1.307.323-1.533.307-2.284.54-.028.02.032.04 1.029.098.44.024h1.077l2.005.15.525.346.315.424-.053.323-.807.411-3.631-.863-.872-.218h-.12v.073l.726.71 1.331 1.202 1.667 1.55.084.383-.214.302-.226-.032-1.464-1.101-.565-.497-1.28-1.077h-.084v.113l.295.432 1.557 2.34.08.718-.112.234-.404.141-.444-.08-.911-1.28-.94-1.44-.759-1.291-.093.053-.448 4.821-.21.246-.484.186-.403-.307-.214-.496.214-.98.258-1.28.21-1.016.19-1.263.112-.42-.008-.028-.092.012-.953 1.307-1.448 1.957-1.146 1.227-.274.109-.477-.247.045-.44.266-.39 1.586-2.018.956-1.25.617-.723-.004-.105h-.036l-4.212 2.736-.75.096-.324-.302.04-.496.154-.162 1.267-.871z' },
+  { key: 'p', label: 'Perplexity', color: '#20808D', vb: '0 0 16 16', d: 'M8 .188a.5.5 0 0 1 .503.5V4.03l3.022-2.92.059-.048a.51.51 0 0 1 .49-.054.5.5 0 0 1 .306.46v3.247h1.117l.1.01a.5.5 0 0 1 .403.49v5.558a.5.5 0 0 1-.503.5H12.38v3.258a.5.5 0 0 1-.312.462.51.51 0 0 1-.55-.11l-3.016-3.018v3.448c0 .275-.225.5-.503.5a.5.5 0 0 1-.503-.5v-3.448l-3.018 3.019a.51.51 0 0 1-.548.11.5.5 0 0 1-.312-.463v-3.258H2.503a.5.5 0 0 1-.503-.5V5.215l.01-.1c.047-.229.25-.4.493-.4H3.62V1.469l.006-.074a.5.5 0 0 1 .302-.387.51.51 0 0 1 .547.102l3.023 2.92V.687c0-.276.225-.5.503-.5M4.626 9.333v3.984l2.87-2.872v-4.01zm3.877 1.113 2.871 2.871V9.333l-2.87-2.897zm3.733-1.668a.5.5 0 0 1 .145.35v1.145h.612V5.715H9.201zm-9.23 1.495h.613V9.13c0-.131.052-.257.145-.35l3.033-3.064h-3.79zm1.62-5.558H6.76L4.626 2.652zm4.613 0h2.134V2.652z' },
+  { key: 'g', label: 'Gemini', color: '#4285F4', vb: '0 0 24 24', d: 'M12 24A14.304 14.304 0 0 0 0 12 14.304 14.304 0 0 0 12 0a14.304 14.304 0 0 0 12 12 14.304 14.304 0 0 0-12 12' },
+]
+---
+
+<!-- Reading progress: tracks the article body, not the whole page -->
+<div
+  x-data="{ progress: 0 }"
+  x-init="
+    const update = () => {
+      const el = document.querySelector('.post-content');
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      if (total <= 0) { progress = rect.bottom <= window.innerHeight ? 100 : 0; return; }
+      progress = Math.max(0, Math.min(100, (Math.max(0, -rect.top) / total) * 100));
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+  "
+  class="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px]"
+  aria-hidden="true"
+>
+  <div class="h-full bg-green" :style="`width: ${progress}%`"></div>
+</div>
+
+<!-- Screenshot lightbox, opened by .post-figure__imagewrap buttons in the body -->
+<div
+  x-data="{ open: false, src: '', alt: '' }"
+  @pin-figure-open.window="open = true; src = $event.detail.src; alt = $event.detail.alt"
+  @keydown.escape.window="open = false"
+>
+  <div x-show="open" x-transition.opacity class="fixed inset-0 z-[70] flex items-center justify-center p-4 md:p-12" style="display: none;" role="dialog" aria-modal="true" aria-label="Screenshot">
+    <div class="absolute inset-0 bg-ink/70" @click="open = false"></div>
+    <button type="button" @click="open = false" class="fixed right-4 top-4 z-10 grid size-9 place-items-center rounded-full bg-white text-ink-2" aria-label="Close screenshot"><X size={16} /></button>
+    <img :src="src" :alt="alt" class="relative max-h-[90vh] max-w-[95vw] rounded-xl shadow-window" />
+  </div>
+</div>
+
+<!-- Current section, mobile only (desktop has the TOC) -->
+<div id="pin-sticky-section" class="pointer-events-none fixed inset-x-0 top-16 z-40 -translate-y-2 border-b border-ink/5 bg-bg/95 opacity-0 backdrop-blur-md transition-[opacity,translate] duration-200 lg:hidden [&.is-visible]:translate-y-0 [&.is-visible]:opacity-100" aria-hidden="true">
+  <div class="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 text-sm">
+    <span id="pin-sticky-section-num" class="font-medium tabular-nums text-green">01</span>
+    <span id="pin-sticky-section-title" class="truncate text-ink-2"></span>
+  </div>
+</div>
+
+<div class="mx-auto grid max-w-[1160px] grid-cols-1 gap-x-16 px-4 pb-24 pt-8 md:px-8 md:pt-12 lg:grid-cols-[minmax(0,1fr)_256px] xl:gap-x-24">
+  <article class="min-w-0">
+    <header>
+      <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-3">
+        <a href="/blog/" class="hover:text-ink">Blog</a>
+        {tags.length > 0 && (
+          <>
+            <span aria-hidden="true">/</span>
+            <span>
+              {tags.map((tag, i) => (<>{i > 0 && ', '}<a href={`/blog/tag/${tag.slug}/`} class="hover:text-ink">{tag.name ?? tag.slug}</a></>))}
+            </span>
+          </>
+        )}
+      </nav>
+
+      <h1 class="mt-6 text-[34px] font-medium leading-[1.08] tracking-[-0.02em] text-balance md:text-[52px]">{title}</h1>
+      {excerpt && <p class="mt-5 text-lg leading-relaxed text-ink-2 text-pretty md:text-xl">{excerpt}</p>}
+
+      <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4 border-y border-ink/5 py-4">
+        {authors.length > 0 && (
+          <div class="flex items-center gap-3">
+            <div class="flex -space-x-2">
+              {authors.map((a) => <AuthorAvatar author={a} size={36} eager class="ring-2 ring-bg" />)}
+            </div>
+            <div class="text-sm leading-tight">
+              <p class="font-medium">
+                {authors.map((a, i) => (<>{i > 0 && ', '}{a.slug ? <a href={`/blog/author/${a.slug}/`} class="hover:text-green-accessible">{a.name}</a> : a.name}</>))}
+              </p>
+              <p class="mt-0.5 text-ink-3">
+                {formattedDate && <time datetime={publishedAt!}>{formattedDate}</time>}
+                {formattedUpdatedAt && <> · Updated <time datetime={updatedAt!}>{formattedUpdatedAt}</time></>}
+              </p>
+            </div>
+          </div>
+        )}
+        {authors.length === 0 && formattedDate && <p class="text-sm text-ink-3"><time datetime={publishedAt!}>{formattedDate}</time></p>}
+        <p class="flex items-center gap-1.5 text-sm text-ink-3"><Clock size={14} aria-hidden="true" />{readMinutes} min read</p>
+
+        <div class="flex items-center gap-2 sm:ml-auto" x-data="{ copied: false }">
+          <a href={linkedInShareUrl} target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn" class={shareBtn}>
+            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 11.01-4.12 2.06 2.06 0 010 4.12zm-1.78 13.02h3.56V9H3.56v11.45z" /></svg>
+          </a>
+          <a href={twitterShareUrl} target="_blank" rel="noopener noreferrer" aria-label="Share on X (Twitter)" class={shareBtn}>
+            <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+          </a>
+          <button type="button" aria-label="Copy link" class={shareBtn} @click="navigator.clipboard?.writeText(window.location.href); copied = true; setTimeout(() => copied = false, 1500)">
+            <span x-show="!copied"><Link2 size={15} /></span>
+            <span x-show="copied" x-cloak class="text-green"><Check size={15} /></span>
+          </button>
+        </div>
+      </div>
+
+      {featureImage && (
+        <img
+          src={featureImage}
+          srcset={heroSrcMobile ? `${heroSrcMobile} 900w, ${featureImage} 1725w` : undefined}
+          sizes={heroSrcMobile ? '(max-width: 768px) 100vw, 840px' : undefined}
+          width="1725"
+          height="912"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+          alt={heroAlt ?? title}
+          class="mt-8 h-auto w-full rounded-3xl bg-bg-secondary object-cover outline outline-1 -outline-offset-1 outline-black/5"
+        />
+      )}
+    </header>
+
+    <div class="post-content mt-10 md:mt-12">
+      {finalSegments.map((seg) => {
+        if (seg.type === 'html') return <div class="prose-body" set:html={seg.value} />
+        if (seg.type === 'role-cta') return <RoleInlineCTA />
+        if (seg.type === 'sidenote-cta') return (
+          <aside class="my-12 flex flex-col gap-5 rounded-[28px] bg-bg-secondary p-6 sm:flex-row sm:items-start md:p-8">
+            <PinAvatar size={44} />
+            <div>
+              <p class="text-sm font-medium tracking-wide text-green">A sidenote from us</p>
+              <p class="mt-2 text-xl font-medium leading-snug tracking-[-0.01em] text-balance md:text-2xl">You don't have to take our word for it — try Pin free on your next open role.</p>
+              <div class="mt-5 flex flex-col gap-2 sm:flex-row">
+                <Button signup size="md" track="blog_sidenote">Try For Free</Button>
+                <Button href="/book-a-demo/" variant="secondary" size="md" track="blog_sidenote">Book a Demo</Button>
+              </div>
+            </div>
+          </aside>
+        )
+        const Tool = toolRegistry[seg.slug]
+        return <Tool />
+      })}
+    </div>
+
+    {authorWithBio.length > 0 && (
+      <section class="mt-16 flex flex-col gap-4" aria-label="About the author">
+        {authorWithBio.map((a) => (
+          <div class="flex flex-col gap-4 rounded-3xl bg-bg-secondary p-6 sm:flex-row sm:items-start md:p-8">
+            <AuthorAvatar author={a} size={56} />
+            <div>
+              <p class="text-sm text-ink-3">Written by</p>
+              <p class="mt-0.5 text-lg font-medium">{a.name}</p>
+              <p class="mt-2 leading-relaxed text-ink-2 text-pretty">{a.bio}</p>
+              {a.slug && <a href={`/blog/author/${a.slug}/`} class="group mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-green-accessible">More from {a.name?.split(' ')[0]} <ArrowRight size={15} class="transition-transform group-hover:translate-x-0.5" /></a>}
+            </div>
+          </div>
+        ))}
+      </section>
+    )}
+  </article>
+
+  <aside class="hidden lg:block">
+    <div class="sticky top-24 flex max-h-[calc(100vh-7rem)] flex-col gap-6">
+      {hasToc && (
+        <nav aria-label="Table of contents" class="flex min-h-0 flex-col">
+          <p class="text-sm font-medium tracking-wide text-green">In this article</p>
+          <ol class="mt-3 flex min-h-24 flex-col overflow-y-auto [scrollbar-width:thin]">
+            {tocItems.map((item) => (
+              <li>
+                <a
+                  href={`#${item.id}`}
+                  data-toc-target={item.id}
+                  class="toc-link relative block rounded-lg py-1.5 pl-4 pr-2 text-sm leading-snug text-ink-3 transition-colors hover:text-ink [&.is-active]:text-ink"
+                >
+                  <span class="absolute left-0 top-[0.8em] size-1.5 rounded-full bg-ink/15 transition-colors [.is-active>&]:bg-green" aria-hidden="true"></span>
+                  {item.isTool && <span class="mr-1.5 rounded bg-green-lighter px-1.5 py-0.5 text-[11px] font-medium text-green-accessible">Tool</span>}
+                  {item.text}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+
+      <div
+        class:list={['shrink-0 [@media(max-height:860px)]:hidden', hasToc && 'border-t border-ink/5 pt-6']}
+        x-data="{
+          summarize(provider) {
+            const e = encodeURIComponent('Summarize this article: ' + window.location.href);
+            const names = { c: 'chatgpt', a: 'claude', p: 'perplexity', g: 'gemini' };
+            const urls = {
+              c: 'https://chatgpt.com/?q=' + e,
+              a: 'https://claude.ai/new?q=' + e,
+              p: 'https://www.perplexity.ai/?q=' + e,
+              g: 'https://gemini.google.com/app?q=' + e,
+            };
+            const name = names[provider];
+            window.posthog?.capture('blog_summarize_clicked', { provider: name, page: window.location.pathname });
+            window.dataLayer?.push({ event: 'blog_summarize_clicked', provider: name, page: window.location.pathname });
+            window.open(urls[provider], '_blank', 'noopener,noreferrer');
+          }
+        }"
+      >
+        <p class="text-sm font-medium tracking-wide text-green">Summarize article</p>
+        <div class="mt-3 grid grid-cols-2 gap-1.5">
+          {summarizers.map((s) => (
+            <button type="button" @click={`summarize('${s.key}')`} aria-label={`Summarize in ${s.label}`} class="flex items-center gap-2 rounded-lg bg-white px-2.5 py-2 text-[13px] text-ink-2 shadow-[0_0_0_1px_rgb(0_0_0/0.06)] transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-green">
+              <svg width="14" height="14" viewBox={s.vb} fill={s.color} aria-hidden="true"><path d={s.d} /></svg>
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div class="shrink-0 rounded-3xl bg-green-lighter p-5">
+        <p class="text-sm font-medium tracking-wide text-green-accessible">Try Pin</p>
+        <p class="mt-1.5 text-xl font-medium tracking-[-0.01em]">Find Ideal Candidates</p>
+        <p class="mt-2 text-sm leading-relaxed text-ink-2">Pin's AI recruiter sources, personalizes outreach, and books interviews — so you can focus on closing.</p>
+        <div class="mt-4 flex flex-col gap-2">
+          <Button signup size="md" track="blog_sidebar">Try For Free</Button>
+          <Button href="/book-a-demo/" variant="secondary" size="md" track="blog_sidebar">Book Demo</Button>
+        </div>
+        <p class="mt-3 text-center text-xs text-ink-3">No credit card required</p>
+      </div>
+    </div>
+  </aside>
+</div>
+
+{relatedPosts.length > 0 && (
+  <section class="mx-auto max-w-7xl px-4 pb-24 md:px-8" aria-labelledby="related-reading">
+    <h2 id="related-reading" class="text-2xl font-medium tracking-[-0.02em] md:text-[32px]">Related reading</h2>
+    <div class="mt-8 grid gap-x-8 gap-y-8 sm:grid-cols-2 sm:gap-y-12 lg:grid-cols-3">
+      {relatedPosts.map((p) => <PostCard post={p} />)}
+    </div>
+  </section>
+)}
+
+<CTABand track="blog_post" />
+
+<!-- Keeps the mobile section bar and TOC active state in sync with scroll.
+     Deferred to idle / first scroll so the initial layout read doesn't delay LCP. -->
+<script is:inline>
+(function () {
+  var started = false
+  function init() {
+    if (started) return
+    started = true
+    var sticky = document.getElementById('pin-sticky-section')
+    var titleEl = document.getElementById('pin-sticky-section-title')
+    var numEl = document.getElementById('pin-sticky-section-num')
+    var headings = Array.from(document.querySelectorAll('.post-content h2[id]'))
+    var links = {}
+    document.querySelectorAll('.toc-link[data-toc-target]').forEach(function (a) { links[a.getAttribute('data-toc-target')] = a })
+    var footer = document.querySelector('footer')
+    var activeId = null
+    function update() {
+      var threshold = window.scrollY + 140
+      var idx = -1
+      for (var i = 0; i < headings.length; i++) if (headings[i].offsetTop <= threshold) idx = i
+      var active = idx >= 0 ? headings[idx] : null
+      var nextId = active ? active.id : null
+      if (nextId !== activeId) {
+        if (activeId && links[activeId]) links[activeId].classList.remove('is-active')
+        if (nextId && links[nextId]) links[nextId].classList.add('is-active')
+        activeId = nextId
+      }
+      if (!sticky) return
+      var pastFooter = footer && window.scrollY + window.innerHeight > footer.offsetTop + 100
+      var show = !!active && active.getBoundingClientRect().bottom < 120 && !pastFooter
+      sticky.classList.toggle('is-visible', show)
+      if (active) {
+        titleEl.textContent = active.textContent || ''
+        numEl.textContent = String(idx + 1).padStart(2, '0')
+      }
+    }
+    window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    update()
+  }
+  if ('requestIdleCallback' in window) requestIdleCallback(init, { timeout: 1500 })
+  else setTimeout(init, 200)
+  window.addEventListener('scroll', init, { once: true, passive: true, capture: true })
+})()
+</script>

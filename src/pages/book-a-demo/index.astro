@@ -1,0 +1,73 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import BookADemoForm from "../../components/company/BookADemoForm.astro";
+import Testimonials from "../../components/company/Testimonials.astro";
+import { breadcrumb } from "../../components/company/breadcrumb";
+import { Check } from "@lucide/astro";
+
+const points = [
+  "More candidates than LinkedIn and Indeed combined.",
+  "No two year contracts, no outrageous bills.",
+  "Straight-forward & affordable monthly pricing.",
+  "Cancel or freeze at any time.",
+];
+const stages = [
+  { n: "01", name: "Brief", text: "Give Pin a role and a company. It drafts the criteria and asks what it needs." },
+  { n: "02", name: "Match", text: "850M+ profiles searched, with the reason each person fits." },
+  { n: "03", name: "Outreach", text: "Personal sequences sent from your own Gmail or Outlook." },
+  { n: "04", name: "Replies", text: "Not-interested archived, known questions answered, new ones sent to you." },
+  { n: "05", name: "Booked", text: "Times offered, back-and-forth handled, invite sent." },
+];
+---
+
+<Layout
+  title="Book a Demo - Pin"
+  description="Book a demo with Pin and watch an AI recruiter take a real role from job title to booked interviews. Tour the platform and start sourcing in minutes."
+  jsonLd={breadcrumb("Book a Demo", "https://www.pin.com/book-a-demo/")}
+>
+  <section class="mx-auto grid max-w-7xl items-start gap-12 px-4 pb-24 pt-12 md:px-8 md:pb-32 md:pt-20 lg:grid-cols-[1fr_480px] lg:gap-20">
+    <div>
+      <p data-reveal class="text-sm font-medium tracking-wide text-green">Book a demo</p>
+      <h1 data-reveal style="--i:1" class="mt-3 text-[40px] font-medium leading-[1.04] tracking-[-0.02em] text-balance md:text-[56px]">See Pin go from job title to booked interviews.</h1>
+      <p data-reveal style="--i:2" class="mt-5 max-w-xl text-lg leading-relaxed text-ink-2 text-pretty md:text-xl">Bring an open role. In minutes you can take a full tour and start sourcing for all your open positions. It is that simple and fast.</p>
+      <ul data-reveal style="--i:3" class="mt-8 space-y-3">
+        {points.map((p) => (
+          <li class="flex items-center gap-3">
+            <span class="grid size-5 shrink-0 place-items-center rounded-full bg-green-lighter text-green-accessible"><Check size={12} stroke-width={3} /></span>
+            {p}
+          </li>
+        ))}
+      </ul>
+      <div data-reveal style="--i:4" class="mt-12 hidden rounded-3xl tint-sand p-6 md:p-8 lg:block">
+        <p class="text-sm font-medium text-ink-2">What you'll see on the call</p>
+        <ol class="mt-4 divide-y divide-ink/8">
+          {stages.map((s) => (
+            <li class="grid grid-cols-[2.5rem_6rem_1fr] gap-3 py-3 text-[15px]">
+              <span class="text-ink-3 tabular-nums">{s.n}</span>
+              <span class="font-medium">{s.name}</span>
+              <span class="text-ink-2">{s.text}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4 lg:sticky lg:top-24">
+      <div id="demo-form-top" data-reveal style="--i:2">
+        <BookADemoForm />
+      </div>
+      <!-- Try for free (mobile only) -->
+      <div class="flex flex-col items-center gap-3 lg:hidden">
+        <p class="text-sm text-ink-3">or</p>
+        <button
+          type="button"
+          @click="isLoginModalOpen = true; window.dataLayer?.push({ event: 'start_free_clicked', location: 'book_a_demo', page: '/book-a-demo/' })"
+          class="w-full rounded-xl border border-ink/12 bg-white px-5 py-3.5 font-medium transition-colors hover:border-green"
+        >Try Pin free</button>
+        <p class="text-xs text-ink-3">No credit card required</p>
+      </div>
+    </div>
+  </section>
+
+  <Testimonials />
+</Layout>

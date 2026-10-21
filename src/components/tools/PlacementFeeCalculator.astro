@@ -1,0 +1,260 @@
+---
+import "./tools.css";
+// Placement Fee Calculator — agency-economics tool for recruiters.
+// Salary × fee % + optional split + fallout reserve → net take-home and an
+// annualized run-rate projection. No backend. Styles live in tools.css.
+---
+
+<script is:inline>
+  window.placementFeeCalculator = function () {
+    return {
+      baseSalary: 120000,
+      feePct: 22,
+      splitPct: 0,
+      fallbackReservePct: 15,
+      placementsPerQuarter: 3,
+      copied: false,
+      linkCopied: false,
+      _trackedFirst: false,
+      _viewTracked: false,
+
+      _track(event, props = {}) {
+        try {
+          const root = this.$root;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event,
+            tool_slug: (root && root.dataset && root.dataset.pinToolSlug) || '',
+            tool_name: (root && root.dataset && root.dataset.pinToolName) || '',
+            post_slug: (location.pathname.split('/').filter(Boolean).pop() || ''),
+            page_path: location.pathname,
+            ...props,
+          });
+        } catch (e) {}
+      },
+      _trackFirstInteraction(type) {
+        if (this._trackedFirst) return;
+        this._trackedFirst = true;
+        this._track('blog_tool_first_interaction', { interaction_type: type });
+      },
+
+      hydrate() {
+        try {
+          const s = new URLSearchParams(window.location.search).get('pf');
+          if (s) {
+            const state = JSON.parse(decodeURIComponent(atob(s)));
+            for (const k of Object.keys(state)) {
+              if (k in this && typeof state[k] === 'number') this[k] = state[k];
+            }
+            this._track('blog_tool_shared_state_loaded');
+          }
+        } catch (e) {}
+        if (!this._viewTracked && typeof IntersectionObserver !== 'undefined') {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              this._viewTracked = true;
+              this._track('blog_tool_viewed');
+              io.disconnect();
+            }
+          }, { threshold: 0.3 });
+          io.observe(this.$root);
+        }
+      },
+
+      applyPreset(id) {
+        const presets = {
+          'solo-low':     { baseSalary: 90000,  feePct: 18, splitPct: 0,  fallbackReservePct: 10, placementsPerQuarter: 2 },
+          'solo-mid':     { baseSalary: 120000, feePct: 22, splitPct: 0,  fallbackReservePct: 15, placementsPerQuarter: 3 },
+          'solo-high':    { baseSalary: 180000, feePct: 25, splitPct: 0,  fallbackReservePct: 15, placementsPerQuarter: 2 },
+          'co-recruiter': { baseSalary: 150000, feePct: 22, splitPct: 50, fallbackReservePct: 15, placementsPerQuarter: 4 },
+        };
+        const p = presets[id];
+        if (!p) return;
+        Object.assign(this, p);
+        this._track('blog_tool_preset_selected', { preset_id: id });
+        this._trackFirstInteraction('preset');
+      },
+
+      reset() {
+        this.baseSalary = 120000; this.feePct = 22; this.splitPct = 0;
+        this.fallbackReservePct = 15; this.placementsPerQuarter = 3;
+        this._track('blog_tool_reset_clicked');
+      },
+
+      get grossFee() { return Math.round(this.baseSalary * (this.feePct / 100)); },
+      get yourCut()  { return Math.round(this.grossFee * (1 - this.splitPct / 100)); },
+      get reserve()  { return Math.round(this.yourCut * (this.fallbackReservePct / 100)); },
+      get netTakeHome() { return this.yourCut - this.reserve; },
+      get quarterly() { return this.netTakeHome * this.placementsPerQuarter; },
+      get annualized() { return this.quarterly * 4; },
+
+      get summary() {
+        const f = (n) => '$' + Math.round(n).toLocaleString();
+        return [
+          'Placement Fee breakdown',
+          '──────────────────────',
+          '',
+          'Deal',
+          '  Candidate base salary:  ' + f(this.baseSalary),
+          '  Fee percentage:         ' + this.feePct + '%',
+          '  Split with co-recruiter: ' + this.splitPct + '%',
+          '  Fallout reserve:        ' + this.fallbackReservePct + '%',
+          '',
+          'This deal',
+          '  Gross fee:      ' + f(this.grossFee),
+          '  Your cut:       ' + f(this.yourCut) + '  (after ' + this.splitPct + '% split)',
+          '  Reserve held:   ' + f(this.reserve) + '  (fallout clause)',
+          '  Net take-home:  ' + f(this.netTakeHome),
+          '',
+          'Run rate',
+          '  Placements per quarter: ' + this.placementsPerQuarter,
+          '  Quarterly take-home:    ' + f(this.quarterly),
+          '  Annualized:             ' + f(this.annualized),
+        ].join('\n');
+      },
+
+      shareUrl() {
+        try {
+          const state = {
+            baseSalary: this.baseSalary, feePct: this.feePct, splitPct: this.splitPct,
+            fallbackReservePct: this.fallbackReservePct, placementsPerQuarter: this.placementsPerQuarter,
+          };
+          const s = btoa(encodeURIComponent(JSON.stringify(state)));
+          const url = new URL(window.location.href);
+          url.searchParams.set('pf', s);
+          return url.toString();
+        } catch (e) { return window.location.href; }
+      },
+
+      _copyText(text, flag) {
+        const ok = () => { this[flag] = true; setTimeout(() => this[flag] = false, 1500); };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(ok).catch(() => {});
+          return;
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      },
+      copy() {
+        this._copyText(this.summary, 'copied');
+        this._track('blog_tool_output_copied', { net: this.netTakeHome });
+      },
+      copyLink() {
+        const url = this.shareUrl();
+        try { history.replaceState(null, '', url); } catch (e) {}
+        this._copyText(url, 'linkCopied');
+        this._track('blog_tool_share_link_copied');
+      },
+      _onInput() { this._trackFirstInteraction('input'); },
+    };
+  };
+</script>
+
+<section
+  class="pin-tool"
+  data-pin-tool-slug="placement-fee-calculator"
+  data-pin-tool-name="Placement Fee Calculator"
+  x-data="placementFeeCalculator()"
+  x-init="hydrate()"
+>
+  <h2 class="pt-title" id="pin-tool-placement-fee-calculator">
+    Placement Fee Calculator
+    <span class="pt-tool-badge" aria-hidden="true">Tool</span>
+  </h2>
+  <p class="pt-intro">
+    Agency deal math in 10 seconds. Enter salary + fee % + any split and fallout reserve — get gross fee, your cut, reserve held, net take-home, and annualized run rate at your current placement pace.
+  </p>
+
+  <div class="pt-row">
+    <div>
+      <span class="pt-label">Preset</span>
+      <div class="pt-presets">
+        <button type="button" class="pt-preset-btn" @click="applyPreset('solo-low')">Solo · low fee</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('solo-mid')">Solo · mid</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('solo-high')">Solo · premium</button>
+        <button type="button" class="pt-preset-btn" @click="applyPreset('co-recruiter')">Co-recruiter split</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="pf-sal">Candidate base salary ($)</label>
+      <input id="pf-sal" class="pt-input" type="number" min="0" step="5000" x-model.number="baseSalary" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="pf-fee">Fee percentage (%)</label>
+      <input id="pf-fee" class="pt-input" type="number" min="0" max="50" step="1" x-model.number="feePct" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row two">
+    <div>
+      <label class="pt-label" for="pf-split">Split with co-recruiter (%)</label>
+      <input id="pf-split" class="pt-input" type="number" min="0" max="100" step="5" x-model.number="splitPct" @input.debounce.300ms="_onInput()" />
+    </div>
+    <div>
+      <label class="pt-label" for="pf-res">Fallout reserve (%)</label>
+      <input id="pf-res" class="pt-input" type="number" min="0" max="50" step="5" x-model.number="fallbackReservePct" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-row">
+    <div>
+      <label class="pt-label" for="pf-qtr">Placements per quarter</label>
+      <input id="pf-qtr" class="pt-input" type="number" min="0" step="1" x-model.number="placementsPerQuarter" @input.debounce.300ms="_onInput()" />
+    </div>
+  </div>
+
+  <div class="pt-calc-grid">
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Gross fee</span>
+      <span class="pt-calc-value" x-text="'$' + grossFee.toLocaleString()"></span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Your cut</span>
+      <span class="pt-calc-value" x-text="'$' + yourCut.toLocaleString()"></span>
+    </div>
+    <div class="pt-calc-card pt-calc-total">
+      <span class="pt-calc-label">Net take-home</span>
+      <span class="pt-calc-value" x-text="'$' + netTakeHome.toLocaleString()"></span>
+    </div>
+    <div class="pt-calc-card">
+      <span class="pt-calc-label">Annualized</span>
+      <span class="pt-calc-value" x-text="'$' + annualized.toLocaleString()"></span>
+    </div>
+  </div>
+
+  <div class="pt-output-wrap">
+    <label class="pt-label" for="pf-out">Summary</label>
+    <textarea id="pf-out" class="pt-output" readonly x-text="summary"></textarea>
+    <div class="pt-actions">
+      <button type="button" class="pt-btn primary" @click="copy()">
+        <span x-show="!copied">Copy summary</span>
+        <span x-show="copied" x-cloak>Copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="copyLink()">
+        <span x-show="!linkCopied">Copy share link</span>
+        <span x-show="linkCopied" x-cloak>Link copied</span>
+      </button>
+      <button type="button" class="pt-btn secondary" @click="reset()">Reset</button>
+    </div>
+  </div>
+
+  <div class="pt-howto">
+    <strong>How to use:</strong>
+    <ol>
+      <li>Enter the candidate's annual base salary (most fee calcs exclude bonus/equity).</li>
+      <li>Set the fee percentage per your contract (typical range 18–30%).</li>
+      <li>Split % is what goes to a co-recruiter, finder, or employer on a referral.</li>
+      <li>Fallout reserve is the portion you withhold against a 90-day fallout clause — release it once the candidate clears the guarantee period.</li>
+      <li>Placements per quarter projects annualized run rate so you can benchmark against the $300k+ typical solo-recruiter target.</li>
+    </ol>
+  </div>
+
+  <p class="pt-source">
+    Built by Pin. Pin's agency users average $420k/year in personal billings — see <a href="https://www.pin.com/">pin.com</a>.
+  </p>
+</section>

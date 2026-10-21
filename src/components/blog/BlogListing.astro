@@ -1,0 +1,189 @@
+---
+// Shared template for /blog, /blog/tag/*, /blog/author/* and their paginated pages.
+import { ArrowRight, ChevronLeft, ChevronRight } from '@lucide/astro'
+import PostCard from './PostCard.astro'
+import AuthorAvatar from './AuthorAvatar.astro'
+import CTABand from '../ui/CTABand.astro'
+import { relativeTime } from './utils'
+
+type Post = any
+
+interface Props {
+  mode: 'all' | 'tag' | 'author'
+  posts: Post[]
+  allTags: { name?: string; slug: string }[]
+  tagCounts: Map<string, number>
+  activeTag: string
+  activeTagName?: string
+  currentPage: number
+  totalPages: number
+  paginationBase: string
+  paginationIndexUrl?: string
+  customH1?: string
+  customSubtitle?: string
+  intro?: string
+  totalArticleCount: number
+  lastPublishedAt?: string
+  featuredPosts: Post[]
+  relatedTags?: { slug: string; name?: string; count: number }[]
+  author?: { name: string; slug: string; profile_image?: string | null; bio?: string | null; credentials?: string[]; sameAs?: string[] }
+  authors?: { name?: string; slug: string; profile_image?: string | null; count: number }[]
+}
+
+const {
+  mode, posts, allTags, tagCounts, activeTag, activeTagName, currentPage, totalPages,
+  paginationBase, paginationIndexUrl, customH1, customSubtitle, intro, totalArticleCount,
+  lastPublishedAt, featuredPosts = [], relatedTags = [], author, authors = [],
+} = Astro.props
+
+function socialLabel(url: string): string {
+  if (url.includes('linkedin.com')) return 'LinkedIn'
+  if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter'
+  if (url.includes('facebook.com')) return 'Facebook'
+  if (url.includes('github.com')) return 'GitHub'
+  if (url.includes('youtube.com')) return 'YouTube'
+  return 'Website'
+}
+
+const indexUrl = paginationIndexUrl ?? paginationBase
+const pageHref = (page: number) => (page === 1 ? indexUrl : `${paginationBase}/${page}/`)
+
+const title = customH1 ?? (mode === 'author' ? (author?.name ?? '') : (activeTagName ?? 'All'))
+const subtitle = customSubtitle ?? (
+  mode === 'tag'
+    ? `The latest from Pin on ${activeTagName ?? title}.`
+    : mode === 'author'
+      ? (author?.bio ?? `Articles by ${author?.name ?? ''} on the Pin blog.`)
+      : 'Guides, benchmarks and field notes from the Pin editorial team — on AI recruiting, sourcing, and hiring.'
+)
+const kicker = mode === 'tag' ? 'Topic' : mode === 'author' ? 'Author' : 'Pin Blog'
+const h1 = mode === 'all' ? 'AI recruiting, sourcing & hiring guides' : title
+const featuredHeading = mode === 'tag' ? `Featured in ${activeTagName ?? title}` : mode === 'author' ? `Featured by ${author?.name ?? title}` : 'Featured'
+const listHeading = mode === 'tag' ? `All in ${activeTagName ?? title}` : mode === 'author' ? `Articles by ${author?.name ?? title}` : 'All articles'
+const featuredCards = featuredPosts.slice(0, 2)
+const articles = (n: number) => `${n} ${n === 1 ? 'article' : 'articles'}`
+
+const chipTags = allTags
+  .map((t) => ({ ...t, count: tagCounts.get(t.slug) ?? 0 }))
+  .sort((a, b) => b.count - a.count)
+const chip = 'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-green'
+const chipIdle = 'bg-white text-ink-2 shadow-[0_0_0_1px_rgb(0_0_0/0.06)] hover:text-ink'
+const chipActive = 'bg-green text-white'
+---
+
+<div class="mx-auto max-w-7xl px-4 pb-24 pt-10 md:px-8 md:pb-32 md:pt-16">
+  <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-2 text-sm text-ink-3">
+    <a href="/" class="hover:text-ink">Home</a><span aria-hidden="true">/</span>
+    {mode === 'all' ? <span class="text-ink-2" aria-current="page">Blog</span> : <a href="/blog/" class="hover:text-ink">Blog</a>}
+    {mode !== 'all' && (<><span aria-hidden="true">/</span><span class="text-ink-2" aria-current="page">{mode === 'author' ? author?.name : (activeTagName ?? title)}</span></>)}
+  </nav>
+
+  <header class:list={['mt-8 md:mt-12', mode === 'author' && 'flex flex-col-reverse gap-8 md:flex-row md:items-start md:justify-between']}>
+    <div class="max-w-3xl">
+      <p data-reveal class="text-sm font-medium tracking-wide text-green">{kicker}</p>
+      <h1 data-reveal style="--i:1" class="mt-3 text-[40px] font-medium leading-[1.05] tracking-[-0.02em] text-balance md:text-[60px]">{h1}</h1>
+      <p data-reveal style="--i:2" class="mt-5 text-lg leading-relaxed text-ink-2 text-pretty md:text-xl">{subtitle}</p>
+      {intro && <div data-reveal style="--i:3" class="listing-intro mt-5 max-w-2xl leading-relaxed text-ink-2" set:html={intro} />}
+      {mode === 'author' && author?.credentials?.length ? (
+        <ul class="mt-5 flex flex-wrap gap-2">
+          {author.credentials.map((c) => <li class="rounded-full bg-green-lighter px-3 py-1 text-sm text-green-accessible">{c}</li>)}
+        </ul>
+      ) : null}
+      {mode === 'author' && author?.sameAs?.length ? (
+        <div class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          {author.sameAs.map((url) => <a href={url} rel="nofollow me" target="_blank" class="font-medium text-green-accessible underline decoration-green/30 underline-offset-4 hover:decoration-green">{socialLabel(url)}</a>)}
+        </div>
+      ) : null}
+      <p data-reveal style="--i:4" class="mt-6 flex flex-wrap items-center gap-x-2 text-sm text-ink-3">
+        <span>{articles(totalArticleCount)}</span>
+        {lastPublishedAt && (<><span aria-hidden="true">·</span><span>Last published {relativeTime(lastPublishedAt)}</span></>)}
+        {totalPages > 1 && (<><span aria-hidden="true">·</span><span>Page {currentPage} of {totalPages}</span></>)}
+      </p>
+    </div>
+    {mode === 'author' && author && (
+      <AuthorAvatar author={author} size={128} eager />
+    )}
+  </header>
+
+  <!-- Topic / author switcher: scrolls sideways on small screens, wraps on desktop -->
+  <nav aria-label={mode === 'author' ? 'Authors' : 'Topics'} class="mt-12 border-y border-ink/5 py-5">
+    <div class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
+      {mode === 'author' ? authors.map((a) => (
+        <a href={`/blog/author/${a.slug}/`} class:list={[chip, 'pl-1.5', a.slug === author?.slug ? chipActive : chipIdle]} aria-current={a.slug === author?.slug ? 'page' : undefined}>
+          <AuthorAvatar author={a} size={22} />
+          {a.name ?? a.slug} <span class="tabular-nums opacity-60">{a.count}</span>
+        </a>
+      )) : (
+        <>
+          <a href="/blog/" class:list={[chip, activeTag === 'all' ? chipActive : chipIdle]} aria-current={activeTag === 'all' ? 'page' : undefined}>
+            All <span class="tabular-nums opacity-60">{mode === 'all' ? totalArticleCount : ''}</span>
+          </a>
+          {chipTags.map((t) => (
+            <a href={`/blog/tag/${t.slug}/`} class:list={[chip, t.slug === activeTag ? chipActive : chipIdle]} aria-current={t.slug === activeTag ? 'page' : undefined}>
+              {t.name ?? t.slug} <span class="tabular-nums opacity-60">{t.count}</span>
+            </a>
+          ))}
+        </>
+      )}
+    </div>
+  </nav>
+
+  {featuredCards.length > 0 && (
+    <section class="mt-16" aria-labelledby="featured-heading">
+      <h2 id="featured-heading" class="text-2xl font-medium tracking-[-0.02em] md:text-[32px]">{featuredHeading}</h2>
+      <p class="mt-1 text-ink-2">Hand-picked by the Pin editorial team. Start here.</p>
+      <div class:list={['mt-8 grid gap-x-8 gap-y-12', featuredCards.length > 1 && 'md:grid-cols-2']}>
+        {featuredCards.map((post) => (
+          <PostCard post={post} featured showExcerpt />
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section class="mt-20" aria-labelledby="list-heading">
+    <h2 id="list-heading" class="text-2xl font-medium tracking-[-0.02em] md:text-[32px]">{listHeading}</h2>
+    {totalArticleCount > 0 && <p class="mt-1 text-ink-2">{articles(totalArticleCount)}, most recent first.</p>}
+    {posts.length > 0 ? (
+      <div class="mt-8 grid gap-x-8 gap-y-8 sm:grid-cols-2 sm:gap-y-12 lg:grid-cols-3">
+        {posts.map((post) => <PostCard post={post} />)}
+      </div>
+    ) : (
+      <p class="mt-8 text-ink-2">No posts yet. Check back soon.</p>
+    )}
+  </section>
+
+  {totalPages > 1 && (
+    <nav aria-label="Article pagination" class="mt-16 flex flex-wrap items-center justify-center gap-1.5">
+      {currentPage > 1 && <a href={pageHref(currentPage - 1)} rel="prev" class="grid size-10 place-items-center rounded-full text-ink-2 hover:bg-bg-secondary hover:text-ink" aria-label="Previous page"><ChevronLeft size={18} /></a>}
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+        <a
+          href={pageHref(page)}
+          aria-current={page === currentPage ? 'page' : undefined}
+          class:list={['grid size-10 place-items-center rounded-full text-sm tabular-nums transition-colors', page === currentPage ? 'bg-green text-white' : 'text-ink-2 hover:bg-bg-secondary hover:text-ink']}
+        >{page}</a>
+      ))}
+      {currentPage < totalPages && <a href={pageHref(currentPage + 1)} rel="next" class="grid size-10 place-items-center rounded-full text-ink-2 hover:bg-bg-secondary hover:text-ink" aria-label="Next page"><ChevronRight size={18} /></a>}
+    </nav>
+  )}
+
+  {mode === 'tag' && relatedTags.length > 0 && (
+    <section class="mt-24" aria-labelledby="related-topics">
+      <h2 id="related-topics" class="text-2xl font-medium tracking-[-0.02em] md:text-[32px]">Related topics</h2>
+      <div class="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {relatedTags.map((t) => (
+          <a href={`/blog/tag/${t.slug}/`} class="group flex flex-col justify-between gap-6 rounded-2xl bg-bg-secondary p-5 transition-colors hover:bg-green-lighter">
+            <span class="flex items-start justify-between gap-3 font-medium">{t.name ?? t.slug}<ArrowRight size={18} class="mt-0.5 shrink-0 text-green transition-transform group-hover:translate-x-0.5" /></span>
+            <span class="text-sm text-ink-3">{articles(t.count)}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+</div>
+
+<CTABand track="blog_listing" />
+
+<style>
+  .listing-intro :global(p + p) { margin-top: 0.75rem; }
+  .listing-intro :global(a) { color: var(--color-green-accessible); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--color-green) 35%, transparent); text-underline-offset: 3px; }
+</style>

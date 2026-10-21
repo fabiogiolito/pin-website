@@ -1,0 +1,109 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import PostLayout from '../../components/blog/PostLayout.astro'
+import { breadcrumbJsonLd, detectEmbeddedTools, toolSchemas } from '../../components/blog/utils'
+import { getAllUnifiedPosts } from '../../lib/posts'
+import { extractFaqJsonLd } from '../../lib/faq-schema'
+import { organizationSchema, ORGANIZATION_ID } from '../../lib/schema'
+
+export async function getStaticPaths() {
+  const posts = await getAllUnifiedPosts()
+  return posts.map((post) => {
+    const tagSlugs = post.tags?.map((tag) => tag.slug) ?? []
+    const relatedPosts = posts
+      .filter((other) => other.slug !== post.slug && other.tags?.some((tag) => tagSlugs.includes(tag.slug)))
+      .slice(0, 3)
+    return { params: { slug: post.slug }, props: { post, relatedPosts } }
+  })
+}
+
+const { post, relatedPosts } = Astro.props
+const showFeatureImage = !post.hide_feature_image
+
+// Person JSON-LD: url points at our /blog/author/<slug>/ hub; external profiles go to sameAs.
+function authorToPerson(a: any) {
+  const authorPageUrl = a.slug ? `https://www.pin.com/blog/author/${a.slug}/` : undefined
+  const sameAs = [
+    a.website,
+    a.twitter && `https://twitter.com/${a.twitter.replace(/^@/, '')}`,
+    a.facebook && `https://facebook.com/${a.facebook}`,
+  ].filter(Boolean)
+  return {
+    '@type': 'Person',
+    ...(authorPageUrl && { '@id': authorPageUrl }),
+    name: a.name,
+    ...(a.profile_image && { image: a.profile_image }),
+    ...(a.bio && { description: a.bio }),
+    ...(authorPageUrl ? { url: authorPageUrl } : a.website && { url: a.website }),
+    ...(sameAs.length && { sameAs }),
+  }
+}
+
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: post.title,
+  ...(post.feature_image && {
+    image: post.feature_image.startsWith('http') ? post.feature_image : new URL(post.feature_image, Astro.site).href,
+  }),
+  ...(post.published_at && { datePublished: post.published_at }),
+  ...(post.updated_at && { dateModified: post.updated_at }),
+  ...(post.authors?.length && { author: post.authors.map(authorToPerson) }),
+  publisher: { '@id': ORGANIZATION_ID },
+}
+
+const faqJsonLd = extractFaqJsonLd(post.html ?? '')
+
+// One SoftwareApplication entry per embedded interactive tool.
+const toolJsonLd = detectEmbeddedTools(post.html ?? '').map((slug) => {
+  const s = toolSchemas[slug]
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: s.name,
+    description: s.description,
+    applicationCategory: s.applicationCategory,
+    operatingSystem: 'Web',
+    url: `https://www.pin.com/blog/${post.slug}/#pin-tool-${slug}`,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    publisher: { '@id': ORGANIZATION_ID },
+  }
+})
+
+// Breadcrumb: Home › Blog › [primary tag] › Title (first tag is primary, Ghost convention).
+const primaryTag = post.tags?.[0]
+const breadcrumb = breadcrumbJsonLd([
+  { name: 'Home', url: 'https://www.pin.com/' },
+  { name: 'Blog', url: 'https://www.pin.com/blog/' },
+  ...(primaryTag ? [{ name: primaryTag.name ?? primaryTag.slug, url: `https://www.pin.com/blog/tag/${primaryTag.slug}/` }] : []),
+  { name: post.title, url: `https://www.pin.com/blog/${post.slug}/` },
+])
+
+const jsonLd = [organizationSchema, articleJsonLd, ...(faqJsonLd ? [faqJsonLd] : []), ...toolJsonLd, breadcrumb]
+---
+
+<Layout
+  title={`${post.title} - Pin`}
+  description={post.excerpt}
+  ogImage={post.feature_image || undefined}
+  ogType="article"
+  jsonLd={jsonLd}
+  authorName={post.authors?.[0]?.name}
+  publishedAt={post.published_at}
+  modifiedAt={post.updated_at}
+  canonicalUrl={post.canonical_url}
+  preloadImages={showFeatureImage && post.feature_image ? [post.feature_image] : undefined}
+>
+  <PostLayout
+    title={post.title ?? ''}
+    excerpt={post.excerpt}
+    publishedAt={post.published_at}
+    updatedAt={post.updated_at}
+    authors={post.authors}
+    featureImage={showFeatureImage ? post.feature_image : undefined}
+    heroAlt={post.hero_alt}
+    html={post.html ?? ''}
+    tags={post.tags ?? []}
+    relatedPosts={relatedPosts}
+  />
+</Layout>
