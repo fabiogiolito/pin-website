@@ -9,7 +9,7 @@ interface Props {
 const { n, stage, title, tint } = Astro.props;
 ---
 
-<section data-chapter={n - 1} id={stage.toLowerCase()} class="scroll-mt-28 py-14 md:py-20">
+<section data-chapter={n - 1} id={stage.toLowerCase()} style={`--n:${n}`} class="scroll-mt-28 py-14 md:py-20">
   <div class="grid gap-5 md:grid-cols-2 md:items-end md:gap-16">
     <div>
       <p data-reveal class="text-sm font-medium tracking-wide text-green">0{n} · {stage}</p>
@@ -20,6 +20,6 @@ const { n, stage, title, tint } = Astro.props;
     </div>
   </div>
   <div data-reveal style="--i:2" class:list={["relative mt-10 overflow-hidden rounded-[28px] px-4 py-8 sm:px-8 md:rounded-[36px] md:px-12 md:py-14", `tint-${tint}`]}>
-    <slot />
+    <div class="viz"><slot /></div>
   </div>
 </section>

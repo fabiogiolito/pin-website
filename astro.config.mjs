@@ -20,6 +20,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_URL = "https://www.pin.com";
 
 const SITEMAP_EXCLUDED_PATHS = [
+  '/v2/',
+  '/v2',
   '/privacy/',
   '/privacy',
   '/terms/',

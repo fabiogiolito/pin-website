@@ -23,7 +23,7 @@ const menus = [
     <ul class="hidden items-center gap-1 text-[15px] lg:flex">
       {menus.map((m) => (
         <li class="group relative">
-          <button type="button" class="flex items-center gap-1 rounded-lg px-3 py-2 text-ink-2 transition-colors hover:text-ink group-focus-within:text-ink" aria-haspopup="true">
+          <button type="button" class="flex items-center gap-1 rounded-lg px-3 py-2 font-medium text-ink-2 transition-colors hover:text-ink group-focus-within:text-ink" aria-haspopup="true">
             {m.label} <ChevronDown size={14} class="transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180" />
           </button>
           <div class="invisible absolute left-1/2 top-full -translate-x-1/2 pt-2 opacity-0 transition-[opacity,visibility,translate] duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
@@ -47,13 +47,13 @@ const menus = [
           </div>
         </li>
       ))}
-      <li><a href="/customers/" class="rounded-lg px-3 py-2 text-ink-2 transition-colors hover:text-ink">Customers</a></li>
-      <li><a href="/pricing/" class="rounded-lg px-3 py-2 text-ink-2 transition-colors hover:text-ink">Pricing</a></li>
-      <li><a href="/blog/" class="rounded-lg px-3 py-2 text-ink-2 transition-colors hover:text-ink">Blog</a></li>
+      <li><a href="/customers/" class="rounded-lg px-3 py-2 font-medium text-ink-2 transition-colors hover:text-ink">Customers</a></li>
+      <li><a href="/pricing/" class="rounded-lg px-3 py-2 font-medium text-ink-2 transition-colors hover:text-ink">Pricing</a></li>
+      <li><a href="/blog/" class="rounded-lg px-3 py-2 font-medium text-ink-2 transition-colors hover:text-ink">Blog</a></li>
     </ul>
 
     <div class="flex items-center gap-1 text-[15px] md:gap-2">
-      <a href="https://app.pin.com/login" class="hidden rounded-lg px-3 py-2 text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink sm:block"
+      <a href="https://app.pin.com/login" class="hidden rounded-lg px-3 py-2 font-medium text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink sm:block"
         onclick="window.dataLayer?.push({ event: 'sign_in_clicked', location: 'header', page: window.location.pathname })">Sign in</a>
       <button type="button" class="rounded-xl bg-green px-4 py-2.5 font-medium text-white transition-[background-color,scale] hover:bg-green-accessible active:scale-[0.98]"
         @click="isLoginModalOpen = true; window.dataLayer?.push({ event: 'start_free_clicked', location: 'header', page: window.location.pathname })">Try Pin Free</button>

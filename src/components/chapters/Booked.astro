@@ -13,7 +13,6 @@ const intros = [
   { day: 1, at: 5, name: "Priya Raman", time: "3:00 PM" },
   { day: 4, at: 1, name: "Daniel Okafor", time: "11:00 AM" },
 ];
-const ROW = 44;
 ---
 
 <Chapter n={5} stage="Booked" title="They said yes. It's already on your calendar." tint="green">
@@ -54,21 +53,21 @@ const ROW = 44;
         <span class="flex items-center gap-1 text-app-fg3"><ChevronLeft size={16} /><span class="text-[13px] text-app-fg2">This week</span><ChevronRight size={16} /></span>
       </div>
       <div class="overflow-x-auto">
-        <div class="min-w-[520px] p-3 text-[12px]">
+        <div class="cal min-w-[520px] p-3 text-[12px]">
           <div class="grid grid-cols-[48px_repeat(5,1fr)] text-app-fg2">
             <span></span>
             {days.map((d) => <span class="px-1.5 pb-2 font-medium">{d}</span>)}
           </div>
-          <div class="relative grid grid-cols-[48px_repeat(5,1fr)]" style={`height:${hours.length * ROW}px`}>
-            <div>{hours.map((h) => <p class="text-app-fg3" style={`height:${ROW}px`}>{h}</p>)}</div>
+          <div class="relative grid grid-cols-[48px_repeat(5,1fr)]" style={`height:calc(var(--row) * ${hours.length})`}>
+            <div>{hours.map((h) => <p class="text-app-fg3" style="height:var(--row)">{h}</p>)}</div>
             {days.map((_, d) => (
               <div class="relative border-l border-app-border">
-                {hours.map(() => <div class="border-t border-app-border" style={`height:${ROW}px`}></div>)}
+                {hours.map(() => <div class="border-t border-app-border" style="height:var(--row)"></div>)}
                 {busy.filter((b) => b[0] === d).map(([, s, l]) => (
-                  <div class="absolute inset-x-1 rounded-md bg-app-fg/6" style={`top:${s * ROW + 2}px;height:${l * ROW - 4}px`}></div>
+                  <div class="absolute inset-x-1 rounded-md bg-app-fg/6" style={`top:calc(var(--row) * ${s} + 2px);height:calc(var(--row) * ${l} - 4px)`}></div>
                 ))}
                 {intros.filter((e) => e.day === d).map((e) => (
-                  <div class="intro absolute inset-x-1 flex flex-col justify-center overflow-hidden rounded-md bg-app-tint/12 px-2 leading-tight text-app-tint-fg" style={`top:${e.at * ROW + 2}px;height:${ROW - 4}px;--i:${intros.indexOf(e)}`}>
+                  <div class="intro absolute inset-x-1 flex flex-col justify-center overflow-hidden rounded-md bg-app-tint/12 px-2 leading-tight text-app-tint-fg" style={`top:calc(var(--row) * ${e.at} + 2px);height:calc(var(--row) - 4px);--i:${intros.indexOf(e)}`}>
                     <p class="truncate text-[12px] font-semibold">{e.name}</p>
                     <p class="flex items-center gap-1 truncate text-[11px] opacity-75"><Video size={10} class="shrink-0" /> {e.time}</p>
                   </div>
@@ -84,6 +83,7 @@ const ROW = 44;
 </Chapter>
 
 <style>
+  .cal { --row: 44px; }
   .tip { opacity: 0; translate: 0 4px; transition: opacity 200ms, translate 200ms var(--ease-out-soft); }
   .group:hover .tip, .show-tip .tip { opacity: 1; translate: 0 0; }
   :global(.js) .intro { opacity: 0; translate: 0 -12px; scale: 0.96; transition: opacity 350ms, translate 450ms var(--ease-out-soft), scale 450ms var(--ease-out-soft); transition-delay: calc(var(--i) * 350ms + 900ms); }

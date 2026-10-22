@@ -101,8 +101,10 @@ const colors: Record<string, string> = {
     stroke-dasharray: var(--len);
     stroke-dashoffset: var(--len);
     transition: stroke-dashoffset 900ms var(--ease-out-soft), opacity 300ms;
+    transition-delay: calc(var(--d, 0) * 90ms);
   }
   #replies-map.drawn .lines :global(path) { stroke-dashoffset: 0; }
+  #replies-map.instant .lines :global(path) { transition: none; }
   /* Hovering an action (or an email) spotlights its connections */
   #replies-map.focus .email:not(.lit),
   #replies-map.focus .action:not(.lit),
@@ -119,21 +121,27 @@ const colors: Record<string, string> = {
   const COLORS: Record<string, string> = { slack: "hsl(256 60% 58%)", schedule: "hsl(142 60% 34%)", kb: "hsl(221 70% 52%)", archive: "hsl(240 4% 62%)" };
 
   function draw() {
+    if (!root.offsetWidth) return; // hidden: keep the last geometry
     const box = root.getBoundingClientRect();
+    const k = root.offsetWidth / box.width || 1; // undo any CSS scale on an ancestor
     const paths: string[] = [];
     emails.forEach((e, i) => {
       const a = e.getBoundingClientRect();
-      e.dataset.to!.split(" ").forEach((to, k) => {
+      e.dataset.to!.split(" ").forEach((to, j) => {
         const b = actions[to].getBoundingClientRect();
-        const x1 = a.right - box.left, y1 = a.top + a.height / 2 - box.top + (k - (e.dataset.to!.split(" ").length - 1) / 2) * 10;
-        const x2 = b.left - box.left, y2 = b.top + Math.min(b.height / 2, 40) - box.top;
+        const x1 = (a.right - box.left) * k, y1 = (a.top + a.height / 2 - box.top) * k + (j - (e.dataset.to!.split(" ").length - 1) / 2) * 10;
+        const x2 = (b.left - box.left) * k, y2 = (b.top - box.top) * k + Math.min(b.height * k / 2, 40);
         const dx = (x2 - x1) * 0.55;
         const d = `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
-        paths.push(`<path d="${d}" stroke="${COLORS[to]}" data-from="${e.dataset.id}" data-to="${to}" style="--len:400;transition-delay:${i * 90}ms"></path>`);
+        paths.push(`<path d="${d}" stroke="${COLORS[to]}" data-from="${e.dataset.id}" data-to="${to}" style="--len:400;--d:${i}"></path>`);
       });
     });
+    // Swap geometry with transitions off, so new or resized paths never animate between old and new lengths.
+    root.classList.add("instant");
     svg.innerHTML = paths.join("");
     svg.querySelectorAll("path").forEach((p) => p.style.setProperty("--len", String(Math.ceil(p.getTotalLength()))));
+    svg.getBoundingClientRect();
+    root.classList.remove("instant");
   }
 
   function focus(from?: string, to?: string) {
@@ -159,6 +167,17 @@ const colors: Record<string, string> = {
 
   draw();
   new ResizeObserver(draw).observe(root);
+  // A parent layout can take over timing (data-managed): it sends "lines:hide" and "lines:show" once the cards have settled.
+  // Rebuilding the paths resets them to undrawn instantly, with no retract animation.
+  root.addEventListener("lines:hide", () => {
+    root.classList.remove("drawn");
+    draw();
+  });
+  root.addEventListener("lines:show", () => {
+    root.classList.remove("drawn");
+    draw();
+    root.classList.add("drawn");
+  });
   if (reducedMotion) root.classList.add("drawn");
-  else onEnter(root, () => root.classList.add("drawn"), 0.35);
+  else onEnter(root, () => !("managed" in root.dataset) && root.classList.add("drawn"), 0.35);
 </script>
