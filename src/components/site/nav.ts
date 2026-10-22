@@ -1,26 +1,26 @@
 // Site navigation, shared by Header and Footer.
-import { Search, Workflow, Send, CalendarCheck, Users, Plug } from "@lucide/astro";
+import { Search, Workflow, Send, CalendarCheck, Users, Plug, Briefcase, UserCheck, Rocket, Cpu, HeartPulse, ShieldCheck, Landmark } from "@lucide/astro";
 
-export type NavLink = { label: string; href: string; desc?: string; external?: boolean; icon?: typeof Search };
+export type NavLink = { label: string; href: string; desc?: string; external?: boolean; icon?: typeof Search; badge?: string; group?: string };
 
 export const product: NavLink[] = [
   { label: "AI Sourcing", icon: Search, href: "/features/ai-sourcing/", desc: "Find the right people in 850M+ profiles" },
   { label: "AI Recruiting Agent", icon: Workflow, href: "/features/ai-recruiting-agent/", desc: "Job title in, booked interviews out" },
   { label: "Automated Outreach", icon: Send, href: "/features/automated-outreach/", desc: "Personal sequences sent from your inbox" },
   { label: "AI Interview Scheduling", icon: CalendarCheck, href: "/features/ai-interview-scheduling/", desc: "Replies sorted, calls booked" },
-  { label: "Recruiting CRM", icon: Users, href: "/features/crm/", desc: "Every candidate and conversation in one place" },
-  { label: "Pin MCP Server", icon: Plug, href: "/mcp/", desc: "Use Pin from Claude and other AI tools" },
+  { label: "Recruiting CRM", icon: Users, href: "/features/crm/", badge: "New", desc: "Every candidate and conversation in one place" },
+  { label: "Pin MCP Server", icon: Plug, href: "/mcp/", badge: "New", desc: "Use Pin from Claude and other AI tools" },
 ];
 
 export const builtFor: NavLink[] = [
-  { label: "Recruiting Teams", href: "/built-for/recruiting-teams/" },
-  { label: "Agencies", href: "/built-for/agencies/" },
-  { label: "Hiring Managers", href: "/built-for/hiring-managers/" },
-  { label: "Founders", href: "/built-for/founders/" },
-  { label: "Tech Companies", href: "/built-for/tech-companies/" },
-  { label: "Healthcare", href: "/built-for/healthcare/" },
-  { label: "Cybersecurity", href: "/built-for/cybersecurity/" },
-  { label: "FinTech", href: "/built-for/fintech/" },
+  { label: "Hiring Managers", icon: UserCheck, href: "/built-for/hiring-managers/", desc: "Source without leaving Slack", group: "Built for" },
+  { label: "Founders", icon: Rocket, href: "/built-for/founders/", desc: "Hire your first 20 people", group: "Built for" },
+  { label: "Recruiting Teams", icon: Users, href: "/built-for/recruiting-teams/", desc: "Full-desk orchestration", group: "Built for" },
+  { label: "Agencies", icon: Briefcase, href: "/built-for/agencies/", desc: "Multi-client workspaces", group: "Built for" },
+  { label: "Tech Companies", icon: Cpu, href: "/built-for/tech-companies/", desc: "ML, infra, full-stack", group: "Industries" },
+  { label: "Healthcare", icon: HeartPulse, href: "/built-for/healthcare/", desc: "Clinicians, RNs, allied", group: "Industries" },
+  { label: "Cybersecurity", icon: ShieldCheck, href: "/built-for/cybersecurity/", desc: "Cleared & specialized talent", group: "Industries" },
+  { label: "FinTech", icon: Landmark, href: "/built-for/fintech/", desc: "Quant, risk, compliance", group: "Industries" },
 ];
 
 export const compare: NavLink[] = [

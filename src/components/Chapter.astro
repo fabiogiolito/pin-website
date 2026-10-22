@@ -23,3 +23,8 @@ const { n, stage, title, tint } = Astro.props;
     <div class="viz"><slot /></div>
   </div>
 </section>
+
+<style>
+  /* Grid columns in the visuals may shrink below their content's min width, so nothing pushes past the panel on small screens. */
+  .viz > :global(* > *) { min-width: 0; }
+</style>

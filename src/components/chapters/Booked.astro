@@ -52,13 +52,13 @@ const intros = [
         <p class="font-semibold">October 2026</p>
         <span class="flex items-center gap-1 text-app-fg3"><ChevronLeft size={16} /><span class="text-[13px] text-app-fg2">This week</span><ChevronRight size={16} /></span>
       </div>
-      <div class="overflow-x-auto">
-        <div class="cal min-w-[520px] p-3 text-[12px]">
-          <div class="grid grid-cols-[48px_repeat(5,1fr)] text-app-fg2">
+      <div>
+        <div class="cal p-2 text-[12px] sm:p-3">
+          <div class="grid grid-cols-[40px_repeat(5,minmax(0,1fr))] sm:grid-cols-[48px_repeat(5,minmax(0,1fr))] text-app-fg2">
             <span></span>
-            {days.map((d) => <span class="px-1.5 pb-2 font-medium">{d}</span>)}
+            {days.map((d) => <span class="truncate px-1.5 pb-2 font-medium">{d}</span>)}
           </div>
-          <div class="relative grid grid-cols-[48px_repeat(5,1fr)]" style={`height:calc(var(--row) * ${hours.length})`}>
+          <div class="relative grid grid-cols-[40px_repeat(5,minmax(0,1fr))] sm:grid-cols-[48px_repeat(5,minmax(0,1fr))]" style={`height:calc(var(--row) * ${hours.length})`}>
             <div>{hours.map((h) => <p class="text-app-fg3" style="height:var(--row)">{h}</p>)}</div>
             {days.map((_, d) => (
               <div class="relative border-l border-app-border">
