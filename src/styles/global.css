@@ -71,6 +71,11 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Tailwind v4 resets buttons to cursor: default; anything clickable gets a pointer. */
+@layer base {
+  button:not(:disabled), [role="button"], [role="radio"], [role="tab"], summary, label[for], select { cursor: pointer; }
+}
+
 /* Reveal on enter. Only hidden when JS is running so no-JS still shows content. */
 .js [data-reveal] {
   opacity: 0;

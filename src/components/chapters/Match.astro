@@ -5,29 +5,30 @@ import Avatar from "../Avatar.astro";
 
 type Verdict = "Yes" | "Maybe";
 const candidates: {
-  name: string; hue: number; location: string; current: string; past: string; edu: string;
+  name: string; hue: number; fit: string; location: string; current: string; past: string; edu: string;
   evals: [string, Verdict, string][]; criteria: [string, string][];
 }[] = [
   {
-    name: "Maya Chen", hue: 340, location: "Brooklyn, NY",
+    name: "Maya Chen", hue: 340, fit: "9.5", location: "Brooklyn, NY",
     current: "Senior Software Engineer at Stripe", past: "Software Engineer at Square", edu: "B.S. Computer Science at Cornell",
     evals: [["Payments depth?", "Yes", "six years on Stripe's ledger and money-movement services."], ["Leadership?", "Yes", "tech lead for 4 engineers, ready for a staff-track role."]],
     criteria: [["Go & Kotlin", "Go daily; led the Kotlin migration of the payouts API."], ["Distributed systems", "Owns a service handling 40k req/s."], ["5–8 years", "7 years of backend experience."]],
   },
   {
-    name: "Daniel Okafor", hue: 200, location: "New York, NY",
+    name: "Daniel Okafor", hue: 200, fit: "9.5", location: "New York, NY",
     current: "Backend Lead at Plaid", past: "Senior Engineer at Capital One", edu: "M.S. Computer Science at NYU",
     evals: [["Payments depth?", "Yes", "eight years across banking APIs and card issuing."], ["Startup pace?", "Maybe", "mostly large-company experience, one early-stage stint."]],
     criteria: [["Go & Kotlin", "Go in production at Plaid."], ["Distributed systems", "Built an event pipeline for 2B+ events a day."], ["5–8 years", "8 years of backend experience."]],
   },
   {
-    name: "Priya Raman", hue: 25, location: "Jersey City, NJ",
+    name: "Priya Raman", hue: 25, fit: "9.0", location: "Jersey City, NJ",
     current: "Software Engineer II at Brex", past: "Engineer at Goldman Sachs", edu: "B.S. Computer Science at Georgia Tech",
     evals: [["Payments depth?", "Yes", "owned card authorization latency at Brex."], ["Leadership?", "Maybe", "mentors two engineers, no formal lead role yet."]],
     criteria: [["Go & Kotlin", "Kotlin services for spend management."], ["Distributed systems", "Cut authorization p99 by 40%."], ["5–8 years", "5 years of backend experience."]],
   },
 ];
 const tone = { Yes: "text-app-pos", Maybe: "text-app-warn" };
+const fitPill = "rounded bg-app-pos/10 px-1.5 py-0.5 text-[12px] font-semibold leading-none tabular-nums text-app-pos";
 ---
 
 <Chapter n={2} stage="Match" title="850M+ profiles. Only the ones that fit." tint="sand">
@@ -42,15 +43,16 @@ const tone = { Yes: "text-app-pos", Maybe: "text-app-warn" };
       <div class="mb-3 flex items-center justify-between gap-3"><p class="text-sm text-ink-2">Try it: approve or decline<span class="hidden md:inline"> (← / →)</span></p><span class="callout hidden md:inline-flex">Explains why they match</span></div>
       <div class="relative h-[640px] sm:h-[440px]">
         {candidates.map((c, i) => (
-          <article class="card panel absolute inset-x-0 top-0 p-5 md:p-6" style={`z-index:${candidates.length - i}`} aria-label={c.name}>
+          <article class="card panel absolute inset-x-0 top-0 p-5 md:p-6" style={`z-index:${candidates.length - i}`} aria-label={c.name} data-fit={c.fit}>
             <header class="flex flex-wrap items-start gap-4">
               <span class="avatar"><Avatar name={c.name} hue={c.hue} size={56} /></span>
               <div class="min-w-0 flex-1">
-                <p class="text-[17px] font-semibold">{c.name}</p>
+                <p class="flex flex-wrap items-center gap-x-2.5 gap-y-1"><span class="text-[17px] font-semibold">{c.name}</span></p>
                 <p class="text-app-fg2">{c.location}</p>
                 <p class="mt-1.5 flex gap-2.5 text-app-fg3"><Link2 size={14} /><Globe size={14} /></p>
               </div>
               <div class="flex w-full gap-1.5 text-[12px] font-medium sm:w-auto">
+                <span class="flex flex-1 flex-col items-center justify-center rounded-lg bg-app-pos/10 px-2 py-1.5 text-app-pos sm:w-[68px] sm:flex-none"><span class="text-[20px] font-semibold leading-none tabular-nums">{c.fit}</span><span class="mt-1 text-[9px] font-semibold tracking-wider">FIT SCORE</span></span>
                 <span class="hidden w-[68px] flex-col items-center gap-1 rounded-lg px-2 py-2 text-app-fg2 shadow-app sm:flex"><MessageSquare size={16} /> Comment</span>
                 <button type="button" data-act="reject" class="flex flex-1 flex-col items-center sm:w-[68px] sm:flex-none gap-1 rounded-lg px-2 py-2 text-app-neg shadow-app transition-[scale,background-color] hover:bg-app-neg/5 active:scale-95"><XCircle size={16} /> Decline</button>
                 <button type="button" data-act="approve" class="flex flex-1 flex-col items-center sm:w-[68px] sm:flex-none gap-1 rounded-lg px-2 py-2 text-app-pos shadow-app transition-[scale,background-color] hover:bg-app-pos/5 active:scale-95"><CheckCircle2 size={16} /> Approve</button>
@@ -85,10 +87,10 @@ const tone = { Yes: "text-app-pos", Maybe: "text-app-warn" };
     <!-- Approved list + review request -->
     <div class="space-y-6 lg:pt-12">
       <div class="panel p-4">
-        <p class="flex items-center justify-between font-semibold">Approved <span id="approved-count" class="rounded bg-app-pos/10 px-1.5 text-[12px] tabular-nums text-app-pos">11</span></p>
+        <p class="flex items-center justify-between font-semibold">Approved <span id="approved-count" class="rounded bg-app-fg/5 px-1.5 text-[12px] tabular-nums text-app-fg3">11</span></p>
         <ul id="approved-list" class="mt-3 space-y-2 text-[13px]">
-          {["Sofia Alvarez", "Tom Becker"].map((n, i) => (
-            <li class="flex items-center gap-2.5"><span class="avatar"><Avatar name={n} hue={60 + i * 140} size={24} /></span><span class="flex-1">{n}</span><Check size={13} class="text-app-pos" /></li>
+          {[["Sofia Alvarez", "9.0"], ["Tom Becker", "9.5"]].map(([n, fit], i) => (
+            <li class="flex items-center gap-2.5"><span class="avatar"><Avatar name={n} hue={60 + i * 140} size={24} /></span><span class="flex-1">{n}</span><span class={fitPill}>{fit}</span><Check size={13} class="text-app-pos" /></li>
           ))}
         </ul>
       </div>
@@ -158,6 +160,7 @@ const tone = { Yes: "text-app-pos", Maybe: "text-app-warn" };
     Object.assign(avatar.style, { width: "24px", height: "24px", fontSize: "9px" });
     row.querySelector(".avatar")!.replaceChildren(avatar);
     row.children[1].textContent = card.getAttribute("aria-label");
+    row.children[2].textContent = card.dataset.fit ?? "";
     row.classList.add("row-in");
     list.prepend(row);
     while (list.children.length > 4) list.lastElementChild!.remove();

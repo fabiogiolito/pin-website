@@ -53,10 +53,10 @@ const menus = [
     </ul>
 
     <div class="flex items-center gap-1 text-[15px] md:gap-2">
-      <a href="https://app.pin.com/login" class="hidden rounded-lg px-3 py-2 text-ink-2 transition-colors hover:text-ink sm:block"
+      <a href="https://app.pin.com/login" class="hidden rounded-lg px-3 py-2 text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink sm:block"
         onclick="window.dataLayer?.push({ event: 'sign_in_clicked', location: 'header', page: window.location.pathname })">Sign in</a>
       <button type="button" class="rounded-xl bg-green px-4 py-2.5 font-medium text-white transition-[background-color,scale] hover:bg-green-accessible active:scale-[0.98]"
-        @click="isLoginModalOpen = true; window.dataLayer?.push({ event: 'start_free_clicked', location: 'header', page: window.location.pathname })">Try Pin free</button>
+        @click="isLoginModalOpen = true; window.dataLayer?.push({ event: 'start_free_clicked', location: 'header', page: window.location.pathname })">Try Pin Free</button>
       <button type="button" class="grid size-10 place-items-center rounded-lg text-ink-2 lg:hidden" @click="open = !open" :aria-expanded="open" aria-label="Menu">
         <span x-show="!open"><Menu size={20} /></span>
         <span x-show="open" style="display:none"><X size={20} /></span>
